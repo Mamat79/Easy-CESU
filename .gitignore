@@ -1,0 +1,35 @@
+# Contexte local et livraisons personnalisées
+RESUME_PROJET.md
+systeme_notes_intervention/GUIDE_MISE_A_JOUR_*.txt
+systeme_notes_intervention/creer_kit_transfert_*.py
+systeme_notes_intervention/creer_video_presentation.py
+systeme_notes_intervention/CLEANUP_REPORT.md
+
+# Données personnelles et sauvegardes
+systeme_notes_intervention/config.json
+systeme_notes_intervention/application/data/
+systeme_notes_intervention/backups/
+systeme_notes_intervention/sauvegardes/
+
+# Constructions et fichiers générés
+systeme_notes_intervention/.build_venv/
+systeme_notes_intervention/.venv/
+systeme_notes_intervention/build/
+systeme_notes_intervention/dist/
+systeme_notes_intervention/output/
+systeme_notes_intervention/sorties/
+systeme_notes_intervention/tmp/
+systeme_notes_intervention/*.spec
+
+# Secrets, journaux et caches
+.env
+.env.*
+**/__pycache__/
+*.py[cod]
+*.log
+*.err
+*.sqlite
+*.sqlite-*
+*.db
+*.zip
+*.exe

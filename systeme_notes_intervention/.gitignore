@@ -1,0 +1,31 @@
+# Données personnelles et sauvegardes locales
+config.json
+application/data/
+sauvegardes/
+backups/
+
+# Fichiers de travail et caches régénérables
+.build_venv/
+.venv/
+build/
+dist/
+tmp/
+output/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+application/*.log
+application/*.err.log
+*.sqlite
+*.sqlite-*
+*.db
+*.spec
+
+# Paquets produits localement
+sorties/
+
+# Outils et documents propres à une livraison locale
+GUIDE_MISE_A_JOUR_*.txt
+creer_kit_transfert_*.py
+creer_video_presentation.py
+CLEANUP_REPORT.md

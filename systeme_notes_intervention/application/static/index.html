@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Easy CESU</title>
+    <link id="faviconLink" rel="icon" href="/icons/generique.png?v=20260724-v210" type="image/png" />
+    <link rel="stylesheet" href="/styles.css?v=20260724-v210" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <h1>Easy CESU</h1>
+          <p id="statusLine">Chargement...</p>
+        </div>
+        <div class="month-controls">
+          <select id="quickProfileSelect" aria-label="Compte actif" title="Changer de compte"></select>
+          <input id="yearFilter" type="number" min="2020" max="2100" />
+          <select id="monthFilter"></select>
+          <button id="generateBtn" class="primary">
+            <span class="button-icon">▣</span>
+            Générer les notes
+          </button>
+          <button id="exportBtn" class="secondary">
+            <span class="button-icon">⇩</span>
+            Bilan Excel
+          </button>
+          <button id="clientsTopBtn" class="secondary" type="button">
+            <span class="button-icon">☷</span>
+            Clients
+          </button>
+        </div>
+      </header>
+
+      <nav class="tabbar" aria-label="Navigation principale">
+        <button class="tab-btn active" type="button" data-view="interventions">Interventions</button>
+        <button class="tab-btn" type="button" data-view="planning">Planning</button>
+        <button class="tab-btn" type="button" data-view="overview">Bilan</button>
+        <button class="tab-btn" type="button" data-view="clients">Clients</button>
+        <button class="tab-btn" type="button" data-view="followup">Notes et paiements</button>
+        <button class="tab-btn" type="button" data-view="database">Base de données</button>
+        <button class="tab-btn" type="button" data-view="settings">Réglages</button>
+      </nav>
+
+      <main class="workspace">
+        <section class="entry-panel view-panel" data-view-panel="interventions">
+          <div class="section-heading">
+            <h2 id="formTitle">Nouvelle intervention</h2>
+            <button id="resetBtn" class="ghost" type="button">Effacer</button>
+          </div>
+          <form id="interventionForm">
+            <input id="editingId" type="hidden" />
+
+            <label for="dateInput">Date</label>
+            <input id="dateInput" type="date" required />
+
+            <label for="clientInput">Client</label>
+            <input id="clientInput" list="clientsList" autocomplete="off" required />
+            <datalist id="clientsList"></datalist>
+
+            <div class="two-columns">
+              <div>
+                <label for="durationInput">Durée</label>
+                <div class="number-stepper">
+                  <button type="button" class="stepper-button" data-step-target="durationInput" data-step-direction="-1" aria-label="Retirer 30 minutes">−</button>
+                  <input id="durationInput" type="number" min="0.5" step="any" inputmode="decimal" required />
+                  <button type="button" class="stepper-button" data-step-target="durationInput" data-step-direction="1" aria-label="Ajouter 30 minutes">+</button>
+                </div>
+                <span class="stepper-hint">par 30 min</span>
+              </div>
+              <div>
+                <label for="rateInput">Net horaire</label>
+                <div class="number-stepper">
+                  <button type="button" class="stepper-button" data-step-target="rateInput" data-step-direction="-1" aria-label="Retirer 50 centimes">−</button>
+                  <input id="rateInput" type="number" min="0" step="any" inputmode="decimal" required />
+                  <button type="button" class="stepper-button" data-step-target="rateInput" data-step-direction="1" aria-label="Ajouter 50 centimes">+</button>
+                </div>
+                <span class="stepper-hint">par 0,50 €</span>
+              </div>
+            </div>
+
+            <label for="locationInput">Lieu</label>
+            <input id="locationInput" autocomplete="off" />
+
+            <label for="taskInput">Description de l'intervention</label>
+            <textarea id="taskInput" rows="4"></textarea>
+
+            <details class="intervention-details">
+              <summary>Horaires et paiement</summary>
+              <div class="two-columns">
+                <div><label for="statusInput">État</label><select id="statusInput"><option value="prevue">Prévue</option><option value="confirmee">Confirmée</option><option value="realisee" selected>Réalisée</option><option value="reportee">Reportée</option><option value="annulee">Annulée</option><option value="a_declarer">À déclarer</option></select></div>
+                <div><label for="plannedStartInput">Début prévu</label><input id="plannedStartInput" type="time" /></div>
+                <div><label for="plannedEndInput">Fin prévue</label><input id="plannedEndInput" type="time" /></div>
+                <div><label for="actualStartInput">Début réel</label><input id="actualStartInput" type="time" /></div>
+                <div><label for="actualEndInput">Fin réelle</label><input id="actualEndInput" type="time" /></div>
+              </div>
+              <div class="two-columns">
+                <div><label for="breakInput">Pause (min)</label><input id="breakInput" type="number" min="0" step="5" value="0" /></div>
+                <div><label for="travelInput">Déplacement (min)</label><input id="travelInput" type="number" min="0" step="5" value="0" /></div>
+              </div>
+              <div class="two-columns">
+                <div>
+                  <label for="plannedAmountInput">Montant prévu</label>
+                  <div class="number-stepper">
+                    <button type="button" class="stepper-button" data-step-target="plannedAmountInput" data-step-direction="-1" aria-label="Retirer 50 centimes">−</button>
+                    <input id="plannedAmountInput" type="number" min="0" step="any" inputmode="decimal" />
+                    <button type="button" class="stepper-button" data-step-target="plannedAmountInput" data-step-direction="1" aria-label="Ajouter 50 centimes">+</button>
+                  </div>
+                </div>
+                <div>
+                  <label for="receivedAmountInput">Montant reçu</label>
+                  <div class="number-stepper">
+                    <button type="button" class="stepper-button" data-step-target="receivedAmountInput" data-step-direction="-1" aria-label="Retirer 50 centimes">−</button>
+                    <input id="receivedAmountInput" type="number" min="0" step="any" inputmode="decimal" />
+                    <button type="button" class="stepper-button" data-step-target="receivedAmountInput" data-step-direction="1" aria-label="Ajouter 50 centimes">+</button>
+                  </div>
+                </div>
+              </div>
+            </details>
+
+            <div class="check-row">
+              <label class="check-label"><input id="transmittedInput" type="checkbox" /> Transmis</label>
+              <label class="check-label"><input id="paidInput" type="checkbox" /> Payé</label>
+            </div>
+
+            <button id="saveBtn" class="primary full" type="submit">Enregistrer</button>
+          </form>
+        </section>
+
+        <section class="month-panel view-panel" data-view-panel="interventions">
+          <div class="summary-strip">
+            <div class="metric">
+              <span>Interventions</span>
+              <strong id="metricInterventions">0</strong>
+            </div>
+            <div class="metric">
+              <span>Clients</span>
+              <strong id="metricClients">0</strong>
+            </div>
+            <div class="metric">
+              <span>Heures</span>
+              <strong id="metricHours">00:00</strong>
+            </div>
+            <div class="metric">
+              <span>Net</span>
+              <strong id="metricNet">0,00 €</strong>
+            </div>
+          </div>
+
+          <div class="section-heading table-heading">
+            <h2 id="monthTitle">Interventions du mois</h2>
+            <div class="filter-line">
+              <input id="searchInput" type="search" placeholder="Rechercher" />
+              <button id="clientsShortcutBtn" class="secondary" type="button">Répertoire clients</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="interventions-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Client</th>
+                  <th>Durée</th>
+                  <th>Net</th>
+                  <th>Travaux</th>
+                  <th class="actions-col"></th>
+                </tr>
+              </thead>
+              <tbody id="interventionsBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="planningPanel" class="planning-panel view-panel" data-view-panel="planning" hidden>
+          <div class="section-heading table-heading">
+            <div>
+              <h2>Planning des rappels</h2>
+              <p class="section-note">Les rappels en retard, du jour et à venir restent regroupés ici.</p>
+            </div>
+            <button id="planningTodayBtn" class="secondary" type="button">Aujourd'hui</button>
+          </div>
+          <div class="planning-columns">
+            <section class="planning-group planning-late">
+              <h3>En retard</h3>
+              <div id="planningLate"></div>
+            </section>
+            <section class="planning-group">
+              <h3>Aujourd'hui</h3>
+              <div id="planningToday"></div>
+            </section>
+            <section class="planning-group">
+              <h3>À prévoir</h3>
+              <div id="planningUpcoming"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="overviewPanel" class="overview-panel view-panel" data-view-panel="overview" hidden>
+          <header class="annual-banner">
+            <div>
+              <h2 id="annualTitle">Bilan d'activité</h2>
+              <p id="annualSubtitle">Évolution mensuelle des heures et du salaire net.</p>
+            </div>
+            <div class="annual-view-control">
+              <label for="annualGranularity">Afficher par</label>
+              <select id="annualGranularity">
+                <option value="day">Jour</option>
+                <option value="week">Semaine</option>
+                <option value="month" selected>Mois</option>
+                <option value="year">Année</option>
+              </select>
+            </div>
+          </header>
+
+          <div class="annual-overview-content">
+            <div class="annual-metrics">
+              <div class="overview-metric">
+                <span>Total net</span>
+                <strong id="overviewNet">0,00 €</strong>
+              </div>
+              <div class="overview-metric">
+                <span>Heures réalisées</span>
+                <strong id="overviewHours">00:00</strong>
+              </div>
+              <div class="overview-metric">
+                <span>Interventions</span>
+                <strong id="overviewInterventions">0</strong>
+              </div>
+              <div class="overview-metric">
+                <span id="overviewAverageLabel">Clients-mois</span>
+                <strong id="overviewAverage">0,00 €</strong>
+              </div>
+            </div>
+
+            <div class="annual-charts">
+              <section class="annual-chart-card annual-net-card" aria-labelledby="annualNetChartTitle">
+                <h3 id="annualNetChartTitle">Évolution du montant net</h3>
+                <div id="annualNetChart" class="annual-line-chart" aria-label="Évolution mensuelle du salaire net"></div>
+              </section>
+              <section class="annual-chart-card" aria-labelledby="annualHoursChartTitle">
+                <h3 id="annualHoursChartTitle">Comparaison des heures</h3>
+                <div class="annual-hours-scroll"><div id="annualHoursChart" class="annual-hours-chart" aria-label="Comparaison mensuelle des heures"></div></div>
+                <p id="annualInsight" class="annual-insight">Aucune intervention cette année.</p>
+              </section>
+            </div>
+
+            <details class="comparison-details">
+              <summary>Comparer des périodes</summary>
+              <div class="comparison-content">
+                <div class="comparison-controls">
+                  <div>
+                    <label for="overviewGranularity">Analyser par</label>
+                    <select id="overviewGranularity">
+                      <option value="day">Jour</option>
+                      <option value="week">Semaine</option>
+                      <option value="month" selected>Mois</option>
+                      <option value="year">Année</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="overviewStart">Du</label>
+                    <input id="overviewStart" type="date" />
+                  </div>
+                  <div>
+                    <label for="overviewEnd">Au</label>
+                    <input id="overviewEnd" type="date" />
+                  </div>
+                  <div>
+                    <label for="overviewReference">Comparer avec</label>
+                    <select id="overviewReference">
+                      <option value="previous">La période précédente</option>
+                      <option value="last_year">La même période l'année passée</option>
+                    </select>
+                  </div>
+                  <button id="overviewApplyBtn" class="primary" type="button">Comparer</button>
+                </div>
+
+                <div class="overview-insight">
+                  <strong id="overviewBusiest">Aucune intervention sur cette période</strong>
+                  <span id="overviewDetail">Les graphiques seront disponibles dès la première intervention.</span>
+                </div>
+
+                <div class="comparison-variation">
+                  <div><span>Écart d'heures</span><strong id="overviewHoursVariation">0 h</strong><small id="overviewHoursReference">Référence : 00:00</small></div>
+                  <div><span>Écart de net</span><strong id="overviewNetVariation">0,00 €</strong><small id="overviewNetReference">Référence : 0,00 €</small></div>
+                  <div><span>Écart d'interventions</span><strong id="overviewInterventionsVariation">0</strong><small id="overviewInterventionsReference">Référence : 0</small></div>
+                </div>
+
+                <div class="overview-charts">
+                  <section class="chart-card" aria-labelledby="netChartTitle">
+                    <div class="chart-heading"><h3 id="netChartTitle">Évolution du salaire net</h3><span id="netChartScale"></span></div>
+                    <div class="chart-legend"><span class="legend-current">Période choisie</span><span class="legend-reference">Référence</span></div>
+                    <div class="bar-chart-scroll"><div id="netChart" class="bar-chart" aria-label="Graphique comparatif du salaire net"></div></div>
+                  </section>
+                  <section class="chart-card" aria-labelledby="hoursChartTitle">
+                    <div class="chart-heading"><h3 id="hoursChartTitle">Évolution des heures</h3><span id="hoursChartScale"></span></div>
+                    <div class="chart-legend"><span class="legend-current">Période choisie</span><span class="legend-reference">Référence</span></div>
+                    <div class="bar-chart-scroll"><div id="hoursChart" class="bar-chart" aria-label="Graphique comparatif des heures"></div></div>
+                  </section>
+                </div>
+
+                <div class="overview-table-wrap">
+                  <table class="overview-table">
+                    <thead><tr><th>Période</th><th>Heures</th><th>Heures réf.</th><th>Net</th><th>Net réf.</th><th>Écart net</th><th>Interventions</th></tr></thead>
+                    <tbody id="overviewBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <section id="settingsPanel" class="settings-panel view-panel" data-view-panel="settings" hidden>
+          <div class="section-heading table-heading">
+            <div>
+              <h2>Réglages</h2>
+              <p class="section-note">Paramètres utilisés pour les nouvelles interventions et les générations.</p>
+              <p class="section-note">Easy CESU - Version <strong id="appVersion">2.1.0</strong></p>
+            </div>
+          </div>
+
+          <div class="settings-grid">
+            <div class="setting-block">
+              <label for="profileSelect">Compte à modifier</label>
+              <div class="profile-picker">
+                <select id="profileSelect"></select>
+                <button id="newProfileBtn" class="secondary" type="button">Nouveau compte</button>
+              </div>
+            </div>
+
+            <div class="setting-block">
+              <label for="profileLabelInput">Nom du compte</label>
+              <input id="profileLabelInput" autocomplete="off" required />
+            </div>
+
+            <div class="setting-block">
+              <label for="employeeNameInput">Nom sur les notes</label>
+              <input id="employeeNameInput" autocomplete="off" />
+            </div>
+
+            <div class="setting-block">
+              <label for="employeePhoneInput">Téléphone</label>
+              <input id="employeePhoneInput" autocomplete="off" />
+            </div>
+
+            <div class="setting-block">
+              <label for="employeeEmailInput">Mail</label>
+              <input id="employeeEmailInput" type="email" autocomplete="off" />
+            </div>
+
+            <div class="setting-block">
+              <label for="employeeSsInput">Numéro SS</label>
+              <input id="employeeSsInput" autocomplete="off" />
+            </div>
+
+            <div class="setting-block">
+              <label for="employeeBirthInput">Naissance</label>
+              <input id="employeeBirthInput" autocomplete="off" />
+            </div>
+
+            <div class="setting-block setting-block-wide">
+              <label for="employeeAddressInput">Adresse affichée sur les notes</label>
+              <textarea id="employeeAddressInput" rows="3"></textarea>
+            </div>
+
+            <div class="setting-block">
+              <label for="primaryActivityInput">Activité principale</label>
+              <select id="primaryActivityInput">
+                <option value="jardinage">Jardinage</option><option value="bricolage">Bricolage</option><option value="menage">Ménage</option>
+                <option value="aide_a_domicile">Aide à domicile</option><option value="garde_d_enfants">Garde d'enfants</option>
+                <option value="soutien_scolaire">Soutien scolaire</option><option value="accompagnement">Accompagnement</option>
+                <option value="assistance_administrative">Assistance administrative</option><option value="informatique">Informatique</option><option value="autre">Autre</option>
+              </select>
+            </div>
+            <div class="setting-block">
+              <label for="shortcutIconInput">Icône des raccourcis</label>
+              <select id="shortcutIconInput">
+                <option value="generique">Services à la personne - générique</option>
+                <option value="jardinage">Jardinage - icône actuelle</option>
+                <option value="bricolage">Bricolage</option>
+                <option value="menage">Ménage</option>
+                <option value="aide_a_domicile">Aide à domicile</option>
+                <option value="garde_d_enfants">Garde d'enfants</option>
+                <option value="soutien_scolaire">Soutien scolaire</option>
+                <option value="accompagnement">Accompagnement</option>
+                <option value="assistance_administrative">Assistance administrative</option>
+                <option value="informatique">Informatique à domicile</option>
+              </select>
+              <p class="section-note">Ce choix sera repris automatiquement par les prochaines mises à jour.</p>
+            </div>
+            <div class="setting-block">
+              <label for="commercialNameInput">Nom commercial facultatif</label>
+              <input id="commercialNameInput" autocomplete="off" />
+            </div>
+            <div class="setting-block setting-block-wide">
+              <label for="backupDirInput">Dossier des sauvegardes</label>
+              <input id="backupDirInput" autocomplete="off" />
+              <p class="section-note">Les sauvegardes restent séparées de la base de données quand c'est possible.</p>
+            </div>
+
+            <div class="setting-block">
+              <label for="defaultRateInput">Tarif net horaire par défaut</label>
+              <div class="rate-setting">
+                <div class="number-stepper">
+                  <button type="button" class="stepper-button" data-step-target="defaultRateInput" data-step-direction="-1" aria-label="Retirer 50 centimes">−</button>
+                  <input id="defaultRateInput" type="number" min="0.01" step="any" inputmode="decimal" required />
+                  <button type="button" class="stepper-button" data-step-target="defaultRateInput" data-step-direction="1" aria-label="Ajouter 50 centimes">+</button>
+                </div>
+                <span>€/h</span>
+              </div>
+              <p class="section-note">Utilisé pour les clients sans tarif individuel. Réglage par 0,50 €.</p>
+            </div>
+
+            <div class="setting-block setting-block-wide quick-setup-block">
+              <label>Configuration rapide</label>
+              <p class="section-note">Crée automatiquement les dossiers de la base, des notes et des exports.</p>
+              <button id="setupFoldersBtn" class="secondary" type="button">Choisir un dossier principal</button>
+            </div>
+
+            <div class="setting-block setting-block-wide">
+              <label for="notesDirInput">Dossier des notes d'intervention</label>
+              <div class="output-picker">
+                <input id="notesDirInput" autocomplete="off" />
+                <button id="browseNotesDirBtn" class="secondary" type="button">Parcourir</button>
+              </div>
+            </div>
+
+            <div class="setting-block setting-block-wide">
+              <label for="exportDirInput">Dossier des exports</label>
+              <div class="output-picker">
+                <input id="exportDirInput" autocomplete="off" />
+                <button id="browseExportDirBtn" class="secondary" type="button">Parcourir</button>
+              </div>
+              <p class="section-note">Bilans Excel et fichiers JSON générés par le bouton Bilan Excel.</p>
+            </div>
+
+            <details class="advanced-settings setting-block-full">
+              <summary>Options avancées</summary>
+              <div class="advanced-settings-grid">
+                <div class="setting-block setting-block-wide">
+                  <label for="sourceDirInput">Dossier source du suivi de paye</label>
+                  <div class="output-picker">
+                    <input id="sourceDirInput" autocomplete="off" />
+                    <button id="browseSourceDirBtn" class="secondary" type="button">Parcourir</button>
+                  </div>
+                </div>
+
+                <div class="setting-block">
+                  <label for="sourcePatternInput">Nom du classeur</label>
+                  <input id="sourcePatternInput" autocomplete="off" />
+                  <p class="section-note">Utilise {year} pour l'année.</p>
+                </div>
+
+                <div class="setting-block setting-block-wide">
+                  <label for="clientsFileInput">Fichier clients source</label>
+                  <div class="output-picker">
+                    <input id="clientsFileInput" autocomplete="off" />
+                    <button id="browseClientsFileBtn" class="secondary" type="button">Parcourir</button>
+                  </div>
+                </div>
+
+                <div class="setting-block setting-block-wide">
+                  <label for="dataDirInput">Dossier de la base de données</label>
+                  <div class="output-picker">
+                    <input id="dataDirInput" autocomplete="off" />
+                    <button id="browseDataDirBtn" class="secondary" type="button">Déplacer</button>
+                  </div>
+                  <p class="section-note">Déplacer copie la base actuelle dans le nouveau dossier puis l'utilise.</p>
+                </div>
+
+                <div class="setting-block setting-block-wide">
+                  <label>Base externe ou partagée</label>
+                  <button id="selectDatabaseFileBtn" class="secondary" type="button">Utiliser une base sans la copier</button>
+                  <p class="section-note">Réservé aux dossiers partagés ou aux cas particuliers.</p>
+                </div>
+              </div>
+            </details>
+
+            <div class="settings-actions">
+              <button id="deleteProfileBtn" class="ghost danger-action" type="button">Supprimer le compte</button>
+              <button id="cancelNewProfileBtn" class="ghost" type="button" hidden>Annuler</button>
+              <button id="saveSettingsBtn" class="primary" type="button">Enregistrer les réglages</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="databasePanel" class="database-panel view-panel" data-view-panel="database" hidden>
+          <div class="section-heading table-heading">
+            <div>
+              <h2>Sauvegarder ou restaurer</h2>
+              <p class="section-note">Une archive ZIP vérifiée contient le compte, les clients, les interventions et les rappels.</p>
+            </div>
+          </div>
+
+          <div class="database-content">
+            <div class="database-account-line">
+              <span>Compte concerné</span>
+              <strong id="databaseProfileName">Compte actif</strong>
+              <p>Chaque compte conserve sa propre liste de clients, ses tarifs et ses interventions.</p>
+            </div>
+
+            <div class="setting-block">
+              <label for="databasePathInput">Base actuellement utilisée</label>
+              <input id="databasePathInput" autocomplete="off" readonly />
+            </div>
+
+            <div class="database-actions">
+              <div class="database-action">
+                <h3>Restaurer une sauvegarde</h3>
+                <p>Choisis une archive Easy CESU pour retrouver un compte sur cet ordinateur.</p>
+                <button id="importDatabaseBtn" class="primary" type="button">Restaurer une sauvegarde</button>
+              </div>
+              <div class="database-action">
+                <h3>Créer une sauvegarde</h3>
+                <p>Crée une archive ZIP complète à conserver ou à transférer.</p>
+                <button id="backupDatabaseBtn" class="secondary" type="button">Créer la sauvegarde</button>
+              </div>
+            </div>
+
+            <p class="database-safety-note">Avant une restauration, le compte actif est sauvegardé automatiquement. Les anciennes bases SQLite restent disponibles dans les options avancées.</p>
+          </div>
+        </section>
+
+        <section id="followupPanel" class="followup-panel view-panel" data-view-panel="followup" hidden>
+          <div class="section-heading table-heading"><div><h2>Notes et paiements</h2><p class="section-note">Les choses à suivre et les règlements attendus, sans surcharger le planning.</p></div></div>
+          <div class="followup-grid">
+            <section class="followup-section">
+              <h3>Note ou chose à faire</h3>
+              <form id="noteForm" class="compact-form">
+                <select id="noteClientInput"><option value="">Choisir un client</option></select>
+                <select id="noteCategoryInput"><option value="information">Information</option><option value="compte_rendu">Compte rendu</option><option value="fait">Chose faite</option><option value="a_faire">À faire</option><option value="paiement">Paiement à suivre</option><option value="materiel">Matériel</option><option value="incident">Incident</option><option value="prive">Note privée</option></select>
+                <select id="notePriorityInput"><option value="normale">Priorité normale</option><option value="haute">Priorité haute</option><option value="basse">Priorité basse</option></select>
+                <textarea id="noteBodyInput" rows="3" placeholder="Ajouter une note..." required></textarea>
+                <label class="check-label"><input id="noteCarryInput" type="checkbox" /> À reporter à la prochaine intervention</label>
+                <button class="primary" type="submit">Ajouter la note</button>
+              </form>
+              <div id="notesList" class="followup-list"></div>
+            </section>
+            <section class="followup-section">
+              <h3>Paiements en attente</h3>
+              <form id="paymentForm" class="compact-form">
+                <select id="paymentClientInput"><option value="">Choisir un client</option></select>
+                <label for="paymentAmountInput">Montant attendu</label>
+                <div class="number-stepper">
+                  <button type="button" class="stepper-button" data-step-target="paymentAmountInput" data-step-direction="-1" aria-label="Retirer 50 centimes">−</button>
+                  <input id="paymentAmountInput" type="number" min="0.01" step="any" inputmode="decimal" placeholder="Montant attendu" required />
+                  <button type="button" class="stepper-button" data-step-target="paymentAmountInput" data-step-direction="1" aria-label="Ajouter 50 centimes">+</button>
+                </div>
+                <input id="paymentDateInput" type="date" />
+                <input id="paymentMethodInput" placeholder="Moyen de paiement" />
+                <button class="primary" type="submit">Créer le suivi</button>
+              </form>
+              <div id="paymentsList" class="followup-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="clientsPanel" class="clients-panel view-panel" data-view-panel="clients" hidden>
+          <div class="section-heading table-heading">
+            <div>
+              <h2>Répertoire clients</h2>
+              <p class="section-note">Coordonnées, numéro CESU et adresse utilisés pour les notes.</p>
+            </div>
+            <div class="filter-line">
+              <input id="clientSearchInput" type="search" placeholder="Rechercher un client" />
+              <button id="refreshClientsBtn" class="secondary" type="button">Importer</button>
+            </div>
+          </div>
+
+          <div class="client-editor">
+            <form id="clientForm" class="client-form">
+              <input id="clientOriginalName" type="hidden" />
+              <div>
+                <label for="clientNameInput">Client</label>
+                <input id="clientNameInput" autocomplete="off" required />
+              </div>
+              <div>
+                <label for="clientEmailInput">Mail</label>
+                <input id="clientEmailInput" type="email" autocomplete="off" />
+              </div>
+              <div>
+                <label for="clientCesuInput">Numéro CESU</label>
+                <input id="clientCesuInput" autocomplete="off" />
+              </div>
+              <div>
+                <label for="clientRateInput">Tarif individuel</label>
+                <div class="number-stepper">
+                  <button type="button" class="stepper-button" data-step-target="clientRateInput" data-step-direction="-1" aria-label="Retirer 50 centimes">−</button>
+                  <input id="clientRateInput" type="number" min="0" step="any" inputmode="decimal" placeholder="Défaut" />
+                  <button type="button" class="stepper-button" data-step-target="clientRateInput" data-step-direction="1" aria-label="Ajouter 50 centimes">+</button>
+                </div>
+              </div>
+              <div>
+                <label for="clientPhoneInput">Téléphone</label>
+                <input id="clientPhoneInput" autocomplete="off" />
+              </div>
+              <div class="client-address-field">
+                <label for="clientAddressInput">Adresse</label>
+                <input id="clientAddressInput" autocomplete="off" />
+              </div>
+              <div class="client-form-actions">
+                <button id="clientResetBtn" class="ghost" type="button">Nouveau</button>
+                <button id="clientSaveBtn" class="primary" type="submit">Enregistrer client</button>
+              </div>
+            </form>
+          </div>
+
+          <section class="reminder-editor" aria-labelledby="reminderTitle">
+            <div class="section-heading table-heading">
+              <div>
+                <h3 id="reminderTitle">Rappels du client</h3>
+                <p id="reminderClientHint" class="section-note">Sélectionne ou enregistre un client pour ajouter un rappel.</p>
+              </div>
+            </div>
+            <form id="reminderForm" class="reminder-form">
+              <input id="reminderId" type="hidden" />
+              <div>
+                <label for="reminderTitleInput">Titre</label>
+                <input id="reminderTitleInput" autocomplete="off" required />
+              </div>
+              <div>
+                <label for="reminderDateInput">Première échéance</label>
+                <input id="reminderDateInput" type="date" required />
+              </div>
+              <div>
+                <label for="reminderTimeInput">Heure</label>
+                <input id="reminderTimeInput" type="time" />
+              </div>
+              <div>
+                <label for="reminderRecurrenceInput">Répétition</label>
+                <select id="reminderRecurrenceInput">
+                  <option value="once">Une fois</option>
+                  <option value="monthly">Chaque mois</option>
+                  <option value="yearly">Chaque année</option>
+                </select>
+              </div>
+              <div>
+                <label for="reminderIntervalInput">Tous les</label>
+                <input id="reminderIntervalInput" type="number" min="1" max="120" value="1" />
+              </div>
+              <div>
+                <label for="reminderAnticipationInput">Avertir avant</label>
+                <input id="reminderAnticipationInput" type="number" min="0" max="365" value="7" />
+              </div>
+              <div>
+                <label for="reminderUnitInput">Unité</label>
+                <select id="reminderUnitInput">
+                  <option value="days">jours</option>
+                  <option value="weeks">semaines</option>
+                  <option value="months">mois</option>
+                </select>
+              </div>
+              <div class="reminder-notes-field">
+                <label for="reminderDescriptionInput">Notes</label>
+                <input id="reminderDescriptionInput" autocomplete="off" />
+              </div>
+              <label class="check-label"><input id="reminderActiveInput" type="checkbox" checked /> Actif</label>
+              <div class="client-form-actions">
+                <button id="reminderResetBtn" class="ghost" type="button">Nouveau rappel</button>
+                <button id="reminderSaveBtn" class="primary" type="submit">Enregistrer le rappel</button>
+              </div>
+            </form>
+            <div id="clientReminders" class="reminder-list"></div>
+          </section>
+
+          <div class="table-wrap clients-table-wrap">
+            <table class="clients-table">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Mail</th>
+                  <th>CESU</th>
+                  <th>Prix/h</th>
+                  <th>Téléphone</th>
+                  <th>Adresse</th>
+                  <th class="actions-col"></th>
+                </tr>
+              </thead>
+              <tbody id="clientsBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+      <footer class="app-disclaimer">
+        Easy CESU V<span id="footerVersion">2.1.0</span> est un outil indépendant de suivi d'activité. Il n'est ni affilié ni connecté automatiquement au service officiel CESU.
+      </footer>
+    </div>
+
+    <dialog id="setupAssistantDialog" class="setup-assistant" aria-labelledby="setupAssistantTitle">
+      <div class="setup-assistant-heading">
+        <img id="setupIcon" src="/icons/generique.png" alt="" width="52" height="52" />
+        <div>
+          <h2 id="setupAssistantTitle">Préparer Easy CESU</h2>
+          <p id="setupAssistantText">Choisis comment démarrer puis où ranger les fichiers de ce compte.</p>
+        </div>
+      </div>
+      <p id="setupAssistantProgress" class="setup-progress">Étape 1 sur 5</p>
+      <section class="setup-step" data-setup-step="1">
+        <p class="setup-assistant-note">Crée un nouveau suivi ou récupère une sauvegarde Easy CESU. Aucune donnée n'est envoyée sur internet.</p>
+        <div id="setupAssistantChoice" class="setup-assistant-choice">
+          <button id="setupAssistantEmptyBtn" class="secondary" type="button">Commencer un nouveau suivi</button>
+          <button id="setupAssistantRestoreBtn" class="primary" type="button">Restaurer une sauvegarde</button>
+        </div>
+      </section>
+      <section class="setup-step" data-setup-step="2" hidden>
+        <label for="setupNameInput">Nom affiché sur les documents</label>
+        <input id="setupNameInput" autocomplete="name" placeholder="Ex. Marie Dupont" />
+        <label for="setupPhoneInput">Téléphone facultatif</label>
+        <input id="setupPhoneInput" autocomplete="tel" />
+      </section>
+      <section class="setup-step" data-setup-step="3" hidden>
+        <label for="setupActivityInput">Activité principale</label>
+        <select id="setupActivityInput"><option value="jardinage">Jardinage</option><option value="bricolage">Bricolage</option><option value="menage">Ménage</option><option value="aide_a_domicile">Aide à domicile</option><option value="garde_d_enfants">Garde d'enfants</option><option value="soutien_scolaire">Soutien scolaire</option><option value="accompagnement">Accompagnement</option><option value="assistance_administrative">Assistance administrative</option><option value="informatique">Informatique</option><option value="autre">Autre</option></select>
+        <p class="setup-assistant-note">L'activité adapte les exemples proposés sans limiter les prestations possibles.</p>
+      </section>
+      <section class="setup-step" data-setup-step="4" hidden>
+        <div class="setup-assistant-folders" aria-label="Dossiers créés automatiquement"><span>Base de données</span><span>Notes</span><span>Exports</span></div>
+        <p class="setup-assistant-note">Le choix recommandé est un dossier local. Un dossier synchronisé ou partagé reste possible s'il est bien accessible en écriture.</p>
+      </section>
+      <section class="setup-step" data-setup-step="5" hidden>
+        <p class="setup-assistant-note">Easy CESU créera une sauvegarde quotidienne dans le dossier indiqué dans Réglages. Tu pourras ensuite ajouter tes clients et tes interventions.</p>
+      </section>
+      <div class="setup-assistant-actions">
+        <button id="setupAssistantLaterBtn" class="ghost" type="button">Plus tard</button>
+        <button id="setupAssistantPreviousBtn" class="ghost" type="button" hidden>Précédent</button>
+        <button id="setupAssistantNextBtn" class="secondary" type="button">Suivant</button>
+        <button id="setupAssistantStartBtn" class="primary" type="button">Choisir le dossier principal</button>
+      </div>
+    </dialog>
+
+    <div id="toast" class="toast" aria-live="polite"></div>
+    <script src="/app.js?v=20260724-v210"></script>
+  </body>
+</html>
