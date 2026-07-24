@@ -23,3 +23,8 @@ Il est recommandé de fermer Easy CESU avant de lancer l'installation.
 - Interface contrôlée sur écran d'ordinateur et mobile.
 - Installation et mise à jour locales validées.
 - Notice PDF contrôlée visuellement.
+
+## Empreintes SHA-256
+
+- `EasyCESU-Setup-x64-2.1.0.exe` : `111328ABFE943EE67292760E7198D293EC1EAB7D0267CC0F1BB824B030FB498A`
+- `Easy_CESU_V2_Notice_Installation_et_Utilisation.pdf` : `4D79CC5778E4FF06305D434BC87C16B81B8144BF835F836BB4361B5B7C36D8C3`
