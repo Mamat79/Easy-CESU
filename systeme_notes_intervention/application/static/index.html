@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Easy CESU</title>
-    <link id="faviconLink" rel="icon" href="/icons/generique.png?v=20260724-v210" type="image/png" />
-    <link rel="stylesheet" href="/styles.css?v=20260724-v210" />
+    <link id="faviconLink" rel="icon" href="/icons/generique.png?v=20260724-v210b" type="image/png" />
+    <link rel="stylesheet" href="/styles.css?v=20260724-v210b" />
   </head>
   <body>
     <div class="app-shell">
@@ -64,10 +64,9 @@
                 <label for="durationInput">Durée</label>
                 <div class="number-stepper">
                   <button type="button" class="stepper-button" data-step-target="durationInput" data-step-direction="-1" aria-label="Retirer 30 minutes">−</button>
-                  <input id="durationInput" type="number" min="0.5" step="any" inputmode="decimal" required />
+                  <input id="durationInput" type="text" inputmode="text" data-min="0.5" autocomplete="off" required />
                   <button type="button" class="stepper-button" data-step-target="durationInput" data-step-direction="1" aria-label="Ajouter 30 minutes">+</button>
                 </div>
-                <span class="stepper-hint">par 30 min</span>
               </div>
               <div>
                 <label for="rateInput">Net horaire</label>
@@ -76,7 +75,6 @@
                   <input id="rateInput" type="number" min="0" step="any" inputmode="decimal" required />
                   <button type="button" class="stepper-button" data-step-target="rateInput" data-step-direction="1" aria-label="Ajouter 50 centimes">+</button>
                 </div>
-                <span class="stepper-hint">par 0,50 €</span>
               </div>
             </div>
 
@@ -410,7 +408,7 @@
                 </div>
                 <span>€/h</span>
               </div>
-              <p class="section-note">Utilisé pour les clients sans tarif individuel. Réglage par 0,50 €.</p>
+              <p class="section-note">Utilisé pour les clients sans tarif individuel.</p>
             </div>
 
             <div class="setting-block setting-block-wide quick-setup-block">
@@ -731,6 +729,6 @@
     </dialog>
 
     <div id="toast" class="toast" aria-live="polite"></div>
-    <script src="/app.js?v=20260724-v210"></script>
+    <script src="/app.js?v=20260724-v210b"></script>
   </body>
 </html>

@@ -3,6 +3,8 @@
 ## 2.1.0 - 2026-07-24
 
 - Grands boutons moins et plus pour régler les durées par 30 minutes et les tarifs ou montants par 0,50 euro.
+- Durées affichées au format heures et minutes (`1:00`, `1:30`, `2:00`) sans indication supplémentaire sous le champ.
+- Suppression de l'indication du pas sous les champs Durée et Net horaire pour éviter toute ambiguïté.
 - Saisie directe toujours possible pour conserver les valeurs historiques précises.
 - Choix visuel de l'icône métier dans l'installateur : générique, jardinage, bricolage, ménage, aide à domicile, garde d'enfants, soutien scolaire, accompagnement, administratif ou informatique.
 - L'installateur reprend automatiquement l'icône mémorisée par le compte actif lors d'une mise à jour.

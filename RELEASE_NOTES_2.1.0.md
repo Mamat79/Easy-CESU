@@ -9,6 +9,8 @@ Cette version rend Easy CESU utilisable pour les principaux métiers de services
 - Grands boutons moins et plus pour les champs numériques.
 - Durées ajustées par pas de 30 minutes.
 - Tarifs et montants ajustés par pas de 0,50 euro.
+- Durées affichées sans ambiguïté au format `h:mm`, par exemple `1:00` ou `2:30`.
+- Aucune indication du pas n'est affichée sous les champs.
 - Libellés rendus plus génériques pour tous les métiers CESU.
 
 ## Mise à jour
@@ -26,5 +28,5 @@ Il est recommandé de fermer Easy CESU avant de lancer l'installation.
 
 ## Empreintes SHA-256
 
-- `EasyCESU-Setup-x64-2.1.0.exe` : `111328ABFE943EE67292760E7198D293EC1EAB7D0267CC0F1BB824B030FB498A`
-- `Easy_CESU_V2_Notice_Installation_et_Utilisation.pdf` : `4D79CC5778E4FF06305D434BC87C16B81B8144BF835F836BB4361B5B7C36D8C3`
+- `EasyCESU-Setup-x64-2.1.0.exe` : `E67BAE2D01B5E8F9E148F2BEC85D044942E6B41FA67C1790DF6903E3AFE0FD20`
+- `Easy_CESU_V2_Notice_Installation_et_Utilisation.pdf` : `97143F46BCA9B5596352A3A04D51F5173D1A386EB3D030DF528EBE3B81C12A36`

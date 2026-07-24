@@ -261,24 +261,44 @@ function dateFr(value) {
   return new Intl.DateTimeFormat("fr-FR").format(new Date(`${value}T00:00:00`));
 }
 
+function parseDurationInput(value) {
+  const raw = String(value ?? "").trim().toLowerCase().replace(",", ".");
+  const timeMatch = raw.match(/^(\d+)\s*[:h]\s*(\d{1,2})$/);
+  if (timeMatch) {
+    const hours = Number(timeMatch[1]);
+    const minutes = Number(timeMatch[2]);
+    return minutes < 60 ? hours + minutes / 60 : Number.NaN;
+  }
+  const decimal = Number(raw);
+  return Number.isFinite(decimal) ? decimal : Number.NaN;
+}
+
+function formatDurationInput(value) {
+  const hours = typeof value === "string" ? parseDurationInput(value) : Number(value);
+  if (!Number.isFinite(hours) || hours < 0) return "";
+  const totalMinutes = Math.round(hours * 60);
+  return `${Math.floor(totalMinutes / 60)}:${String(totalMinutes % 60).padStart(2, "0")}`;
+}
+
 function durationLabel(hours) {
-  const minutes = Math.round(Number(hours || 0) * 60);
-  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+  return formatDurationInput(Number(hours || 0));
 }
 
 function adjustSteppedNumber(input, direction) {
   // Les gros boutons ont volontairement un pas simple : 30 minutes ou 0,50 euro.
   const step = 0.5;
-  const current = Number.parseFloat(input.value);
+  const current = input === els.durationInput
+    ? parseDurationInput(input.value)
+    : Number.parseFloat(input.value);
   const startingValue = Number.isFinite(current) ? current : 0;
   let nextValue = Math.round((startingValue + direction * step) * 100) / 100;
-  const minimum = Number.parseFloat(input.min);
-  const maximum = Number.parseFloat(input.max);
+  const minimum = Number.parseFloat(input.dataset.min || input.min);
+  const maximum = Number.parseFloat(input.dataset.max || input.max);
   if (Number.isFinite(minimum)) nextValue = Math.max(minimum, nextValue);
   if (Number.isFinite(maximum)) nextValue = Math.min(maximum, nextValue);
 
   input.value = input === els.durationInput
-    ? (Number.isInteger(nextValue) ? String(nextValue) : nextValue.toFixed(1))
+    ? formatDurationInput(nextValue)
     : nextValue.toFixed(2);
   input.dispatchEvent(new Event("input", { bubbles: true }));
   input.dispatchEvent(new Event("change", { bubbles: true }));
@@ -307,7 +327,7 @@ function applyProfileIcon(iconKey) {
     "informatique",
   ]);
   const key = supported.has(iconKey) ? iconKey : "generique";
-  const path = `/icons/${key}.png?v=20260724-v210`;
+  const path = `/icons/${key}.png?v=20260724-v210b`;
   els.faviconLink.href = path;
   els.setupIcon.src = path;
 }
@@ -616,7 +636,7 @@ function resetForm() {
   els.form.reset();
   els.dateInput.value = new Date().toISOString().slice(0, 10);
   els.rateInput.value = state.defaultRate.toFixed(2);
-  els.durationInput.value = "1";
+  els.durationInput.value = "1:00";
   els.statusInput.value = "realisee";
   els.breakInput.value = "0";
   els.travelInput.value = "0";
@@ -636,10 +656,11 @@ function resetClientForm() {
 }
 
 function formPayload() {
+  const durationHours = parseDurationInput(els.durationInput.value);
   return {
     date: els.dateInput.value,
     client: els.clientInput.value,
-    duration_hours: Number(els.durationInput.value),
+    duration_hours: durationHours,
     hourly_rate: Number(els.rateInput.value),
     location: els.locationInput.value,
     task: els.taskInput.value,
@@ -653,8 +674,8 @@ function formPayload() {
     actual_end: els.actualEndInput.value,
     break_minutes: Number(els.breakInput.value || 0),
     travel_minutes: Number(els.travelInput.value || 0),
-    planned_amount: els.plannedAmountInput.value === "" ? Number(els.durationInput.value) * Number(els.rateInput.value) : Number(els.plannedAmountInput.value),
-    received_amount: els.receivedAmountInput.value === "" ? (els.paidInput.checked ? Number(els.durationInput.value) * Number(els.rateInput.value) : 0) : Number(els.receivedAmountInput.value),
+    planned_amount: els.plannedAmountInput.value === "" ? durationHours * Number(els.rateInput.value) : Number(els.plannedAmountInput.value),
+    received_amount: els.receivedAmountInput.value === "" ? (els.paidInput.checked ? durationHours * Number(els.rateInput.value) : 0) : Number(els.receivedAmountInput.value),
   };
 }
 
@@ -677,7 +698,7 @@ function loadIntoForm(row) {
   els.formTitle.textContent = "Modifier l'intervention";
   els.dateInput.value = row.date;
   els.clientInput.value = row.client;
-  els.durationInput.value = row.duration_hours;
+  els.durationInput.value = formatDurationInput(row.duration_hours);
   els.rateInput.value = row.hourly_rate;
   els.locationInput.value = row.location || "";
   els.taskInput.value = row.task || "";
@@ -1037,6 +1058,11 @@ async function saveIntervention(event) {
   try {
     const id = els.editingId.value;
     const payload = formPayload();
+    if (!Number.isFinite(payload.duration_hours) || payload.duration_hours < 0.5) {
+      showToast("Saisis une durée valide, par exemple 2:30.");
+      els.durationInput.focus();
+      return;
+    }
     if (id) {
       await api(`/api/interventions/${id}`, { method: "PUT", body: JSON.stringify(payload) });
       showToast("Intervention modifiée.");
@@ -1543,6 +1569,12 @@ async function savePayment(event) {
 function bindEvents() {
   els.form.addEventListener("submit", saveIntervention);
   els.resetBtn.addEventListener("click", resetForm);
+  els.durationInput.addEventListener("blur", () => {
+    const duration = parseDurationInput(els.durationInput.value);
+    if (Number.isFinite(duration) && duration >= 0.5) {
+      els.durationInput.value = formatDurationInput(duration);
+    }
+  });
   els.yearFilter.addEventListener("change", async () => {
     await loadMonth();
     state.overviewYear = null;

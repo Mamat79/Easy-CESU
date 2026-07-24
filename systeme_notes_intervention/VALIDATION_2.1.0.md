@@ -17,6 +17,7 @@
 - Suite isolée : 15 tests réussis.
 - Contrôle visuel de l'interface en 1440 x 900 et 390 x 844.
 - Contrôle des boutons de 42 x 42 pixels et de leurs pas de réglage.
+- Contrôle de l'affichage des durées en `h:mm` et de l'absence d'indication sous les champs.
 - Contrôle des dix icônes disponibles.
 - Installation locale depuis l'installateur final.
 - Conservation exacte de la configuration et de la base pendant l'installation.

@@ -99,8 +99,13 @@ class NumericStepperContractTests(unittest.TestCase):
             "paymentAmountInput",
         ):
             self.assertIn(f'data-step-target="{field}"', html)
-        self.assertIn("par 30 min", html)
-        self.assertIn("par 0,50 €", html)
+        self.assertNotIn("stepper-hint", html)
+        self.assertNotIn("par 30 min", html)
+        self.assertNotIn("par 0,50 €", html)
+        self.assertIn('id="durationInput" type="text"', html)
+        self.assertIn("function parseDurationInput", javascript)
+        self.assertIn("function formatDurationInput", javascript)
+        self.assertIn('els.durationInput.value = "1:00"', javascript)
         self.assertIn("function adjustSteppedNumber", javascript)
         self.assertIn("const step = 0.5", javascript)
 

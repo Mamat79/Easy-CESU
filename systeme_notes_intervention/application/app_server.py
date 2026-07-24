@@ -3764,7 +3764,7 @@ def main(open_browser: bool | None = None) -> int:
     preferred_port = int(os.environ.get("NOTES_APP_PORT", "8765"))
     port, existing_server = select_server_port(preferred_port)
     url = f"http://127.0.0.1:{port}"
-    browser_url = f"{url}/?v=20260724-v210"
+    browser_url = f"{url}/?v=20260724-v210b"
     if open_browser is None:
         open_browser = bool(getattr(sys, "frozen", False)) or os.environ.get("NOTES_OPEN_BROWSER") == "1"
     if existing_server:

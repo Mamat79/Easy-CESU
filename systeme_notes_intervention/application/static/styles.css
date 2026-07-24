@@ -833,14 +833,6 @@ textarea:focus {
   background: var(--amber);
 }
 
-.stepper-hint {
-  display: block;
-  margin-top: 4px;
-  color: var(--muted);
-  font-size: 11px;
-  text-align: center;
-}
-
 .two-columns {
   display: grid;
   grid-template-columns: 1fr 1fr;
