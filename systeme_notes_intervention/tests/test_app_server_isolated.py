@@ -273,15 +273,14 @@ import app_server
     def test_v3_local_server_starts_and_stops_without_a_browser(self) -> None:
         self.run_scenario(
             """
-            import socket
             import time
             import urllib.request
 
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
-                probe.bind(("127.0.0.1", 0))
-                port = probe.getsockname()[1]
-            runtime = app_server.LocalAppServer(port)
+            runtime = app_server.LocalAppServer(preferred_port=0)
             url = runtime.start(background=True)
+            port = runtime.port
+            assert port > 0
+            assert f":{port}/" in url
             with urllib.request.urlopen(url.replace("/?v=20260725-v300", "/api/app-info"), timeout=5) as response:
                 info = __import__("json").loads(response.read().decode("utf-8"))
             assert info["app_version"] == "3.0.0"

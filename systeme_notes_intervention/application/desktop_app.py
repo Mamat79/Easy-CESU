@@ -26,7 +26,9 @@ def main() -> int:
     except ImportError as exc:
         raise RuntimeError("Le composant de fenêtre native pywebview est absent.") from exc
 
-    runtime = LocalAppServer()
+    # La fenêtre native ne publie pas un port fixe : Windows lui attribue un
+    # port local libre, sans risque de conflit avec PATATE ou un autre projet.
+    runtime = LocalAppServer(preferred_port=0)
     url = runtime.start(background=True)
     storage_dir = user_data_root() / "webview"
     storage_dir.mkdir(parents=True, exist_ok=True)

@@ -3633,7 +3633,11 @@ class LocalAppServer:
     """Pilote le serveur HTTP local indépendamment de la fenêtre d'affichage."""
 
     def __init__(self, preferred_port: int | None = None) -> None:
-        self.preferred_port = preferred_port or int(os.environ.get("NOTES_APP_PORT", "8765"))
+        self.preferred_port = (
+            int(os.environ.get("NOTES_APP_PORT", "8765"))
+            if preferred_port is None
+            else preferred_port
+        )
         self.port = 0
         self.url = ""
         self.browser_url = ""
@@ -3643,14 +3647,22 @@ class LocalAppServer:
         self.server_thread: threading.Thread | None = None
 
     def start(self, background: bool = True) -> str:
-        self.port, self.existing_server = select_server_port(self.preferred_port)
-        self.url = f"http://127.0.0.1:{self.port}"
-        self.browser_url = f"{self.url}/?v=20260725-v300"
+        if self.preferred_port == 0:
+            # Le mode fenêtre native laisse Windows choisir un port libre afin de
+            # ne jamais concurrencer les autres serveurs locaux de l'utilisateur.
+            self.port, self.existing_server = 0, False
+        else:
+            self.port, self.existing_server = select_server_port(self.preferred_port)
         if self.existing_server:
+            self.url = f"http://127.0.0.1:{self.port}"
+            self.browser_url = f"{self.url}/?v=20260725-v300"
             return self.browser_url
 
         init_db()
         self.server = ThreadingHTTPServer(("127.0.0.1", self.port), AppHandler)
+        self.port = int(self.server.server_address[1])
+        self.url = f"http://127.0.0.1:{self.port}"
+        self.browser_url = f"{self.url}/?v=20260725-v300"
         self.server.daemon_threads = True
         self.monitor_stop = threading.Event()
         threading.Thread(

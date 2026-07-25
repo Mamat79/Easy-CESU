@@ -20,7 +20,9 @@ Date : 25 juillet 2026
 - Ouverture de l'exécutable dans une fenêtre Windows `Easy CESU V3`.
 - Affichage de l'assistant de premier démarrage.
 - Ouverture et contrôle visuel de l'onglet `Modèles`.
-- Fermeture de la fenêtre, arrêt du processus et libération du port 8765.
+- Fermeture de la fenêtre, arrêt du processus et libération du port local.
+- Attribution dynamique d'un port libre par Windows pour la fenêtre native,
+  sans collision avec PATATE déjà actif sur un autre port.
 - Génération et rendu d'un PDF par défaut et d'un PDF personnalisé.
 - Rendu visuel des deux pages de la notice V3.
 - Installateur V3 exécuté avec le code de sortie 0.
@@ -28,8 +30,8 @@ Date : 25 juillet 2026
   identiques, hors script de désinstallation volontairement régénéré.
 - Raccourcis `Easy CESU V3` créés sur le Bureau et dans le menu Démarrer.
 - Version 3.0.0 enregistrée dans la liste des applications Windows.
-- Lancement depuis l'installation, serveur local limité à `127.0.0.1:8765` et
-  réponse `/api/app-info` indiquant la version 3.0.0.
+- Lancement depuis l'installation, serveur local limité à `127.0.0.1` sur un
+  port dynamique et réponse `/api/app-info` indiquant la version 3.0.0.
 
 ## Protection des données
 

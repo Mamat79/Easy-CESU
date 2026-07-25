@@ -4,6 +4,8 @@
 
 - Easy CESU s'ouvre dans une fenêtre Windows dédiée basée sur Microsoft WebView2, sans onglet Chrome.
 - Fermer la fenêtre arrête automatiquement le serveur local et libère son port.
+- La fenêtre native utilise un port libre attribué par Windows afin de ne pas
+  entrer en conflit avec PATATE ou un autre serveur local.
 - Nouvel onglet `Modèles` avec aperçu A4 en direct.
 - Création, duplication, import, export, sélection et suppression contrôlée des modèles de notes.
 - Personnalisation des textes, couleurs, tailles, marges, espacements et ordre des blocs.

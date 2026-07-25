@@ -49,6 +49,10 @@ class NativeWindowTests(unittest.TestCase):
         runtime = FakeRuntime()
         calls: dict[str, object] = {}
 
+        def create_runtime(*args: object, **kwargs: object) -> FakeRuntime:
+            calls["runtime"] = (args, kwargs)
+            return runtime
+
         def create_window(*args: object, **kwargs: object) -> None:
             calls["create"] = (args, kwargs)
 
@@ -58,7 +62,7 @@ class NativeWindowTests(unittest.TestCase):
         fake_webview = types.SimpleNamespace(create_window=create_window, start=start)
         with tempfile.TemporaryDirectory(prefix="easy-cesu-native-") as temporary:
             with (
-                patch.object(desktop_app, "LocalAppServer", return_value=runtime),
+                patch.object(desktop_app, "LocalAppServer", side_effect=create_runtime),
                 patch.object(desktop_app, "user_data_root", return_value=Path(temporary)),
                 patch.dict(sys.modules, {"webview": fake_webview}),
             ):
@@ -66,6 +70,7 @@ class NativeWindowTests(unittest.TestCase):
 
         self.assertEqual(result, 0)
         self.assertTrue(runtime.stopped)
+        self.assertEqual(calls["runtime"], ((), {"preferred_port": 0}))
         title, url = calls["create"][0][:2]
         self.assertEqual(title, "Easy CESU V3")
         self.assertEqual(url, "http://127.0.0.1:9999/?v=test")

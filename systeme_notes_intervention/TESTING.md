@@ -25,6 +25,8 @@ La V3.0.0 comporte 20 tests automatisés couvrant notamment :
 - création, duplication, import, export et suppression contrôlée des modèles ;
 - génération d'un PDF avec un modèle personnalisé ;
 - ouverture de la fenêtre native WebView2 et arrêt du serveur à sa fermeture ;
+- attribution dynamique et libération du port local afin d'éviter les conflits
+  avec les autres applications ;
 - isolation complète de la préversion par rapport aux données installées ;
 - détection et installation conditionnelle du runtime Microsoft WebView2.
 
