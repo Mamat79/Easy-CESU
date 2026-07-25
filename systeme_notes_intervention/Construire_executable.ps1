@@ -12,7 +12,7 @@ $Stamp = Get-Date -Format "yyyyMMdd_HHmm"
 $ZipPath = Join-Path $Sorties "EasyCESU-Portable-x64-$Version-$Stamp.zip"
 $NoticeGenerator = Join-Path $Root "generer_notice_pdf.py"
 $IconGenerator = Join-Path $Root "generer_icone.py"
-$NoticePdf = Join-Path $Root "output\pdf\Easy_CESU_V2_Notice_Installation_et_Utilisation.pdf"
+$NoticePdf = Join-Path $Root "output\pdf\Easy_CESU_V3_Notice_Installation_et_Utilisation.pdf"
 $BundledPython = Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
 
 function Find-BasePython {
@@ -82,7 +82,7 @@ if ($LASTEXITCODE -ne 0) { throw "Echec de construction de l'executable." }
 Write-Host "Generation de la notice PDF..."
 & $BuildPython $NoticeGenerator
 if ($LASTEXITCODE -ne 0) { throw "Echec de generation de la notice PDF." }
-Copy-Item -LiteralPath $NoticePdf -Destination (Join-Path $AppDist "Easy_CESU_V2_Notice_Installation_et_Utilisation.pdf") -Force
+Copy-Item -LiteralPath $NoticePdf -Destination (Join-Path $AppDist "Easy_CESU_V3_Notice_Installation_et_Utilisation.pdf") -Force
 
 $InstallerCmd = Join-Path $AppDist "Installer sur ce PC.cmd"
 $InstallerPs1 = Join-Path $AppDist "installer_sur_ce_pc.ps1"

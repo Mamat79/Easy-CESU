@@ -6,6 +6,7 @@ import math
 import re
 import unicodedata
 from collections import defaultdict
+from copy import deepcopy
 from dataclasses import dataclass, asdict
 from datetime import date, datetime, time, timedelta
 from html import escape
@@ -65,6 +66,115 @@ EMPLOYEE_LINES = [
     "",
     "",
 ]
+
+NOTE_TEMPLATE_BLOCKS = ("identity", "title", "table")
+DEFAULT_NOTE_TEMPLATE_CONFIGURATION = {
+    "version": 1,
+    "blocks": list(NOTE_TEMPLATE_BLOCKS),
+    "visible": {"identity": True, "title": True, "table": True},
+    "labels": {
+        "title": "NOTE D’INTERVENTION",
+        "employer": "Nom de l’employeur :",
+        "month": "Mois concerné :",
+        "date": "Dates d’intervention",
+        "hourly_rate": "Salaire net",
+        "hours": "Nombre d’heure",
+        "amount": "Montant total",
+        "total": "Total du mois :",
+    },
+    "page": {
+        "left_margin_cm": 2.5,
+        "right_margin_cm": 2.5,
+        "top_margin_cm": 2.3,
+        "bottom_margin_cm": 1.4,
+    },
+    "typography": {
+        "body_size": 11.0,
+        "title_size": 11.0,
+        "table_size": 10.5,
+        "text_color": "#000000",
+        "title_color": "#000000",
+    },
+    "spacing": {
+        "identity_after_cm": 1.35,
+        "title_after_cm": 2.65,
+        "table_after_cm": 0.0,
+    },
+    "table": {
+        "header_background": "#E6E6E6",
+        "total_background": "#E6E6E6",
+        "border_color": "#000000",
+        "row_height_cm": 0.70,
+        "minimum_rows": 15,
+    },
+}
+
+
+def default_note_template_configuration() -> dict[str, Any]:
+    return deepcopy(DEFAULT_NOTE_TEMPLATE_CONFIGURATION)
+
+
+def normalize_note_template_configuration(value: object) -> dict[str, Any]:
+    """Normalise uniquement les réglages de mise en page pris en charge."""
+
+    source = value if isinstance(value, dict) else {}
+    result = default_note_template_configuration()
+
+    blocks = source.get("blocks")
+    if isinstance(blocks, list):
+        selected = [str(item) for item in blocks if str(item) in NOTE_TEMPLATE_BLOCKS]
+        result["blocks"] = list(dict.fromkeys(selected + list(NOTE_TEMPLATE_BLOCKS)))
+
+    visible = source.get("visible")
+    if isinstance(visible, dict):
+        result["visible"]["identity"] = bool(visible.get("identity", True))
+        result["visible"]["title"] = bool(visible.get("title", True))
+    result["visible"]["table"] = True
+
+    labels = source.get("labels")
+    if isinstance(labels, dict):
+        for key, fallback in result["labels"].items():
+            text = str(labels.get(key, fallback) or "").strip()
+            result["labels"][key] = text[:100] or fallback
+
+    numeric_ranges = {
+        ("page", "left_margin_cm"): (0.8, 4.0),
+        ("page", "right_margin_cm"): (0.8, 4.0),
+        ("page", "top_margin_cm"): (0.8, 4.0),
+        ("page", "bottom_margin_cm"): (0.8, 4.0),
+        ("typography", "body_size"): (8.0, 16.0),
+        ("typography", "title_size"): (9.0, 24.0),
+        ("typography", "table_size"): (7.0, 14.0),
+        ("spacing", "identity_after_cm"): (0.0, 4.0),
+        ("spacing", "title_after_cm"): (0.0, 5.0),
+        ("spacing", "table_after_cm"): (0.0, 2.0),
+        ("table", "row_height_cm"): (0.45, 1.2),
+        ("table", "minimum_rows"): (1, 24),
+    }
+    for (section, key), (minimum, maximum) in numeric_ranges.items():
+        section_value = source.get(section)
+        if not isinstance(section_value, dict) or key not in section_value:
+            continue
+        try:
+            number = float(section_value[key])
+        except (TypeError, ValueError):
+            continue
+        number = max(minimum, min(maximum, number))
+        result[section][key] = int(number) if key == "minimum_rows" else round(number, 2)
+
+    color_pattern = re.compile(r"^#[0-9A-Fa-f]{6}$")
+    for section, keys in {
+        "typography": ("text_color", "title_color"),
+        "table": ("header_background", "total_background", "border_color"),
+    }.items():
+        section_value = source.get(section)
+        if not isinstance(section_value, dict):
+            continue
+        for key in keys:
+            candidate = str(section_value.get(key, "")).strip()
+            if color_pattern.fullmatch(candidate):
+                result[section][key] = candidate.upper()
+    return result
 
 
 @dataclass
@@ -477,27 +587,48 @@ def generate_note_pdf(
     font_name: str,
     bold_font_name: str,
     employee_lines: list[str] | None = None,
+    template_configuration: dict[str, Any] | None = None,
 ) -> None:
+    configuration = normalize_note_template_configuration(template_configuration)
+    page = configuration["page"]
+    typography = configuration["typography"]
+    spacing = configuration["spacing"]
+    table_configuration = configuration["table"]
+    labels = configuration["labels"]
+
     path.parent.mkdir(parents=True, exist_ok=True)
     doc = SimpleDocTemplate(
         str(path),
         pagesize=A4,
-        rightMargin=2.5 * cm,
-        leftMargin=2.5 * cm,
-        topMargin=2.3 * cm,
-        bottomMargin=1.4 * cm,
+        rightMargin=page["right_margin_cm"] * cm,
+        leftMargin=page["left_margin_cm"] * cm,
+        topMargin=page["top_margin_cm"] * cm,
+        bottomMargin=page["bottom_margin_cm"] * cm,
     )
-    normal = ParagraphStyle("NoteNormal", fontName=font_name, fontSize=11, leading=14)
+    normal = ParagraphStyle(
+        "NoteNormal",
+        fontName=font_name,
+        fontSize=typography["body_size"],
+        leading=typography["body_size"] + 3,
+        textColor=colors.HexColor(typography["text_color"]),
+    )
     label = ParagraphStyle("NoteLabel", parent=normal, fontName=bold_font_name)
-    title = ParagraphStyle("NoteTitle", parent=label, alignment=1, fontSize=11, leading=14)
+    title = ParagraphStyle(
+        "NoteTitle",
+        parent=label,
+        alignment=1,
+        fontSize=typography["title_size"],
+        leading=typography["title_size"] + 3,
+        textColor=colors.HexColor(typography["title_color"]),
+    )
 
-    story: list[Any] = []
+    usable_width = A4[0] - doc.leftMargin - doc.rightMargin
     employer = Table(
         [
-            [Paragraph("Nom de l’employeur :", label), Paragraph(escape(client), normal)],
-            [Paragraph("Mois concerné :", label), Paragraph(escape(month_label), normal)],
+            [Paragraph(escape(labels["employer"]), label), Paragraph(escape(client), normal)],
+            [Paragraph(escape(labels["month"]), label), Paragraph(escape(month_label), normal)],
         ],
-        colWidths=[4.6 * cm, 4.7 * cm],
+        colWidths=[usable_width * 0.2875, usable_width * 0.29375],
     )
     employer.setStyle(
         TableStyle(
@@ -512,7 +643,7 @@ def generate_note_pdf(
     )
     header = Table(
         [[Paragraph(employee_block(employee_lines), normal), employer]],
-        colWidths=[6.7 * cm, 9.3 * cm],
+        colWidths=[usable_width * 0.41875, usable_width * 0.58125],
     )
     header.setStyle(
         TableStyle(
@@ -527,12 +658,7 @@ def generate_note_pdf(
             ]
         )
     )
-    story.append(header)
-    story.append(Spacer(1, 1.35 * cm))
-    story.append(Paragraph("NOTE D’INTERVENTION", title))
-    story.append(Spacer(1, 2.65 * cm))
-
-    data = [["Dates d’intervention", "Salaire net", "Nombre d’heure", "Montant total"]]
+    data = [[labels["date"], labels["hourly_rate"], labels["hours"], labels["amount"]]]
     total_hours = 0.0
     total_net = 0.0
     for item in sorted(rows, key=lambda r: r.date):
@@ -547,29 +673,32 @@ def generate_note_pdf(
                 french_money(item.montant_net),
             ]
         )
-    while len(data) < 16:
+    minimum_rows = int(table_configuration["minimum_rows"])
+    while len(data) < minimum_rows + 1:
         data.append(["", "", "", ""])
-    data.append(["Total du mois :", "", hours_label(total_hours), french_money(total_net)])
+    data.append([labels["total"], "", hours_label(total_hours), french_money(total_net)])
 
     table = Table(
         data,
-        colWidths=[4.0 * cm, 4.0 * cm, 4.0 * cm, 4.0 * cm],
-        rowHeights=[0.72 * cm] + [0.70 * cm] * (len(data) - 2) + [0.72 * cm],
+        colWidths=[usable_width / 4] * 4,
+        rowHeights=[0.72 * cm]
+        + [table_configuration["row_height_cm"] * cm] * (len(data) - 2)
+        + [0.72 * cm],
         repeatRows=1,
     )
     table.setStyle(
         TableStyle(
             [
                 ("FONTNAME", (0, 0), (-1, -1), font_name),
-                ("FONTSIZE", (0, 0), (-1, -1), 10.5),
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E6E6E6")),
-                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#E6E6E6")),
+                ("FONTSIZE", (0, 0), (-1, -1), typography["table_size"]),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(table_configuration["header_background"])),
+                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor(table_configuration["total_background"])),
                 ("FONTNAME", (0, 0), (-1, 0), bold_font_name),
                 ("FONTNAME", (0, -1), (-1, -1), bold_font_name),
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
                 ("ALIGN", (0, -1), (1, -1), "RIGHT"),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor(table_configuration["border_color"])),
                 ("SPAN", (0, -1), (1, -1)),
                 ("LEFTPADDING", (0, 0), (-1, -1), 4),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 4),
@@ -578,7 +707,19 @@ def generate_note_pdf(
             ]
         )
     )
-    story.append(table)
+    blocks = {
+        "identity": header,
+        "title": Paragraph(escape(labels["title"]), title),
+        "table": table,
+    }
+    story: list[Any] = []
+    for block_name in configuration["blocks"]:
+        if not configuration["visible"].get(block_name, True):
+            continue
+        story.append(blocks[block_name])
+        gap = float(spacing.get(f"{block_name}_after_cm", 0))
+        if gap > 0:
+            story.append(Spacer(1, gap * cm))
     doc.build(story)
 
 
@@ -587,6 +728,7 @@ def generate_notes(
     notes_dir: Path,
     overwrite: bool,
     employee_lines: list[str] | None = None,
+    template_configuration: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     grouped: dict[tuple[int, int, str], list[Intervention]] = defaultdict(list)
     for item in interventions:
@@ -607,7 +749,16 @@ def generate_notes(
             result["skipped"].append(str(output))
             continue
         try:
-            generate_note_pdf(output, client, f"{MONTH_LABELS[month]} {year}", rows, font, bold_font, employee_lines)
+            generate_note_pdf(
+                output,
+                client,
+                f"{MONTH_LABELS[month]} {year}",
+                rows,
+                font,
+                bold_font,
+                employee_lines,
+                template_configuration,
+            )
             result["created"].append(str(output))
         except Exception as exc:  # noqa: BLE001
             result["errors"].append(f"{output}: {exc}")

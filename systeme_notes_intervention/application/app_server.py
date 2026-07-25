@@ -60,8 +60,9 @@ else:
 
 STATIC_DIR = APP_DIR / "static"
 APP_NAME = "Easy CESU"
-APP_VERSION = "2.1.0"
-DATABASE_SCHEMA_VERSION = 2
+APP_VERSION = "3.0.0"
+V2_SCHEMA_VERSION = 2
+DATABASE_SCHEMA_VERSION = 3
 BROWSER_CLOSE_GRACE_SECONDS = 5.0
 BROWSER_STALE_SECONDS = 90.0
 BROWSER_SESSION_LOCK = threading.Lock()
@@ -72,6 +73,9 @@ BROWSER_EMPTY_SINCE: float | None = None
 
 
 def user_data_root() -> Path:
+    override = str(os.environ.get("EASY_CESU_DATA_ROOT") or "").strip()
+    if override:
+        return Path(override).expanduser()
     base = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
     return Path(base) / "EasyCESU"
 
@@ -104,13 +108,18 @@ def default_export_dir() -> Path:
 sys.path.insert(0, str(RESOURCE_DIR))
 sys.path.insert(0, str(ROOT_DIR))
 from generer_notes_et_donnees import (  # noqa: E402
+    EMPLOYEE_LINES,
     Intervention,
     MONTH_LABELS,
     build_summaries,
+    default_note_template_configuration,
+    generate_note_pdf,
     generate_notes,
     hours_label,
     money,
+    normalize_note_template_configuration,
     normalize_name,
+    register_fonts,
     sorted_name_key,
 )
 
@@ -194,7 +203,8 @@ def ensure_runtime_files() -> None:
         legacy_root = legacy_user_data_root()
         legacy_config = legacy_root / "config.json"
         legacy_data = legacy_root / "application" / "data"
-        if getattr(sys, "frozen", False) and legacy_config.exists():
+        legacy_import_disabled = os.environ.get("EASY_CESU_DISABLE_LEGACY_IMPORT") == "1"
+        if getattr(sys, "frozen", False) and legacy_config.exists() and not legacy_import_disabled:
             shutil.copy2(legacy_config, CONFIG_PATH)
             if legacy_data.exists() and not DATA_DIR.exists():
                 shutil.copytree(legacy_data, DATA_DIR)
@@ -482,7 +492,7 @@ def apply_v2_schema_migrations() -> None:
             """
         )
         applied = {int(row["version"]) for row in db.execute("SELECT version FROM schema_migrations").fetchall()}
-        needs_v2 = DATABASE_SCHEMA_VERSION not in applied
+        needs_v2 = V2_SCHEMA_VERSION not in applied
         has_user_data = database_contains_user_data(db)
 
     if not needs_v2:
@@ -597,7 +607,52 @@ def apply_v2_schema_migrations() -> None:
         db.execute("UPDATE interventions SET payment_status = CASE WHEN paid = 1 THEN 'received' ELSE 'to_receive' END WHERE payment_status = ''")
         db.execute(
             "INSERT OR IGNORE INTO schema_migrations (version, applied_at, details) VALUES (?, ?, ?)",
-            (DATABASE_SCHEMA_VERSION, now_stamp(), "Fondations universelles V2"),
+            (V2_SCHEMA_VERSION, now_stamp(), "Fondations universelles V2"),
+        )
+
+
+def apply_v3_schema_migrations() -> None:
+    """Ajoute les modèles de documents sans modifier les données métier."""
+
+    with db_connection() as db:
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                version INTEGER PRIMARY KEY,
+                applied_at TEXT NOT NULL,
+                details TEXT NOT NULL DEFAULT ''
+            )
+            """
+        )
+        applied = {int(row["version"]) for row in db.execute("SELECT version FROM schema_migrations").fetchall()}
+        needs_v3 = DATABASE_SCHEMA_VERSION not in applied
+        has_user_data = database_contains_user_data(db)
+
+    if not needs_v3:
+        return
+    if has_user_data:
+        backup_profile_to(BACKUPS_DIR, "avant-migration-v3")
+
+    with db_connection() as db:
+        db.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS document_templates (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+                document_type TEXT NOT NULL DEFAULT 'intervention_note',
+                is_default INTEGER NOT NULL DEFAULT 0,
+                configuration_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_document_templates_type
+            ON document_templates(document_type, is_default);
+            """
+        )
+        db.execute(
+            "INSERT OR IGNORE INTO schema_migrations (version, applied_at, details) VALUES (?, ?, ?)",
+            (DATABASE_SCHEMA_VERSION, now_stamp(), "Fenêtre native et modèles de notes V3"),
         )
 
 
@@ -695,6 +750,8 @@ def init_db() -> None:
             )
             db.execute("UPDATE clients SET hourly_rate = 0 WHERE hourly_rate_custom = 0")
     apply_v2_schema_migrations()
+    apply_v3_schema_migrations()
+    ensure_default_document_template()
     refresh_clients()
     seed_interventions_if_empty()
     refresh_reminder_occurrences()
@@ -2601,6 +2658,311 @@ def update_service_category(category_id: int, data: dict) -> dict:
     return category_to_dict(row)
 
 
+DOCUMENT_TEMPLATE_TYPE = "intervention_note"
+
+
+def document_template_to_dict(row: sqlite3.Row) -> dict:
+    item = dict(row)
+    try:
+        configuration = json.loads(str(item.pop("configuration_json")))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        configuration = {}
+    item["configuration"] = normalize_note_template_configuration(configuration)
+    item["is_default"] = bool(item.get("is_default"))
+    return item
+
+
+def ensure_default_document_template() -> None:
+    with db_connection() as db:
+        existing = db.execute(
+            "SELECT id FROM document_templates WHERE document_type = ? ORDER BY id LIMIT 1",
+            (DOCUMENT_TEMPLATE_TYPE,),
+        ).fetchone()
+        if existing:
+            has_default = db.execute(
+                "SELECT 1 FROM document_templates WHERE document_type = ? AND is_default = 1 LIMIT 1",
+                (DOCUMENT_TEMPLATE_TYPE,),
+            ).fetchone()
+            if not has_default:
+                db.execute("UPDATE document_templates SET is_default = 1 WHERE id = ?", (existing["id"],))
+            return
+        stamp = now_stamp()
+        db.execute(
+            """
+            INSERT INTO document_templates
+                (name, document_type, is_default, configuration_json, created_at, updated_at)
+            VALUES (?, ?, 1, ?, ?, ?)
+            """,
+            (
+                "Note d’intervention classique",
+                DOCUMENT_TEMPLATE_TYPE,
+                json.dumps(default_note_template_configuration(), ensure_ascii=False),
+                stamp,
+                stamp,
+            ),
+        )
+
+
+def list_document_templates() -> list[dict]:
+    ensure_default_document_template()
+    with db_connection() as db:
+        rows = db.execute(
+            """
+            SELECT * FROM document_templates
+            WHERE document_type = ?
+            ORDER BY is_default DESC, name COLLATE NOCASE
+            """,
+            (DOCUMENT_TEMPLATE_TYPE,),
+        ).fetchall()
+    return [document_template_to_dict(row) for row in rows]
+
+
+def default_document_template() -> dict:
+    templates = list_document_templates()
+    return next((item for item in templates if item["is_default"]), templates[0])
+
+
+def validate_document_template(data: dict, existing: dict | None = None) -> dict:
+    name = clean_text(data.get("name", existing.get("name") if existing else ""))
+    if not name:
+        raise ValueError("Le nom du modèle est obligatoire.")
+    if len(name) > 80:
+        raise ValueError("Le nom du modèle est trop long.")
+    raw_configuration = data.get("configuration")
+    configuration = (
+        normalize_note_template_configuration(raw_configuration)
+        if raw_configuration is not None
+        else normalize_note_template_configuration((existing or {}).get("configuration"))
+    )
+    return {
+        "name": name,
+        "configuration": configuration,
+        "is_default": bool(data.get("is_default", (existing or {}).get("is_default", False))),
+    }
+
+
+def create_document_template(data: dict) -> dict:
+    item = validate_document_template(data)
+    stamp = now_stamp()
+    with db_connection() as db:
+        count = int(
+            db.execute(
+                "SELECT COUNT(*) FROM document_templates WHERE document_type = ?",
+                (DOCUMENT_TEMPLATE_TYPE,),
+            ).fetchone()[0]
+        )
+        is_default = item["is_default"] or count == 0
+        if is_default:
+            db.execute(
+                "UPDATE document_templates SET is_default = 0 WHERE document_type = ?",
+                (DOCUMENT_TEMPLATE_TYPE,),
+            )
+        try:
+            cursor = db.execute(
+                """
+                INSERT INTO document_templates
+                    (name, document_type, is_default, configuration_json, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    item["name"],
+                    DOCUMENT_TEMPLATE_TYPE,
+                    1 if is_default else 0,
+                    json.dumps(item["configuration"], ensure_ascii=False),
+                    stamp,
+                    stamp,
+                ),
+            )
+        except sqlite3.IntegrityError as exc:
+            raise ValueError("Un modèle porte déjà ce nom.") from exc
+        row = db.execute("SELECT * FROM document_templates WHERE id = ?", (cursor.lastrowid,)).fetchone()
+    return document_template_to_dict(row)
+
+
+def update_document_template(template_id: int, data: dict) -> dict:
+    with db_connection() as db:
+        row = db.execute("SELECT * FROM document_templates WHERE id = ?", (template_id,)).fetchone()
+    if not row:
+        raise KeyError("Modèle de note introuvable.")
+    existing = document_template_to_dict(row)
+    item = validate_document_template(data, existing)
+    with db_connection() as db:
+        if item["is_default"]:
+            db.execute(
+                "UPDATE document_templates SET is_default = 0 WHERE document_type = ?",
+                (DOCUMENT_TEMPLATE_TYPE,),
+            )
+        elif existing["is_default"]:
+            # Le modèle actif reste actif tant qu'un autre n'est pas choisi.
+            item["is_default"] = True
+        try:
+            db.execute(
+                """
+                UPDATE document_templates
+                SET name = ?, is_default = ?, configuration_json = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    item["name"],
+                    1 if item["is_default"] else 0,
+                    json.dumps(item["configuration"], ensure_ascii=False),
+                    now_stamp(),
+                    template_id,
+                ),
+            )
+        except sqlite3.IntegrityError as exc:
+            raise ValueError("Un modèle porte déjà ce nom.") from exc
+        updated = db.execute("SELECT * FROM document_templates WHERE id = ?", (template_id,)).fetchone()
+    return document_template_to_dict(updated)
+
+
+def duplicate_document_template(template_id: int) -> dict:
+    with db_connection() as db:
+        row = db.execute("SELECT * FROM document_templates WHERE id = ?", (template_id,)).fetchone()
+        names = {
+            str(item["name"]).casefold()
+            for item in db.execute(
+                "SELECT name FROM document_templates WHERE document_type = ?",
+                (DOCUMENT_TEMPLATE_TYPE,),
+            ).fetchall()
+        }
+    if not row:
+        raise KeyError("Modèle de note introuvable.")
+    source = document_template_to_dict(row)
+    base_name = f"{source['name']} - copie"
+    name = base_name
+    suffix = 2
+    while name.casefold() in names:
+        name = f"{base_name} {suffix}"
+        suffix += 1
+    return create_document_template({"name": name, "configuration": source["configuration"]})
+
+
+def delete_document_template(template_id: int) -> None:
+    with db_connection() as db:
+        row = db.execute("SELECT * FROM document_templates WHERE id = ?", (template_id,)).fetchone()
+        if not row:
+            raise KeyError("Modèle de note introuvable.")
+        count = int(
+            db.execute(
+                "SELECT COUNT(*) FROM document_templates WHERE document_type = ?",
+                (DOCUMENT_TEMPLATE_TYPE,),
+            ).fetchone()[0]
+        )
+        if count <= 1:
+            raise ValueError("Le dernier modèle de note ne peut pas être supprimé.")
+        was_default = bool(row["is_default"])
+        db.execute("DELETE FROM document_templates WHERE id = ?", (template_id,))
+        if was_default:
+            replacement = db.execute(
+                """
+                SELECT id FROM document_templates
+                WHERE document_type = ?
+                ORDER BY id LIMIT 1
+                """,
+                (DOCUMENT_TEMPLATE_TYPE,),
+            ).fetchone()
+            db.execute("UPDATE document_templates SET is_default = 1 WHERE id = ?", (replacement["id"],))
+
+
+def available_document_template_name(base_name: str) -> str:
+    with db_connection() as db:
+        names = {
+            str(row["name"]).casefold()
+            for row in db.execute(
+                "SELECT name FROM document_templates WHERE document_type = ?",
+                (DOCUMENT_TEMPLATE_TYPE,),
+            ).fetchall()
+        }
+    candidate = clean_text(base_name) or "Modèle importé"
+    suffix = 2
+    while candidate.casefold() in names:
+        candidate = f"{clean_text(base_name) or 'Modèle importé'} {suffix}"
+        suffix += 1
+    return candidate
+
+
+def export_document_template(template_id: int, destination_dir: object) -> Path:
+    template = next((item for item in list_document_templates() if item["id"] == template_id), None)
+    if not template:
+        raise KeyError("Modèle de note introuvable.")
+    folder = ensure_folder(Path(str(destination_dir)).expanduser())
+    filename = re.sub(r"[^A-Za-z0-9._-]+", "-", normalize_name(template["name"])).strip("-") or "modele-note"
+    path = folder / f"EasyCESU-Modele-{filename}.json"
+    payload = {
+        "format": "easy-cesu-document-template",
+        "format_version": 1,
+        "document_type": DOCUMENT_TEMPLATE_TYPE,
+        "name": template["name"],
+        "configuration": template["configuration"],
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
+def import_document_template(source_file: object) -> dict:
+    path = Path(str(source_file)).expanduser()
+    if not path.is_file():
+        raise ValueError("Fichier de modèle introuvable.")
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError("Le fichier sélectionné n'est pas un modèle Easy CESU valide.") from exc
+    if payload.get("format") != "easy-cesu-document-template" or payload.get("document_type") != DOCUMENT_TEMPLATE_TYPE:
+        raise ValueError("Le fichier sélectionné n'est pas un modèle de note Easy CESU.")
+    name = available_document_template_name(str(payload.get("name") or "Modèle importé"))
+    return create_document_template({"name": name, "configuration": payload.get("configuration")})
+
+
+def generate_document_template_test_pdf(configuration: object, destination_dir: object) -> Path:
+    folder = ensure_folder(Path(str(destination_dir)).expanduser())
+    output = folder / "Apercu modele note Easy CESU.pdf"
+    sample_rows = [
+        Intervention(
+            annee=2026,
+            mois=7,
+            mois_libelle="Juillet",
+            client="Client exemple",
+            date="2026-07-03",
+            duree_heures=2.0,
+            salaire_net_horaire=22.0,
+            montant_net=44.0,
+            montant_brut=0.0,
+            cesu="",
+            adresse="",
+            source_classeur="",
+            source_onglet="",
+        ),
+        Intervention(
+            annee=2026,
+            mois=7,
+            mois_libelle="Juillet",
+            client="Client exemple",
+            date="2026-07-10",
+            duree_heures=1.5,
+            salaire_net_horaire=22.0,
+            montant_net=33.0,
+            montant_brut=0.0,
+            cesu="",
+            adresse="",
+            source_classeur="",
+            source_onglet="",
+        ),
+    ]
+    font, bold_font = register_fonts()
+    generate_note_pdf(
+        output,
+        "Client exemple",
+        "Juillet 2026",
+        sample_rows,
+        font,
+        bold_font,
+        active_employee_lines(),
+        normalize_note_template_configuration(configuration),
+    )
+    return output
+
+
 def note_to_dict(row: sqlite3.Row) -> dict:
     item = dict(row)
     item["carry_forward"] = bool(item.get("carry_forward"))
@@ -3149,12 +3511,20 @@ def generate_month_notes(year: int, month: int, replace: bool = False, output_di
         raise ValueError("Aucune intervention à générer pour ce mois.")
     objects = to_intervention_objects(rows)
     base_dir = set_notes_output_dir(output_dir, create=True) if output_dir else ensure_notes_output_dir(notes_output_dir())
-    result = generate_notes(objects, base_dir, overwrite=replace, employee_lines=active_employee_lines())
+    template = default_document_template()
+    result = generate_notes(
+        objects,
+        base_dir,
+        overwrite=replace,
+        employee_lines=active_employee_lines(),
+        template_configuration=template["configuration"],
+    )
     return {
         "month_label": f"{MONTH_LABELS[month]} {year}",
         "output_base": str(base_dir),
         "output_dir": str(base_dir / str(year) / f"{month:02d}. {MONTH_LABELS[month]} {year}"),
         "summary": month_summary(year, month),
+        "template": {"id": template["id"], "name": template["name"]},
         "notes": result,
     }
 
@@ -3241,7 +3611,7 @@ def local_server_info(port: int) -> dict:
 
 def is_current_easy_cesu_server(port: int) -> bool:
     info = local_server_info(port)
-    if info.get("app_name") != APP_NAME:
+    if info.get("app_name") != APP_NAME or info.get("app_version") != APP_VERSION:
         return False
     if not getattr(sys, "frozen", False):
         return True
@@ -3257,6 +3627,67 @@ def select_server_port(preferred_port: int, attempts: int = 50) -> tuple[int, bo
         if is_current_easy_cesu_server(port):
             return port, True
     raise RuntimeError("Aucun port local disponible pour Easy CESU.")
+
+
+class LocalAppServer:
+    """Pilote le serveur HTTP local indépendamment de la fenêtre d'affichage."""
+
+    def __init__(self, preferred_port: int | None = None) -> None:
+        self.preferred_port = preferred_port or int(os.environ.get("NOTES_APP_PORT", "8765"))
+        self.port = 0
+        self.url = ""
+        self.browser_url = ""
+        self.existing_server = False
+        self.server: ThreadingHTTPServer | None = None
+        self.monitor_stop: threading.Event | None = None
+        self.server_thread: threading.Thread | None = None
+
+    def start(self, background: bool = True) -> str:
+        self.port, self.existing_server = select_server_port(self.preferred_port)
+        self.url = f"http://127.0.0.1:{self.port}"
+        self.browser_url = f"{self.url}/?v=20260725-v300"
+        if self.existing_server:
+            return self.browser_url
+
+        init_db()
+        self.server = ThreadingHTTPServer(("127.0.0.1", self.port), AppHandler)
+        self.server.daemon_threads = True
+        self.monitor_stop = threading.Event()
+        threading.Thread(
+            target=monitor_browser_sessions,
+            args=(self.server, self.monitor_stop),
+            name="easy-cesu-session-monitor",
+            daemon=True,
+        ).start()
+
+        if background:
+            self.server_thread = threading.Thread(
+                target=self.server.serve_forever,
+                name="easy-cesu-local-server",
+                daemon=True,
+            )
+            self.server_thread.start()
+        return self.browser_url
+
+    def serve_forever(self) -> None:
+        if self.existing_server:
+            return
+        if self.server is None:
+            self.start(background=False)
+        if self.server is not None:
+            self.server.serve_forever()
+
+    def stop(self) -> None:
+        # Une seconde fenêtre peut utiliser un serveur déjà lancé : elle ne doit pas l'arrêter.
+        if self.existing_server or self.server is None:
+            return
+        if self.monitor_stop is not None:
+            self.monitor_stop.set()
+        self.server.shutdown()
+        if self.server_thread is not None and self.server_thread.is_alive():
+            self.server_thread.join(timeout=5)
+        self.server.server_close()
+        self.server = None
 
 
 def update_browser_session(payload: dict) -> None:
@@ -3410,6 +3841,9 @@ class AppHandler(SimpleHTTPRequestHandler):
             include_archived = query.get("include_archived", [""])[0].lower() in {"1", "true", "yes"}
             json_response(self, {"categories": list_service_categories(include_archived)})
             return
+        if parsed.path == "/api/document-templates":
+            json_response(self, {"templates": list_document_templates()})
+            return
         if parsed.path == "/api/notes":
             raw_intervention_id = query.get("intervention_id", [""])[0]
             intervention_id = int(raw_intervention_id) if raw_intervention_id else None
@@ -3492,6 +3926,68 @@ class AppHandler(SimpleHTTPRequestHandler):
                 return
             if parsed.path == "/api/service-categories":
                 json_response(self, {"category": create_service_category(body)}, HTTPStatus.CREATED)
+                return
+            if parsed.path == "/api/document-templates":
+                json_response(self, {"template": create_document_template(body)}, HTTPStatus.CREATED)
+                return
+            if parsed.path == "/api/document-templates/import":
+                source_file = body.get("source_file")
+                if not source_file:
+                    selected, cancelled = choose_file(
+                        "Importer un modèle de note Easy CESU",
+                        export_output_dir(),
+                        "Modèles Easy CESU (*.json)|*.json|Tous les fichiers (*.*)|*.*",
+                    )
+                    if cancelled or selected is None:
+                        json_response(self, {"cancelled": True})
+                        return
+                    source_file = str(selected)
+                json_response(self, {"cancelled": False, "template": import_document_template(source_file)})
+                return
+            if parsed.path == "/api/document-templates/preview-pdf":
+                destination = body.get("destination_dir")
+                if not destination:
+                    selected, cancelled = choose_folder(
+                        "Choisir le dossier du PDF d'essai",
+                        export_output_dir(),
+                    )
+                    if cancelled or selected is None:
+                        json_response(self, {"cancelled": True})
+                        return
+                    destination = str(selected)
+                path = generate_document_template_test_pdf(body.get("configuration"), destination)
+                json_response(self, {"cancelled": False, "path": str(path)})
+                return
+            if parsed.path.startswith("/api/document-templates/") and parsed.path.endswith("/duplicate"):
+                template_id = int(parsed.path.split("/")[3])
+                json_response(self, {"template": duplicate_document_template(template_id)}, HTTPStatus.CREATED)
+                return
+            if parsed.path.startswith("/api/document-templates/") and parsed.path.endswith("/reset"):
+                template_id = int(parsed.path.split("/")[3])
+                json_response(
+                    self,
+                    {
+                        "template": update_document_template(
+                            template_id,
+                            {"configuration": default_note_template_configuration()},
+                        )
+                    },
+                )
+                return
+            if parsed.path.startswith("/api/document-templates/") and parsed.path.endswith("/export"):
+                template_id = int(parsed.path.split("/")[3])
+                destination = body.get("destination_dir")
+                if not destination:
+                    selected, cancelled = choose_folder(
+                        "Choisir le dossier d'export du modèle",
+                        export_output_dir(),
+                    )
+                    if cancelled or selected is None:
+                        json_response(self, {"cancelled": True})
+                        return
+                    destination = str(selected)
+                path = export_document_template(template_id, destination)
+                json_response(self, {"cancelled": False, "path": str(path)})
                 return
             if parsed.path == "/api/notes":
                 json_response(self, {"note": create_note(body)}, HTTPStatus.CREATED)
@@ -3675,6 +4171,11 @@ class AppHandler(SimpleHTTPRequestHandler):
                 body = read_json_body(self)
                 json_response(self, {"category": update_service_category(category_id, body)})
                 return
+            if parsed.path.startswith("/api/document-templates/"):
+                template_id = int(parsed.path.rsplit("/", 1)[1])
+                body = read_json_body(self)
+                json_response(self, {"template": update_document_template(template_id, body)})
+                return
             if parsed.path.startswith("/api/notes/"):
                 note_id = int(parsed.path.rsplit("/", 1)[1])
                 body = read_json_body(self)
@@ -3721,6 +4222,10 @@ class AppHandler(SimpleHTTPRequestHandler):
                 update_service_category(category_id, {**category, "is_archived": True})
                 json_response(self, {"ok": True})
                 return
+            if parsed.path.startswith("/api/document-templates/"):
+                delete_document_template(int(parsed.path.rsplit("/", 1)[1]))
+                json_response(self, {"ok": True})
+                return
             if parsed.path.startswith("/api/notes/"):
                 delete_note(int(parsed.path.rsplit("/", 1)[1]))
                 json_response(self, {"ok": True})
@@ -3761,36 +4266,22 @@ class AppHandler(SimpleHTTPRequestHandler):
 
 
 def main(open_browser: bool | None = None) -> int:
-    preferred_port = int(os.environ.get("NOTES_APP_PORT", "8765"))
-    port, existing_server = select_server_port(preferred_port)
-    url = f"http://127.0.0.1:{port}"
-    browser_url = f"{url}/?v=20260724-v210b"
+    runtime = LocalAppServer()
     if open_browser is None:
         open_browser = bool(getattr(sys, "frozen", False)) or os.environ.get("NOTES_OPEN_BROWSER") == "1"
-    if existing_server:
-        print(f"Application deja disponible : {url}", flush=True)
+    browser_url = runtime.start(background=False)
+    if runtime.existing_server:
+        print(f"Application deja disponible : {runtime.url}", flush=True)
         if open_browser:
             open_app_url(browser_url)
         return 0
-    init_db()
-    server = ThreadingHTTPServer(("127.0.0.1", port), AppHandler)
-    server.daemon_threads = True
-    monitor_stop = threading.Event()
-    monitor_thread = threading.Thread(
-        target=monitor_browser_sessions,
-        args=(server, monitor_stop),
-        name="easy-cesu-browser-monitor",
-        daemon=True,
-    )
-    monitor_thread.start()
-    print(f"Application demarree : {url}", flush=True)
+    print(f"Application demarree : {runtime.url}", flush=True)
     if open_browser:
         threading.Timer(0.8, open_app_url, args=[browser_url]).start()
     try:
-        server.serve_forever()
+        runtime.serve_forever()
     finally:
-        monitor_stop.set()
-        server.server_close()
+        runtime.stop()
     return 0
 
 

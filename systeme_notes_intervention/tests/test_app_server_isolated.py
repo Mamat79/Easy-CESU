@@ -220,6 +220,77 @@ import app_server
             """
         )
 
+    def test_v3_document_templates_are_isolated_and_generate_a_pdf(self) -> None:
+        self.run_scenario(
+            """
+            app_server.init_db()
+            app_server.create_client({"name": "Client V3"})
+            app_server.create_intervention(
+                {"date": "2026-07-12", "client": "Client V3", "duration_hours": 1.5, "hourly_rate": 22}
+            )
+            templates = app_server.list_document_templates()
+            assert len(templates) == 1
+            original = templates[0]
+            assert original["is_default"] is True
+            assert original["configuration"]["labels"]["title"] == "NOTE D’INTERVENTION"
+
+            configuration = original["configuration"]
+            configuration["labels"]["title"] = "RELEVÉ DES PRESTATIONS"
+            configuration["table"]["header_background"] = "#D9ECF0"
+            configuration["blocks"] = ["title", "identity", "table"]
+            updated = app_server.update_document_template(
+                original["id"],
+                {"name": "Modèle personnalisé", "configuration": configuration, "is_default": True},
+            )
+            assert updated["configuration"]["blocks"][0] == "title"
+            assert updated["configuration"]["table"]["header_background"] == "#D9ECF0"
+
+            duplicate = app_server.duplicate_document_template(updated["id"])
+            assert duplicate["id"] != updated["id"]
+            assert duplicate["is_default"] is False
+            app_server.delete_document_template(duplicate["id"])
+
+            destination = Path(os.environ["EASY_CESU_TEST_WORKSPACE"])
+            destination.mkdir(parents=True, exist_ok=True)
+            test_pdf = app_server.generate_document_template_test_pdf(updated["configuration"], destination)
+            assert test_pdf.read_bytes().startswith(b"%PDF")
+            generated = app_server.generate_month_notes(2026, 7, output_dir=destination)
+            note_path = Path(generated["notes"]["created"][0])
+            assert note_path.exists() and note_path.read_bytes().startswith(b"%PDF")
+            assert generated["template"]["name"] == "Modèle personnalisé"
+
+            exported = app_server.export_document_template(updated["id"], destination)
+            imported = app_server.import_document_template(exported)
+            assert imported["name"] != updated["name"]
+            assert imported["configuration"]["labels"]["title"] == "RELEVÉ DES PRESTATIONS"
+            with app_server.db_connection() as db:
+                assert db.execute("SELECT version FROM schema_migrations WHERE version = 3").fetchone()[0] == 3
+                assert db.execute("SELECT COUNT(*) FROM interventions").fetchone()[0] == 1
+                assert db.execute("SELECT COUNT(*) FROM clients").fetchone()[0] == 1
+            """
+        )
+
+    def test_v3_local_server_starts_and_stops_without_a_browser(self) -> None:
+        self.run_scenario(
+            """
+            import socket
+            import time
+            import urllib.request
+
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+                probe.bind(("127.0.0.1", 0))
+                port = probe.getsockname()[1]
+            runtime = app_server.LocalAppServer(port)
+            url = runtime.start(background=True)
+            with urllib.request.urlopen(url.replace("/?v=20260725-v300", "/api/app-info"), timeout=5) as response:
+                info = __import__("json").loads(response.read().decode("utf-8"))
+            assert info["app_version"] == "3.0.0"
+            runtime.stop()
+            time.sleep(0.2)
+            assert app_server.port_is_listening(port) is False
+            """
+        )
+
     def test_monthly_reminder_keeps_the_reference_day_and_history(self) -> None:
         self.run_scenario(
             """
