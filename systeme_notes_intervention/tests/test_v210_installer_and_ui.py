@@ -13,12 +13,12 @@ import installateur_windows
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-class InstallerV210Tests(unittest.TestCase):
+class InstallerV3Tests(unittest.TestCase):
     def test_versions_are_synchronized(self) -> None:
         version = (PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip()
-        self.assertEqual(version, "2.1.0")
+        self.assertEqual(version, "3.0.0")
         self.assertEqual(installateur_windows.APP_VERSION, version)
-        self.assertEqual(installateur_windows.shortcut_label(), "Easy CESU V2.1.0")
+        self.assertEqual(installateur_windows.shortcut_label(), "Easy CESU V3")
 
     def test_every_installer_choice_has_an_icon_and_preview(self) -> None:
         for icon_key in installateur_windows.SHORTCUT_ICON_LABELS:
@@ -42,6 +42,29 @@ class InstallerV210Tests(unittest.TestCase):
         )
         self.assertIn("--shortcut-icon", arguments)
         self.assertEqual(arguments[arguments.index("--shortcut-icon") + 1], "menage")
+
+    def test_webview2_is_installed_only_when_missing(self) -> None:
+        with patch.object(installateur_windows, "webview2_runtime_version", return_value="150.0.0.0"):
+            with patch.object(installateur_windows.subprocess, "run") as run:
+                self.assertEqual(installateur_windows.ensure_webview2_runtime(), "150.0.0.0")
+                run.assert_not_called()
+
+        with tempfile.TemporaryDirectory(prefix="easy-cesu-webview2-") as temporary:
+            bootstrapper = Path(temporary) / installateur_windows.WEBVIEW2_BOOTSTRAPPER_NAME
+            bootstrapper.write_bytes(b"programme de test")
+            completed = type("Completed", (), {"returncode": 0})()
+            with (
+                patch.object(installateur_windows, "webview2_bootstrapper_path", return_value=bootstrapper),
+                patch.object(
+                    installateur_windows,
+                    "webview2_runtime_version",
+                    side_effect=["", "150.0.0.0"],
+                ),
+                patch.object(installateur_windows.subprocess, "run", return_value=completed) as run,
+            ):
+                self.assertEqual(installateur_windows.ensure_webview2_runtime(), "150.0.0.0")
+                run.assert_called_once()
+                self.assertEqual(run.call_args.args[0][1:], ["/silent", "/install"])
 
     def test_legacy_local_installation_is_detected_for_replacement(self) -> None:
         with tempfile.TemporaryDirectory(prefix="easy-cesu-detection-") as temporary:
@@ -83,6 +106,51 @@ class InstallerV210Tests(unittest.TestCase):
             updated = json.loads(config_path.read_text(encoding="utf-8"))
             self.assertEqual(updated["profiles"][0]["shortcut_icon"], "informatique")
             self.assertEqual(updated["profiles"][0]["data_file"], "base-a-conserver.sqlite")
+
+    def test_payload_replacement_preserves_legacy_data_and_configuration(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="easy-cesu-update-") as temporary:
+            root = Path(temporary)
+            source = root / "payload"
+            destination = root / "Easy CESU"
+            (source / "_internal").mkdir(parents=True)
+            (source / "_internal" / "runtime.bin").write_bytes(b"nouveau moteur")
+            (source / installateur_windows.EXE_NAME).write_bytes(b"nouvel executable")
+            (source / installateur_windows.NOTICE_NAME).write_bytes(b"nouvelle notice")
+
+            (destination / "_internal").mkdir(parents=True)
+            (destination / "_internal" / "runtime.bin").write_bytes(b"ancien moteur")
+            (destination / "application" / "data").mkdir(parents=True)
+            (destination / "application" / "data" / "clients.sqlite").write_bytes(b"donnees")
+            (destination / "config.json").write_text('{"profil":"Clotilde"}', encoding="utf-8")
+            old_notice = destination / "Easy_CESU_V2_Notice_Installation_et_Utilisation.pdf"
+            old_notice.write_bytes(b"ancienne notice")
+
+            installateur_windows.replace_application_payload(source, destination)
+            installateur_windows.remove_obsolete_notices(destination)
+
+            self.assertEqual(
+                (destination / "_internal" / "runtime.bin").read_bytes(),
+                b"nouveau moteur",
+            )
+            self.assertEqual(
+                (destination / installateur_windows.EXE_NAME).read_bytes(),
+                b"nouvel executable",
+            )
+            self.assertEqual(
+                (destination / "application" / "data" / "clients.sqlite").read_bytes(),
+                b"donnees",
+            )
+            self.assertEqual(
+                (destination / "config.json").read_text(encoding="utf-8"),
+                '{"profil":"Clotilde"}',
+            )
+            self.assertFalse(old_notice.exists())
+            retired = list(destination.glob("_internal.precedente-*"))
+            self.assertEqual(len(retired), 1)
+            self.assertEqual(
+                (retired[0] / "runtime.bin").read_bytes(),
+                b"ancien moteur",
+            )
 
 
 class NumericStepperContractTests(unittest.TestCase):

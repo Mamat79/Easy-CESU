@@ -18,9 +18,11 @@ from tkinter import filedialog, messagebox, ttk
 
 APP_NAME = "Easy CESU"
 EXE_NAME = "Easy CESU.exe"
-APP_VERSION = "2.1.0"
+APP_VERSION = "3.0.0"
 APP_ID = "EasyCESU.Windows.x64"
-NOTICE_NAME = "Easy_CESU_V2_Notice_Installation_et_Utilisation.pdf"
+NOTICE_NAME = "Easy_CESU_V3_Notice_Installation_et_Utilisation.pdf"
+WEBVIEW2_BOOTSTRAPPER_NAME = "MicrosoftEdgeWebview2Setup.exe"
+WEBVIEW2_CLIENT_ID = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 LEGACY_APP_NAMES = ["Factures Cloclo"]
 SHORTCUT_ICON_LABELS = {
     "generique": "Services à la personne - générique",
@@ -199,6 +201,76 @@ def resource_root() -> Path:
     if getattr(sys, "frozen", False):
         return Path(getattr(sys, "_MEIPASS")) / "payload" / APP_NAME
     return Path(__file__).resolve().parent / "dist" / APP_NAME
+
+
+def webview2_bootstrapper_path() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(getattr(sys, "_MEIPASS")) / WEBVIEW2_BOOTSTRAPPER_NAME
+    return Path(__file__).resolve().parent / "build" / "dependencies" / WEBVIEW2_BOOTSTRAPPER_NAME
+
+
+def webview2_runtime_version() -> str:
+    """Retourne la version Evergreen installée, ou une chaîne vide."""
+
+    if os.name != "nt":
+        return ""
+    import winreg
+
+    locations = (
+        (
+            winreg.HKEY_LOCAL_MACHINE,
+            rf"SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{WEBVIEW2_CLIENT_ID}",
+        ),
+        (
+            winreg.HKEY_CURRENT_USER,
+            rf"Software\Microsoft\EdgeUpdate\Clients\{WEBVIEW2_CLIENT_ID}",
+        ),
+        (
+            winreg.HKEY_LOCAL_MACHINE,
+            rf"SOFTWARE\Microsoft\EdgeUpdate\Clients\{WEBVIEW2_CLIENT_ID}",
+        ),
+    )
+    for root, key_path in locations:
+        try:
+            with winreg.OpenKey(root, key_path) as key:
+                version = str(winreg.QueryValueEx(key, "pv")[0] or "").strip()
+                if version and version != "0.0.0.0":
+                    return version
+        except OSError:
+            continue
+    return ""
+
+
+def ensure_webview2_runtime() -> str:
+    """Installe WebView2 silencieusement seulement s'il manque."""
+
+    version = webview2_runtime_version()
+    if version:
+        return version
+    bootstrapper = webview2_bootstrapper_path()
+    if not bootstrapper.exists():
+        raise RuntimeError(
+            "Le composant Microsoft WebView2 est absent et son programme d'installation est introuvable."
+        )
+    completed = subprocess.run(
+        [str(bootstrapper), "/silent", "/install"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(
+            "Microsoft WebView2 n'a pas pu être installé. "
+            "Vérifie la connexion internet ou les règles de sécurité Windows."
+        )
+    for _ in range(60):
+        version = webview2_runtime_version()
+        if version:
+            return version
+        time.sleep(1)
+    raise RuntimeError("Microsoft WebView2 a été lancé, mais son installation n'a pas été détectée.")
 
 
 def installer_icon_path() -> Path:
@@ -409,8 +481,8 @@ def copy_file_with_retry(source: Path, target: Path) -> None:
 def copy_payload(source: Path, destination: Path) -> None:
     if not source.exists():
         raise FileNotFoundError(f"Dossier application introuvable : {source}")
-    destination.mkdir(parents=True, exist_ok=True)
     has_existing_data = destination.exists()
+    destination.mkdir(parents=True, exist_ok=True)
     for item in source.rglob("*"):
         rel = item.relative_to(source)
         if has_existing_data and should_preserve_existing(rel, destination):
@@ -421,6 +493,101 @@ def copy_payload(source: Path, destination: Path) -> None:
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             copy_file_with_retry(item, target)
+
+
+def remove_tree_with_retry(path: Path) -> None:
+    for attempt in range(6):
+        try:
+            shutil.rmtree(path)
+            return
+        except FileNotFoundError:
+            return
+        except OSError as exc:
+            if attempt == 5:
+                raise RuntimeError(
+                    f"Impossible de remplacer l'ancien moteur installé dans {path}."
+                ) from exc
+            time.sleep(0.4)
+
+
+def replace_application_payload(source: Path, destination: Path) -> None:
+    """Prépare la nouvelle version à part, puis remplace rapidement son moteur."""
+
+    if not source.exists():
+        raise FileNotFoundError(f"Dossier application introuvable : {source}")
+
+    destination_parent = destination.parent
+    destination_parent.mkdir(parents=True, exist_ok=True)
+    staging = destination_parent / (
+        f".{destination.name}.mise-a-jour-{os.getpid()}-{time.time_ns()}"
+    )
+    retired_runtime: Path | None = None
+
+    try:
+        log_installation("Préparation des fichiers de la nouvelle version")
+        copy_payload(source, staging)
+        staged_runtime = staging / "_internal"
+        staged_executable = staging / EXE_NAME
+        if not staged_runtime.is_dir() or not staged_executable.is_file():
+            raise RuntimeError("Le paquet d'installation est incomplet.")
+
+        destination.mkdir(parents=True, exist_ok=True)
+        installed_runtime = destination / "_internal"
+        if installed_runtime.exists():
+            retired_runtime = destination / (
+                f"_internal.precedente-{time.strftime('%Y%m%d%H%M%S')}-{os.getpid()}"
+            )
+            log_installation("Mise de côté de l'ancien moteur de l'application")
+            installed_runtime.replace(retired_runtime)
+
+        # Le déplacement reste sur le même disque et évite une longue copie
+        # fichier par fichier au-dessus d'une version déjà installée.
+        try:
+            staged_runtime.replace(installed_runtime)
+        except Exception:
+            if retired_runtime and retired_runtime.exists() and not installed_runtime.exists():
+                retired_runtime.replace(installed_runtime)
+            raise
+        copy_payload(staging, destination)
+        log_installation("Fichiers de l'application remplacés")
+    finally:
+        if staging.exists():
+            remove_tree_with_retry(staging)
+
+
+def cleanup_retired_runtimes(destination: Path, timeout_seconds: float = 5.0) -> None:
+    """Nettoie les anciens moteurs sans pouvoir bloquer la fin de l'installation."""
+
+    for retired in destination.glob("_internal.precedente-*"):
+        environment = os.environ.copy()
+        environment["EASY_CESU_RETIRED_RUNTIME"] = str(retired)
+        try:
+            subprocess.run(
+                [
+                    powershell_executable(),
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "Remove-Item -LiteralPath $env:EASY_CESU_RETIRED_RUNTIME -Recurse -Force -ErrorAction Stop",
+                ],
+                env=environment,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+                timeout=timeout_seconds,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        except subprocess.TimeoutExpired:
+            log_installation(
+                f"Nettoyage différé de l'ancienne version : {retired.name}"
+            )
+
+
+def remove_obsolete_notices(destination: Path) -> None:
+    for notice in destination.glob("Easy_CESU_V*_Notice_Installation_et_Utilisation.pdf"):
+        if notice.name != NOTICE_NAME:
+            notice.unlink(missing_ok=True)
 
 
 def migrate_legacy_data(destination: Path) -> None:
@@ -592,10 +759,14 @@ def install(
 ) -> dict:
     ensure_windows_x64()
     log_installation(f"Début installation {APP_VERSION} vers {destination}")
+    webview2_version = ensure_webview2_runtime()
+    log_installation(f"Microsoft WebView2 disponible : {webview2_version}")
     source = resource_root()
     closed_existing = stop_running_application(destination)
-    copy_payload(source, destination)
+    log_installation("Application existante arrêtée")
+    replace_application_payload(source, destination)
     remove_obsolete_bundled_state(destination)
+    remove_obsolete_notices(destination)
     migrate_legacy_data(user_data_destination())
     exe = destination / EXE_NAME
     if not exe.exists():
@@ -612,6 +783,7 @@ def install(
     write_uninstall_script(destination)
     register_uninstall(destination)
     remember_shortcut_icon(icon_key)
+    cleanup_retired_runtimes(destination)
 
     notice = destination / NOTICE_NAME
     if open_notice and notice.exists():
@@ -629,6 +801,7 @@ def install(
         "launched": launch_app,
         "closed_existing": closed_existing,
         "shortcut_icon": icon_key,
+        "webview2_version": webview2_version,
     }
 
 
