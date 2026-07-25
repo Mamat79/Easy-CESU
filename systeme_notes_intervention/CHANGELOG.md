@@ -1,5 +1,18 @@
 # Journal des changements
 
+## 3.0.0 - 2026-07-25
+
+- Easy CESU s'ouvre dans une fenêtre Windows dédiée basée sur Microsoft WebView2, sans onglet Chrome.
+- Fermer la fenêtre arrête automatiquement le serveur local et libère son port.
+- Nouvel onglet `Modèles` avec aperçu A4 en direct.
+- Création, duplication, import, export, sélection et suppression contrôlée des modèles de notes.
+- Personnalisation des textes, couleurs, tailles, marges, espacements et ordre des blocs.
+- Les modèles sont enregistrés dans la base du compte actif et le modèle choisi pilote les vrais PDF mensuels.
+- Migration additive vers le schéma V3 avec sauvegarde automatique préalable et conservation des données V2.
+- L'installateur contrôle Microsoft WebView2 et inclut le programme d'amorçage officiel lorsqu'une installation est nécessaire.
+- La configuration d'une préversion est isolée et ne reprend jamais les chemins ou la base de la version installée.
+- Nouvelle notice PDF V3 et tests automatisés de la fenêtre native, de l'éditeur et des migrations.
+
 ## 2.1.0 - 2026-07-24
 
 - Grands boutons moins et plus pour régler les durées par 30 minutes et les tarifs ou montants par 0,50 euro.

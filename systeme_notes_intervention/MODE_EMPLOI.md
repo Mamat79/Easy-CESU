@@ -6,15 +6,15 @@ Easy CESU est un outil indépendant de suivi d'activité. Il n'est ni affilié n
 
 ## Utiliser l'application
 
-Depuis l'Explorateur Windows, double-clique sur :
+Depuis le Bureau ou le menu Démarrer, ouvre :
 
 ```text
-Ouvrir Easy CESU.cmd
+Easy CESU V3
 ```
 
-Ce fichier demarre l'application puis ouvre la page dans le navigateur.
+Easy CESU s'ouvre dans sa propre fenêtre. Il n'est plus nécessaire d'ouvrir Chrome ni de conserver une fenêtre de commande.
 
-Lance l'application locale :
+Pour le développement seulement, le serveur local reste lançable avec :
 
 ```powershell
 .\Lancer_application.ps1
@@ -45,8 +45,7 @@ Chaque compte a ses propres clients, interventions et tarifs individuels. Les no
 
 Pour revenir a un autre compte, utilise la liste `Compte` en haut de la page principale.
 
-Easy CESU s'arrete automatiquement quelques secondes apres la fermeture du dernier onglet de l'application. Un simple rechargement de la page ne l'arrete pas.
-Les autres projets ouverts dans Chrome restent independants : Easy CESU reconnait uniquement ses propres onglets et choisit automatiquement un autre port local si un projet utilise deja le port habituel.
+Easy CESU s'arrête automatiquement à la fermeture de sa fenêtre. Les autres applications et les onglets Chrome restent indépendants.
 
 Pour arreter l'application :
 
@@ -65,22 +64,33 @@ Construire installateur Easy CESU.cmd
 Le resultat est cree ici, avec son numero de version et `x64` dans le nom :
 
 ```text
-systeme_notes_intervention\sorties\EasyCESU-Setup-x64-2.1.0.exe
+systeme_notes_intervention\sorties\EasyCESU-Setup-x64-3.0.0.exe
 ```
 
-Cet installateur contient Easy CESU et toutes ses dépendances. Il installe par défaut dans `C:\Program Files\Easy CESU`, permet de choisir un autre dossier, propose une icône selon le métier, crée les raccourcis Bureau/Menu Démarrer au choix et peut ouvrir la notice à la fin. Si tu gardes `Program Files`, Windows demandera une autorisation.
+Cet installateur contient Easy CESU, Python, ses bibliothèques et le programme officiel Microsoft WebView2 utilisé seulement si ce composant manque. Il installe par défaut dans `C:\Program Files\Easy CESU`, permet de choisir un autre dossier, propose une icône selon le métier, crée les raccourcis Bureau/Menu Démarrer au choix et peut ouvrir la notice à la fin. Si tu gardes `Program Files`, Windows demandera une autorisation.
 Si une version est deja installee, l'installateur le signale et propose soit de la remplacer, soit d'installer une copie en plus. Pour une mise a jour, il ferme automatiquement Easy CESU avant de remplacer les fichiers puis relance la nouvelle version si l'option est cochee.
 La configuration et la base sont conservées dans `%LOCALAPPDATA%\EasyCESU` et ne sont pas remplacées lors d'une mise à jour.
 
 L'installateur n'embarque pas ta base de donnees. Pour transmettre l'etat actuel a quelqu'un :
 
 1. Sur ton PC, va dans `Base de donnees` > `Creer la sauvegarde`, puis choisis un dossier.
-2. Donne a la personne `EasyCESU-Setup-x64-2.1.0.exe` et le fichier `.zip` cree.
+2. Donne a la personne `EasyCESU-Setup-x64-3.0.0.exe` et le fichier `.zip` cree.
 3. Sur son PC, elle lance l'installateur, choisit le repertoire d'installation puis ouvre Easy CESU.
 4. Au premier lancement, elle choisit `Restaurer une sauvegarde` et selectionne le fichier `.zip` recu.
 5. L'assistant demande ensuite un seul dossier principal et cree automatiquement les dossiers de la base, des notes et des bilans Excel.
 
 Dans `Options avancees`, le bouton `Utiliser une base sans la copier` sert plutot a travailler directement sur une base placee dans un dossier partage.
+
+## Personnaliser les notes d'intervention
+
+1. Ouvre l'onglet `Modèles`.
+2. Choisis le modèle actuel, clique sur `Nouveau` ou utilise `Dupliquer`.
+3. Modifie les textes, les couleurs, les tailles, les marges ou l'ordre des blocs.
+4. Contrôle le résultat dans l'aperçu A4 à droite.
+5. Coche `Utiliser ce modèle pour les prochaines notes`, puis clique sur `Enregistrer`.
+6. Utilise `PDF d'essai` pour vérifier le document final avant la génération mensuelle.
+
+Chaque compte conserve ses propres modèles. L'import et l'export JSON permettent d'échanger une mise en page sans transférer les clients ni les interventions.
 
 ## Version executable autonome
 

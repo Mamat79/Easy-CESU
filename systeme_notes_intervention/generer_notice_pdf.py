@@ -15,8 +15,8 @@ from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Space
 
 ROOT = Path(__file__).resolve().parent
 APP_VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
-OUTPUT_PDF = ROOT / "output" / "pdf" / "Easy_CESU_V2_Notice_Installation_et_Utilisation.pdf"
-SORTIES_PDF = ROOT / "sorties" / "Easy_CESU_V2_Notice_Installation_et_Utilisation.pdf"
+OUTPUT_PDF = ROOT / "output" / "pdf" / "Easy_CESU_V3_Notice_Installation_et_Utilisation.pdf"
+SORTIES_PDF = ROOT / "sorties" / "Easy_CESU_V3_Notice_Installation_et_Utilisation.pdf"
 
 TEAL = colors.HexColor("#17484F")
 TEAL_SOFT = colors.HexColor("#E5F0F2")
@@ -163,7 +163,7 @@ def build_notice(output: Path) -> None:
 
     story = [
         Paragraph("Easy CESU", styles["title"]),
-        Paragraph("Installer l'application, configurer un profil et retrouver une sauvegarde", styles["subtitle"]),
+        Paragraph("Installer l'application, personnaliser les notes et retrouver une sauvegarde", styles["subtitle"]),
         Spacer(1, 5 * mm),
     ]
 
@@ -203,6 +203,7 @@ def build_notice(output: Path) -> None:
                     f"Double-cliquer sur <b>EasyCESU-Setup-x64-{APP_VERSION}.exe</b>.",
                     "Choisir le dossier d'installation, l'icône correspondant au métier, puis les raccourcis Bureau et menu Démarrer.",
                     "Lors d'une mise à jour, choisir <b>Oui</b> pour remplacer la version existante : l'installateur ferme l'ancienne version automatiquement.",
+                    "Easy CESU s'ouvre ensuite dans sa propre fenêtre. Aucun onglet Chrome n'est nécessaire.",
                 ],
                 styles,
             ),
@@ -240,6 +241,17 @@ def build_notice(output: Path) -> None:
             ),
             section(
                 "5",
+                "Créer un modèle de note",
+                [
+                    "Ouvrir <b>Modèles</b>, puis choisir le modèle à modifier ou cliquer sur <b>Nouveau</b>.",
+                    "Modifier les textes, couleurs, marges et tailles. L'aperçu A4 se met à jour immédiatement.",
+                    "Utiliser les flèches pour réorganiser l'identité, le titre et le tableau, puis cliquer sur <b>Enregistrer</b>.",
+                    "Cocher <b>Utiliser ce modèle</b> pour qu'il soit appliqué aux prochaines notes. Le bouton <b>PDF d'essai</b> permet de contrôler le résultat final.",
+                ],
+                styles,
+            ),
+            section(
+                "6",
                 "Sauvegarder ou transférer les données",
                 [
                     "Sélectionner le bon compte en haut de la page.",
@@ -254,7 +266,7 @@ def build_notice(output: Path) -> None:
     story.extend(
         [
             section(
-                "6",
+                "7",
                 "Mettre à jour sans perdre les données",
                 [
                     "Fermer Easy CESU, puis lancer le nouvel installateur.",
@@ -265,7 +277,7 @@ def build_notice(output: Path) -> None:
                 styles,
             ),
             section(
-                "7",
+                "8",
                 "Choisir l'icône selon le métier",
                 [
                     "Dans l'installateur, choisir l'icône souhaitée avant de créer les raccourcis.",
@@ -275,7 +287,7 @@ def build_notice(output: Path) -> None:
                 styles,
             ),
             section(
-                "8",
+                "9",
                 "Bonnes pratiques de sauvegarde",
                 [
                     "Créer régulièrement une sauvegarde ZIP dans un dossier différent de celui de la base.",
@@ -294,7 +306,7 @@ def build_notice(output: Path) -> None:
                 Paragraph(
                     "Chaque compte possède ses propres clients, tarifs et interventions. "
                     "L'installateur ne contient aucune donnée personnelle. Easy CESU est un outil indépendant de suivi d'activité, sans lien automatique avec le service officiel CESU. "
-                    "Easy CESU s'arrête automatiquement quelques secondes après la fermeture du dernier onglet de l'application.",
+                    "Easy CESU s'arrête automatiquement lorsque sa fenêtre est fermée.",
                     styles["box"],
                 )
             ],

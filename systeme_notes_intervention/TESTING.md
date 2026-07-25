@@ -6,7 +6,7 @@ La suite isolée n'utilise jamais la base personnelle installée :
 .\.build_venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-La V2.1.0 comporte 15 tests automatisés couvrant notamment :
+La V3.0.0 comporte 20 tests automatisés couvrant notamment :
 
 - première installation et profil générique ;
 - création, renommage et séparation des clients ;
@@ -21,12 +21,21 @@ La V2.1.0 comporte 15 tests automatisés couvrant notamment :
 - transmission du choix d'icône au processus administrateur ;
 - détection d'une ancienne installation locale pour la remplacer ;
 - présence des grands boutons de durée et de montant.
+- migration additive V3 et conservation des clients et interventions ;
+- création, duplication, import, export et suppression contrôlée des modèles ;
+- génération d'un PDF avec un modèle personnalisé ;
+- ouverture de la fenêtre native WebView2 et arrêt du serveur à sa fermeture ;
+- isolation complète de la préversion par rapport aux données installées ;
+- détection et installation conditionnelle du runtime Microsoft WebView2.
 
 Contrôles complémentaires réalisés pour chaque livraison :
 
 - compilation Python et contrôle syntaxique JavaScript ;
-- test de l'interface dans Chrome à `1440 x 900` et `390 x 844` ;
+- test Playwright de l'éditeur à `1440 x 900` et `1024 x 768`, sans débordement ;
+- lancement de l'exécutable PyInstaller dans sa vraie fenêtre Windows ;
+- contrôle de l'assistant initial et de l'éditeur de modèles par accessibilité Windows ;
+- fermeture de la fenêtre puis vérification de l'arrêt du processus et du port local ;
 - construction de l'application autonome et de l'installateur x64 ;
-- installation réelle par-dessus la version précédente ;
+- installation réelle par-dessus la version précédente uniquement après validation du candidat ;
 - comparaison de la configuration et de la base avant/après ;
 - contrôle visuel et textuel de la notice PDF.
