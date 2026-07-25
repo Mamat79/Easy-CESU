@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Easy CESU</title>
-    <link id="faviconLink" rel="icon" href="/icons/generique.png?v=20260724-v210b" type="image/png" />
-    <link rel="stylesheet" href="/styles.css?v=20260724-v210b" />
+    <link id="faviconLink" rel="icon" href="/icons/generique.png?v=20260725-v300" type="image/png" />
+    <link rel="stylesheet" href="/styles.css?v=20260725-v300" />
   </head>
   <body>
     <div class="app-shell">
@@ -37,6 +37,7 @@
         <button class="tab-btn active" type="button" data-view="interventions">Interventions</button>
         <button class="tab-btn" type="button" data-view="planning">Planning</button>
         <button class="tab-btn" type="button" data-view="overview">Bilan</button>
+        <button class="tab-btn" type="button" data-view="templates">Modèles</button>
         <button class="tab-btn" type="button" data-view="clients">Clients</button>
         <button class="tab-btn" type="button" data-view="followup">Notes et paiements</button>
         <button class="tab-btn" type="button" data-view="database">Base de données</button>
@@ -310,12 +311,122 @@
           </div>
         </section>
 
+        <section id="templatesPanel" class="templates-panel view-panel" data-view-panel="templates" hidden>
+          <div class="section-heading table-heading template-heading">
+            <div>
+              <h2>Modèles de notes d’intervention</h2>
+              <p class="section-note">Personnalise la note et contrôle le résultat dans l’aperçu A4.</p>
+            </div>
+            <button id="templateImportBtn" class="secondary" type="button">Importer un modèle</button>
+          </div>
+
+          <div class="template-editor">
+            <aside class="template-controls" aria-label="Réglages du modèle">
+              <div class="template-picker">
+                <label for="templateSelect">Modèle à modifier</label>
+                <select id="templateSelect"></select>
+                <div class="template-command-row">
+                  <button id="templateNewBtn" class="secondary" type="button">Nouveau</button>
+                  <button id="templateDuplicateBtn" class="secondary" type="button">Dupliquer</button>
+                  <button id="templateDeleteBtn" class="ghost danger-action" type="button">Supprimer</button>
+                </div>
+              </div>
+
+              <div class="template-field">
+                <label for="templateNameInput">Nom du modèle</label>
+                <input id="templateNameInput" maxlength="80" autocomplete="off" />
+              </div>
+              <label class="check-label template-default-line">
+                <input id="templateDefaultInput" type="checkbox" />
+                Utiliser ce modèle pour les prochaines notes
+              </label>
+
+              <details open>
+                <summary>Organisation de la page</summary>
+                <p class="section-note">Utilise les flèches pour déplacer les éléments.</p>
+                <div id="templateBlocks" class="template-blocks"></div>
+              </details>
+
+              <details>
+                <summary>Textes affichés</summary>
+                <div class="template-fields">
+                  <label for="templateTitleInput">Titre</label>
+                  <input id="templateTitleInput" data-template-label="title" />
+                  <label for="templateEmployerLabelInput">Libellé employeur</label>
+                  <input id="templateEmployerLabelInput" data-template-label="employer" />
+                  <label for="templateMonthLabelInput">Libellé du mois</label>
+                  <input id="templateMonthLabelInput" data-template-label="month" />
+                  <label for="templateDateLabelInput">Colonne dates</label>
+                  <input id="templateDateLabelInput" data-template-label="date" />
+                  <label for="templateRateLabelInput">Colonne tarif</label>
+                  <input id="templateRateLabelInput" data-template-label="hourly_rate" />
+                  <label for="templateHoursLabelInput">Colonne heures</label>
+                  <input id="templateHoursLabelInput" data-template-label="hours" />
+                  <label for="templateAmountLabelInput">Colonne montant</label>
+                  <input id="templateAmountLabelInput" data-template-label="amount" />
+                  <label for="templateTotalLabelInput">Libellé du total</label>
+                  <input id="templateTotalLabelInput" data-template-label="total" />
+                </div>
+              </details>
+
+              <details>
+                <summary>Texte et couleurs</summary>
+                <div class="template-two-columns">
+                  <div><label for="templateBodySizeInput">Texte</label><input id="templateBodySizeInput" type="number" min="8" max="16" step="0.5" /></div>
+                  <div><label for="templateTitleSizeInput">Titre</label><input id="templateTitleSizeInput" type="number" min="9" max="24" step="0.5" /></div>
+                  <div><label for="templateTableSizeInput">Tableau</label><input id="templateTableSizeInput" type="number" min="7" max="14" step="0.5" /></div>
+                  <div><label for="templateTextColorInput">Texte</label><input id="templateTextColorInput" type="color" /></div>
+                  <div><label for="templateTitleColorInput">Titre</label><input id="templateTitleColorInput" type="color" /></div>
+                  <div><label for="templateHeaderColorInput">En-tête</label><input id="templateHeaderColorInput" type="color" /></div>
+                  <div><label for="templateTotalColorInput">Total</label><input id="templateTotalColorInput" type="color" /></div>
+                  <div><label for="templateBorderColorInput">Bordures</label><input id="templateBorderColorInput" type="color" /></div>
+                </div>
+              </details>
+
+              <details>
+                <summary>Marges et espacements</summary>
+                <div class="template-two-columns">
+                  <div><label for="templateMarginTopInput">Marge haute</label><input id="templateMarginTopInput" type="number" min="0.8" max="4" step="0.1" /></div>
+                  <div><label for="templateMarginBottomInput">Marge basse</label><input id="templateMarginBottomInput" type="number" min="0.8" max="4" step="0.1" /></div>
+                  <div><label for="templateMarginLeftInput">Marge gauche</label><input id="templateMarginLeftInput" type="number" min="0.8" max="4" step="0.1" /></div>
+                  <div><label for="templateMarginRightInput">Marge droite</label><input id="templateMarginRightInput" type="number" min="0.8" max="4" step="0.1" /></div>
+                  <div><label for="templateIdentityGapInput">Après identité</label><input id="templateIdentityGapInput" type="number" min="0" max="4" step="0.1" /></div>
+                  <div><label for="templateTitleGapInput">Après titre</label><input id="templateTitleGapInput" type="number" min="0" max="5" step="0.1" /></div>
+                  <div><label for="templateRowHeightInput">Hauteur des lignes</label><input id="templateRowHeightInput" type="number" min="0.45" max="1.2" step="0.05" /></div>
+                  <div><label for="templateMinimumRowsInput">Lignes minimum</label><input id="templateMinimumRowsInput" type="number" min="1" max="24" step="1" /></div>
+                </div>
+                <p class="template-unit-note">Mesures en centimètres, tailles de texte en points.</p>
+              </details>
+
+              <div class="template-actions">
+                <button id="templateResetBtn" class="ghost" type="button">Réglages d’origine</button>
+                <button id="templateSaveBtn" class="primary" type="button">Enregistrer</button>
+                <button id="templateTestPdfBtn" class="secondary" type="button">PDF d’essai</button>
+                <button id="templateExportBtn" class="secondary" type="button">Exporter</button>
+              </div>
+            </aside>
+
+            <section class="template-preview-panel" aria-labelledby="templatePreviewTitle">
+              <div class="template-preview-heading">
+                <div>
+                  <h3 id="templatePreviewTitle">Aperçu de la note</h3>
+                  <p>Les données ci-dessous sont uniquement des exemples.</p>
+                </div>
+                <span id="templateUnsavedBadge" hidden>Modifications non enregistrées</span>
+              </div>
+              <div class="template-paper-stage">
+                <div id="templatePaper" class="template-paper" aria-label="Aperçu A4"></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
         <section id="settingsPanel" class="settings-panel view-panel" data-view-panel="settings" hidden>
           <div class="section-heading table-heading">
             <div>
               <h2>Réglages</h2>
               <p class="section-note">Paramètres utilisés pour les nouvelles interventions et les générations.</p>
-              <p class="section-note">Easy CESU - Version <strong id="appVersion">2.1.0</strong></p>
+              <p class="section-note">Easy CESU - Version <strong id="appVersion">3.0.0</strong></p>
             </div>
           </div>
 
@@ -682,7 +793,7 @@
         </section>
       </main>
       <footer class="app-disclaimer">
-        Easy CESU V<span id="footerVersion">2.1.0</span> est un outil indépendant de suivi d'activité. Il n'est ni affilié ni connecté automatiquement au service officiel CESU.
+        Easy CESU V<span id="footerVersion">3.0.0</span> est un outil indépendant de suivi d'activité. Il n'est ni affilié ni connecté automatiquement au service officiel CESU.
       </footer>
     </div>
 
@@ -729,6 +840,6 @@
     </dialog>
 
     <div id="toast" class="toast" aria-live="polite"></div>
-    <script src="/app.js?v=20260724-v210b"></script>
+    <script src="/app.js?v=20260725-v300"></script>
   </body>
 </html>

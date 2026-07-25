@@ -74,6 +74,10 @@ const state = {
   categories: [],
   notes: [],
   payments: [],
+  documentTemplates: [],
+  selectedTemplateId: null,
+  templateDraft: null,
+  templateDirty: false,
 };
 
 const els = {
@@ -251,6 +255,38 @@ const els = {
   paymentDateInput: document.querySelector("#paymentDateInput"),
   paymentMethodInput: document.querySelector("#paymentMethodInput"),
   paymentsList: document.querySelector("#paymentsList"),
+  templatesPanel: document.querySelector("#templatesPanel"),
+  templateSelect: document.querySelector("#templateSelect"),
+  templateNewBtn: document.querySelector("#templateNewBtn"),
+  templateDuplicateBtn: document.querySelector("#templateDuplicateBtn"),
+  templateDeleteBtn: document.querySelector("#templateDeleteBtn"),
+  templateImportBtn: document.querySelector("#templateImportBtn"),
+  templateNameInput: document.querySelector("#templateNameInput"),
+  templateDefaultInput: document.querySelector("#templateDefaultInput"),
+  templateBlocks: document.querySelector("#templateBlocks"),
+  templateLabelInputs: document.querySelectorAll("[data-template-label]"),
+  templateBodySizeInput: document.querySelector("#templateBodySizeInput"),
+  templateTitleSizeInput: document.querySelector("#templateTitleSizeInput"),
+  templateTableSizeInput: document.querySelector("#templateTableSizeInput"),
+  templateTextColorInput: document.querySelector("#templateTextColorInput"),
+  templateTitleColorInput: document.querySelector("#templateTitleColorInput"),
+  templateHeaderColorInput: document.querySelector("#templateHeaderColorInput"),
+  templateTotalColorInput: document.querySelector("#templateTotalColorInput"),
+  templateBorderColorInput: document.querySelector("#templateBorderColorInput"),
+  templateMarginTopInput: document.querySelector("#templateMarginTopInput"),
+  templateMarginBottomInput: document.querySelector("#templateMarginBottomInput"),
+  templateMarginLeftInput: document.querySelector("#templateMarginLeftInput"),
+  templateMarginRightInput: document.querySelector("#templateMarginRightInput"),
+  templateIdentityGapInput: document.querySelector("#templateIdentityGapInput"),
+  templateTitleGapInput: document.querySelector("#templateTitleGapInput"),
+  templateRowHeightInput: document.querySelector("#templateRowHeightInput"),
+  templateMinimumRowsInput: document.querySelector("#templateMinimumRowsInput"),
+  templateResetBtn: document.querySelector("#templateResetBtn"),
+  templateSaveBtn: document.querySelector("#templateSaveBtn"),
+  templateTestPdfBtn: document.querySelector("#templateTestPdfBtn"),
+  templateExportBtn: document.querySelector("#templateExportBtn"),
+  templatePaper: document.querySelector("#templatePaper"),
+  templateUnsavedBadge: document.querySelector("#templateUnsavedBadge"),
 };
 
 function euro(value) {
@@ -611,6 +647,302 @@ function renderClientsTable() {
     .join("");
 }
 
+const templateBlockLabels = {
+  identity: "Identité et employeur",
+  title: "Titre de la note",
+  table: "Tableau des interventions",
+};
+
+function cloneData(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function currentDocumentTemplate() {
+  return state.documentTemplates.find((item) => Number(item.id) === Number(state.selectedTemplateId)) || null;
+}
+
+function setTemplateDirty(dirty) {
+  state.templateDirty = Boolean(dirty);
+  els.templateUnsavedBadge.hidden = !state.templateDirty;
+}
+
+function clearDocumentTemplateState() {
+  state.documentTemplates = [];
+  state.selectedTemplateId = null;
+  state.templateDraft = null;
+  setTemplateDirty(false);
+  els.templateSelect.innerHTML = "";
+  els.templateBlocks.innerHTML = "";
+  els.templatePaper.innerHTML = "";
+}
+
+function safeTemplateNumber(input, fallback) {
+  const value = Number(input.value);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function syncTemplateDraftFromForm(markDirty = true) {
+  if (!state.templateDraft) return;
+  const draft = state.templateDraft;
+  const configuration = draft.configuration;
+  draft.name = els.templateNameInput.value.trim();
+  draft.is_default = els.templateDefaultInput.checked;
+  els.templateLabelInputs.forEach((input) => {
+    configuration.labels[input.dataset.templateLabel] = input.value;
+  });
+  configuration.typography.body_size = safeTemplateNumber(els.templateBodySizeInput, configuration.typography.body_size);
+  configuration.typography.title_size = safeTemplateNumber(els.templateTitleSizeInput, configuration.typography.title_size);
+  configuration.typography.table_size = safeTemplateNumber(els.templateTableSizeInput, configuration.typography.table_size);
+  configuration.typography.text_color = els.templateTextColorInput.value;
+  configuration.typography.title_color = els.templateTitleColorInput.value;
+  configuration.table.header_background = els.templateHeaderColorInput.value;
+  configuration.table.total_background = els.templateTotalColorInput.value;
+  configuration.table.border_color = els.templateBorderColorInput.value;
+  configuration.page.top_margin_cm = safeTemplateNumber(els.templateMarginTopInput, configuration.page.top_margin_cm);
+  configuration.page.bottom_margin_cm = safeTemplateNumber(els.templateMarginBottomInput, configuration.page.bottom_margin_cm);
+  configuration.page.left_margin_cm = safeTemplateNumber(els.templateMarginLeftInput, configuration.page.left_margin_cm);
+  configuration.page.right_margin_cm = safeTemplateNumber(els.templateMarginRightInput, configuration.page.right_margin_cm);
+  configuration.spacing.identity_after_cm = safeTemplateNumber(els.templateIdentityGapInput, configuration.spacing.identity_after_cm);
+  configuration.spacing.title_after_cm = safeTemplateNumber(els.templateTitleGapInput, configuration.spacing.title_after_cm);
+  configuration.table.row_height_cm = safeTemplateNumber(els.templateRowHeightInput, configuration.table.row_height_cm);
+  configuration.table.minimum_rows = Math.round(safeTemplateNumber(els.templateMinimumRowsInput, configuration.table.minimum_rows));
+  if (markDirty) setTemplateDirty(true);
+  renderTemplatePreview();
+}
+
+function renderTemplateSelector() {
+  els.templateSelect.innerHTML = state.documentTemplates
+    .map((item) => `<option value="${item.id}">${escapeHtml(item.name)}${item.is_default ? " · utilisé" : ""}</option>`)
+    .join("");
+  els.templateSelect.value = String(state.selectedTemplateId || "");
+}
+
+function renderTemplateBlocks() {
+  if (!state.templateDraft) {
+    els.templateBlocks.innerHTML = "";
+    return;
+  }
+  const configuration = state.templateDraft.configuration;
+  els.templateBlocks.innerHTML = configuration.blocks.map((block, index) => `
+    <div class="template-block-row">
+      <label>
+        <input type="checkbox" data-template-visible="${block}" ${configuration.visible[block] ? "checked" : ""} ${block === "table" ? "disabled" : ""} />
+        <span>${escapeHtml(templateBlockLabels[block] || block)}</span>
+      </label>
+      <button class="icon-btn" type="button" title="Monter" aria-label="Monter" data-template-move="${block}" data-template-direction="-1" ${index === 0 ? "disabled" : ""}>↑</button>
+      <button class="icon-btn" type="button" title="Descendre" aria-label="Descendre" data-template-move="${block}" data-template-direction="1" ${index === configuration.blocks.length - 1 ? "disabled" : ""}>↓</button>
+    </div>
+  `).join("");
+}
+
+function renderTemplatePreview() {
+  if (!state.templateDraft) {
+    els.templatePaper.innerHTML = "";
+    return;
+  }
+  const configuration = state.templateDraft.configuration;
+  const labels = configuration.labels;
+  const profile = currentProfile() || {};
+  const employeeLines = [
+    profile.name || "Marie Dupont",
+    ...(profile.address || "10 rue des Lilas\n49000 Angers").split(/\r?\n/),
+    profile.phone || "06 00 00 00 00",
+    profile.email || "contact@exemple.fr",
+  ].filter(Boolean);
+  const employeeHtml = employeeLines
+    .map((line, index) => index === 0 ? `<strong>${escapeHtml(line)}</strong>` : escapeHtml(line))
+    .join("<br>");
+
+  const identity = `
+    <div class="template-preview-identity">
+      <div class="template-preview-employee">${employeeHtml}</div>
+      <div class="template-preview-employer">
+        <strong>${escapeHtml(labels.employer)}</strong><span>Client exemple</span>
+        <strong>${escapeHtml(labels.month)}</strong><span>Juillet 2026</span>
+      </div>
+    </div>`;
+  const title = `<div class="template-preview-title">${escapeHtml(labels.title)}</div>`;
+  const minimumRows = Math.max(2, Math.min(24, Number(configuration.table.minimum_rows || 15)));
+  const sampleRows = [
+    ["03/07/26", "22,00 €", "2:00", "44,00 €"],
+    ["10/07/26", "22,00 €", "1:30", "33,00 €"],
+  ];
+  while (sampleRows.length < minimumRows) sampleRows.push(["", "", "", ""]);
+  const rowsHtml = sampleRows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("");
+  const table = `
+    <table class="template-preview-table">
+      <thead><tr><th>${escapeHtml(labels.date)}</th><th>${escapeHtml(labels.hourly_rate)}</th><th>${escapeHtml(labels.hours)}</th><th>${escapeHtml(labels.amount)}</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+      <tfoot><tr><td colspan="2">${escapeHtml(labels.total)}</td><td>3:30</td><td>77,00 €</td></tr></tfoot>
+    </table>`;
+
+  const paperWidth = els.templatePaper.clientWidth || 700;
+  const pxPerCm = paperWidth / 21;
+  els.templatePaper.style.padding = [
+    configuration.page.top_margin_cm,
+    configuration.page.right_margin_cm,
+    configuration.page.bottom_margin_cm,
+    configuration.page.left_margin_cm,
+  ].map((value) => `${Number(value) * pxPerCm}px`).join(" ");
+  els.templatePaper.style.fontSize = `${configuration.typography.body_size}pt`;
+  els.templatePaper.style.color = configuration.typography.text_color;
+  els.templatePaper.style.setProperty("--preview-header", configuration.table.header_background);
+  els.templatePaper.style.setProperty("--preview-total", configuration.table.total_background);
+  els.templatePaper.style.setProperty("--preview-border", configuration.table.border_color);
+  els.templatePaper.style.setProperty("--preview-row-height", `${configuration.table.row_height_cm * pxPerCm}px`);
+
+  const blockHtml = { identity, title, table };
+  els.templatePaper.innerHTML = configuration.blocks
+    .filter((block) => configuration.visible[block])
+    .map((block) => {
+      const gap = Number(configuration.spacing[`${block}_after_cm`] || 0) * pxPerCm;
+      const size = block === "title" ? configuration.typography.title_size : block === "table" ? configuration.typography.table_size : configuration.typography.body_size;
+      const color = block === "title" ? configuration.typography.title_color : configuration.typography.text_color;
+      return `<div style="margin-bottom:${gap}px;font-size:${size}pt;color:${color}">${blockHtml[block]}</div>`;
+    })
+    .join("");
+  const employer = els.templatePaper.querySelector(".template-preview-employer");
+  if (employer) employer.style.paddingTop = `${1.1 * pxPerCm}px`;
+}
+
+function showDocumentTemplate(template) {
+  state.selectedTemplateId = Number(template.id);
+  state.templateDraft = cloneData(template);
+  els.templateNameInput.value = template.name;
+  els.templateDefaultInput.checked = Boolean(template.is_default);
+  const configuration = template.configuration;
+  els.templateLabelInputs.forEach((input) => {
+    input.value = configuration.labels[input.dataset.templateLabel] || "";
+  });
+  els.templateBodySizeInput.value = configuration.typography.body_size;
+  els.templateTitleSizeInput.value = configuration.typography.title_size;
+  els.templateTableSizeInput.value = configuration.typography.table_size;
+  els.templateTextColorInput.value = configuration.typography.text_color;
+  els.templateTitleColorInput.value = configuration.typography.title_color;
+  els.templateHeaderColorInput.value = configuration.table.header_background;
+  els.templateTotalColorInput.value = configuration.table.total_background;
+  els.templateBorderColorInput.value = configuration.table.border_color;
+  els.templateMarginTopInput.value = configuration.page.top_margin_cm;
+  els.templateMarginBottomInput.value = configuration.page.bottom_margin_cm;
+  els.templateMarginLeftInput.value = configuration.page.left_margin_cm;
+  els.templateMarginRightInput.value = configuration.page.right_margin_cm;
+  els.templateIdentityGapInput.value = configuration.spacing.identity_after_cm;
+  els.templateTitleGapInput.value = configuration.spacing.title_after_cm;
+  els.templateRowHeightInput.value = configuration.table.row_height_cm;
+  els.templateMinimumRowsInput.value = configuration.table.minimum_rows;
+  setTemplateDirty(false);
+  renderTemplateSelector();
+  renderTemplateBlocks();
+  window.requestAnimationFrame(renderTemplatePreview);
+}
+
+async function loadDocumentTemplates(preferredId = null) {
+  const payload = await api("/api/document-templates");
+  state.documentTemplates = payload.templates || [];
+  const selected = state.documentTemplates.find((item) => Number(item.id) === Number(preferredId || state.selectedTemplateId))
+    || state.documentTemplates.find((item) => item.is_default)
+    || state.documentTemplates[0];
+  if (selected) showDocumentTemplate(selected);
+}
+
+async function saveDocumentTemplate() {
+  syncTemplateDraftFromForm(false);
+  if (!state.templateDraft.name) throw new Error("Le nom du modèle est obligatoire.");
+  const payload = await api(`/api/document-templates/${state.selectedTemplateId}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      name: state.templateDraft.name,
+      is_default: state.templateDraft.is_default,
+      configuration: state.templateDraft.configuration,
+    }),
+  });
+  await loadDocumentTemplates(payload.template.id);
+  showToast("Modèle enregistré.");
+}
+
+async function createDocumentTemplate() {
+  const usedNames = new Set(state.documentTemplates.map((item) => item.name.toLowerCase()));
+  let name = "Nouveau modèle";
+  let suffix = 2;
+  while (usedNames.has(name.toLowerCase())) {
+    name = `Nouveau modèle ${suffix}`;
+    suffix += 1;
+  }
+  const payload = await api("/api/document-templates", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+  await loadDocumentTemplates(payload.template.id);
+  els.templateNameInput.focus();
+  els.templateNameInput.select();
+}
+
+async function duplicateDocumentTemplate() {
+  if (state.templateDirty && !window.confirm("Les modifications non enregistrées ne seront pas copiées. Continuer ?")) return;
+  const payload = await api(`/api/document-templates/${state.selectedTemplateId}/duplicate`, {
+    method: "POST",
+    body: "{}",
+  });
+  await loadDocumentTemplates(payload.template.id);
+  showToast("Modèle dupliqué.");
+}
+
+async function deleteDocumentTemplate() {
+  const template = currentDocumentTemplate();
+  if (!template || !window.confirm(`Supprimer le modèle "${template.name}" ?`)) return;
+  await api(`/api/document-templates/${template.id}`, { method: "DELETE" });
+  state.selectedTemplateId = null;
+  state.templateDraft = null;
+  await loadDocumentTemplates();
+  showToast("Modèle supprimé.");
+}
+
+async function resetDocumentTemplate() {
+  if (!window.confirm("Rétablir la mise en page d’origine pour ce modèle ?")) return;
+  const payload = await api(`/api/document-templates/${state.selectedTemplateId}/reset`, {
+    method: "POST",
+    body: "{}",
+  });
+  await loadDocumentTemplates(payload.template.id);
+  showToast("Mise en page d’origine rétablie.");
+}
+
+async function importDocumentTemplate() {
+  const payload = await api("/api/document-templates/import", { method: "POST", body: "{}" });
+  if (payload.cancelled) return;
+  await loadDocumentTemplates(payload.template.id);
+  showToast("Modèle importé.");
+}
+
+async function exportDocumentTemplate() {
+  const payload = await api(`/api/document-templates/${state.selectedTemplateId}/export`, {
+    method: "POST",
+    body: "{}",
+  });
+  if (!payload.cancelled) showToast(`Modèle exporté : ${payload.path}`);
+}
+
+async function generateTemplateTestPdf() {
+  syncTemplateDraftFromForm(false);
+  const payload = await api("/api/document-templates/preview-pdf", {
+    method: "POST",
+    body: JSON.stringify({ configuration: state.templateDraft.configuration }),
+  });
+  if (!payload.cancelled) showToast(`PDF d’essai créé : ${payload.path}`);
+}
+
+function moveTemplateBlock(block, direction) {
+  if (!state.templateDraft) return;
+  const blocks = state.templateDraft.configuration.blocks;
+  const index = blocks.indexOf(block);
+  const destination = index + Number(direction);
+  if (index < 0 || destination < 0 || destination >= blocks.length) return;
+  [blocks[index], blocks[destination]] = [blocks[destination], blocks[index]];
+  setTemplateDirty(true);
+  renderTemplateBlocks();
+  renderTemplatePreview();
+}
+
 function setActiveView(view) {
   els.tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.view === view));
   els.viewPanels.forEach((panel) => {
@@ -627,6 +959,9 @@ function setActiveView(view) {
   }
   if (view === "followup") {
     loadFollowup().catch((error) => showToast(error.message));
+  }
+  if (view === "templates" && !state.documentTemplates.length) {
+    loadDocumentTemplates().catch((error) => showToast(error.message));
   }
 }
 
@@ -1117,6 +1452,7 @@ async function saveSettings(options = {}) {
     showToast(wasCreatingProfile ? "Compte créé." : "Réglages enregistrés.");
   }
   if (wasCreatingProfile) {
+    clearDocumentTemplateState();
     showSetupAssistant("account");
   }
   return payload.settings || payload;
@@ -1316,6 +1652,7 @@ async function deleteCurrentProfile() {
   }
   const payload = await api(`/api/profiles/${encodeURIComponent(profile.id)}`, { method: "DELETE" });
   applyBootstrap(payload);
+  clearDocumentTemplateState();
   await loadMonth();
   showToast("Compte supprimé de l'application.");
 }
@@ -1513,6 +1850,7 @@ async function switchActiveProfile(profileId) {
     body: JSON.stringify({ profile_id: profileId }),
   });
   applyBootstrap(payload);
+  clearDocumentTemplateState();
   await loadMonth();
   showToast("Compte actif changé.");
 }
@@ -1636,6 +1974,58 @@ function bindEvents() {
   });
   els.tabs.forEach((tab) => {
     tab.addEventListener("click", () => setActiveView(tab.dataset.view));
+  });
+  els.templateSelect.addEventListener("change", () => {
+    const nextId = Number(els.templateSelect.value);
+    if (state.templateDirty && !window.confirm("Abandonner les modifications non enregistrées ?")) {
+      els.templateSelect.value = String(state.selectedTemplateId || "");
+      return;
+    }
+    const selected = state.documentTemplates.find((item) => Number(item.id) === nextId);
+    if (selected) showDocumentTemplate(selected);
+  });
+  [
+    els.templateNameInput,
+    els.templateDefaultInput,
+    ...els.templateLabelInputs,
+    els.templateBodySizeInput,
+    els.templateTitleSizeInput,
+    els.templateTableSizeInput,
+    els.templateTextColorInput,
+    els.templateTitleColorInput,
+    els.templateHeaderColorInput,
+    els.templateTotalColorInput,
+    els.templateBorderColorInput,
+    els.templateMarginTopInput,
+    els.templateMarginBottomInput,
+    els.templateMarginLeftInput,
+    els.templateMarginRightInput,
+    els.templateIdentityGapInput,
+    els.templateTitleGapInput,
+    els.templateRowHeightInput,
+    els.templateMinimumRowsInput,
+  ].forEach((input) => input.addEventListener("input", () => syncTemplateDraftFromForm(true)));
+  els.templateBlocks.addEventListener("change", (event) => {
+    const block = event.target.dataset.templateVisible;
+    if (!block || !state.templateDraft) return;
+    state.templateDraft.configuration.visible[block] = event.target.checked;
+    setTemplateDirty(true);
+    renderTemplatePreview();
+  });
+  els.templateBlocks.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-template-move]");
+    if (button) moveTemplateBlock(button.dataset.templateMove, button.dataset.templateDirection);
+  });
+  els.templateNewBtn.addEventListener("click", () => createDocumentTemplate().catch((error) => showToast(error.message)));
+  els.templateDuplicateBtn.addEventListener("click", () => duplicateDocumentTemplate().catch((error) => showToast(error.message)));
+  els.templateDeleteBtn.addEventListener("click", () => deleteDocumentTemplate().catch((error) => showToast(error.message)));
+  els.templateImportBtn.addEventListener("click", () => importDocumentTemplate().catch((error) => showToast(error.message)));
+  els.templateResetBtn.addEventListener("click", () => resetDocumentTemplate().catch((error) => showToast(error.message)));
+  els.templateSaveBtn.addEventListener("click", () => saveDocumentTemplate().catch((error) => showToast(error.message)));
+  els.templateTestPdfBtn.addEventListener("click", () => generateTemplateTestPdf().catch((error) => showToast(error.message)));
+  els.templateExportBtn.addEventListener("click", () => exportDocumentTemplate().catch((error) => showToast(error.message)));
+  window.addEventListener("resize", () => {
+    if (!els.templatesPanel.hidden && state.templateDraft) renderTemplatePreview();
   });
   els.clientsTopBtn.addEventListener("click", () => setActiveView("clients"));
   els.clientsShortcutBtn.addEventListener("click", () => setActiveView("clients"));
