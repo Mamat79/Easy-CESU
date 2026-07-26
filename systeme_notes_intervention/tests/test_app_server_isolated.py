@@ -275,15 +275,19 @@ import app_server
         self.run_scenario(
             """
             import time
-            import urllib.request
+            import http.client
 
             runtime = app_server.LocalAppServer(preferred_port=0)
             url = runtime.start(background=True)
             port = runtime.port
             assert port > 0
             assert f":{port}/" in url
-            with urllib.request.urlopen(url.replace("/?v=20260725-v300", "/api/app-info"), timeout=5) as response:
-                info = __import__("json").loads(response.read().decode("utf-8"))
+            connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+            connection.request("GET", "/api/app-info")
+            response = connection.getresponse()
+            assert response.status == 200
+            info = __import__("json").loads(response.read().decode("utf-8"))
+            connection.close()
             assert info["app_version"] == "3.0.0"
             runtime.stop()
             time.sleep(0.2)
