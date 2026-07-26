@@ -68,7 +68,9 @@ for _ in {1..40}; do
     echo "L'application macOS s'est arrêtée pendant le test de lancement." >&2
     exit 1
   fi
-  PORT="$(lsof -Pan -p "$APP_PID" -iTCP -sTCP:LISTEN 2>/dev/null | awk '/127[.]0[.]0[.]1:/ {sub(/^.*:/, "", $9); print $9; exit}')"
+  # lsof renvoie 1 tant que le serveur n'écoute pas encore. Ce délai normal
+  # ne doit pas interrompre la boucle lorsque pipefail est actif.
+  PORT="$(lsof -Pan -p "$APP_PID" -iTCP -sTCP:LISTEN 2>/dev/null | awk '/127[.]0[.]0[.]1:/ {sub(/^.*:/, "", $9); print $9; exit}' || true)"
   [[ -n "$PORT" ]] && break
   sleep 0.5
 done
