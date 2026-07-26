@@ -28,7 +28,7 @@ Easy CESU est un outil indépendant. Il n'est ni affilié ni connecté automatiq
 
 ## Installation Windows
 
-1. Télécharger `EasyCESU-Setup-x64-3.1.0.exe` depuis la page des versions.
+1. Télécharger `EasyCESU-Setup-x64-3.1.1.exe` depuis la page des versions.
 2. Fermer Easy CESU si une version est déjà ouverte.
 3. Lancer l'installateur et choisir le dossier, l'icône et les raccourcis.
 4. Au premier démarrage, créer une base ou restaurer une sauvegarde.
@@ -39,12 +39,12 @@ Une désinstallation ordinaire conserve les données personnelles. L'installateu
 
 Deux installateurs sont fournis :
 
-- `EasyCESU-macOS-Apple-Silicon-3.1.0.dmg` pour les Mac M1, M2, M3, M4 et suivants ;
-- `EasyCESU-macOS-Intel-3.1.0.dmg` pour les anciens Mac Intel.
+- `EasyCESU-macOS-Apple-Silicon-3.1.1.dmg` pour les Mac M1, M2, M3, M4 et suivants ;
+- `EasyCESU-macOS-Intel-3.1.1.dmg` pour les anciens Mac Intel.
 
 Ouvrir le fichier DMG puis glisser `Easy CESU` dans `Applications`. La première
 fois, faire un clic droit sur l'application puis choisir `Ouvrir` si macOS
-signale qu'elle provient d'un développeur non identifié. La version 3.1.0 n'est
+signale qu'elle provient d'un développeur non identifié. La version 3.1.1 n'est
 pas notarialisée par Apple.
 
 Les données sont enregistrées dans
@@ -57,7 +57,7 @@ open source.
 
 - [Consulter le code et la documentation](https://github.com/Mamat79/easy-cesu)
 - [Signaler un problème ou proposer une amélioration](https://github.com/Mamat79/easy-cesu/issues/new)
-- [Soutenir volontairement Easy CESU avec PayPal](https://www.paypal.com/qrcodes/p2pqrc/EQYCCDK8XFN5Y)
+- [Soutenir volontairement Easy CESU avec le QR ou PayPal.Me](SUPPORT.md)
 
 Une contribution financière est entièrement facultative. Elle ne débloque
 aucune fonctionnalité, ne crée aucun abonnement et ne donne accès à aucune

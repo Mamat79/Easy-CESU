@@ -60,7 +60,7 @@ else:
 
 STATIC_DIR = APP_DIR / "static"
 APP_NAME = "Easy CESU"
-APP_VERSION = "3.1.0"
+APP_VERSION = "3.1.1"
 V2_SCHEMA_VERSION = 2
 DATABASE_SCHEMA_VERSION = 3
 BROWSER_CLOSE_GRACE_SECONDS = 5.0
@@ -76,7 +76,7 @@ SUPPORT_LINKS = {
     "github_repository": "https://github.com/Mamat79/easy-cesu",
     "github_star": "https://github.com/Mamat79/easy-cesu",
     "github_issues": "https://github.com/Mamat79/easy-cesu/issues/new",
-    "paypal": "https://www.paypal.com/qrcodes/p2pqrc/EQYCCDK8XFN5Y",
+    "paypal_me": "https://www.paypal.com/paypalme/MamatLeroy",
 }
 
 
@@ -1500,7 +1500,7 @@ def community_info(current_date: date | None = None) -> dict:
         "developer_name": "Mamat Leroy",
         "repository_url": SUPPORT_LINKS["github_repository"],
         "issues_url": SUPPORT_LINKS["github_issues"],
-        "support_url": SUPPORT_LINKS["paypal"],
+        "support_url": SUPPORT_LINKS["paypal_me"],
         "support_reminder": support_reminder_status(current_date),
     }
 
@@ -3850,14 +3850,14 @@ class LocalAppServer:
             self.port, self.existing_server = select_server_port(self.preferred_port)
         if self.existing_server:
             self.url = f"http://127.0.0.1:{self.port}"
-            self.browser_url = f"{self.url}/?v=20260726-v310"
+            self.browser_url = f"{self.url}/?v=20260726-v311"
             return self.browser_url
 
         init_db()
         self.server = ThreadingHTTPServer(("127.0.0.1", self.port), AppHandler)
         self.port = int(self.server.server_address[1])
         self.url = f"http://127.0.0.1:{self.port}"
-        self.browser_url = f"{self.url}/?v=20260726-v310"
+        self.browser_url = f"{self.url}/?v=20260726-v311"
         self.server.daemon_threads = True
         self.server.block_on_close = False
         self.monitor_stop = threading.Event()

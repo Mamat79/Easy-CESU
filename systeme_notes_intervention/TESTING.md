@@ -6,7 +6,7 @@ La suite isolée n'utilise jamais la base personnelle installée :
 .\.build_venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-La V3.1.0 comporte 28 tests automatisés couvrant notamment :
+La V3.1.1 comporte les tests automatisés couvrant notamment :
 
 - première installation et profil générique ;
 - création, renommage et séparation des clients ;
@@ -32,7 +32,8 @@ La V3.1.0 comporte 28 tests automatisés couvrant notamment :
 - sélection du moteur natif WebView2 ou Cocoa selon le système ;
 - emplacement des données dans `Application Support` sous macOS ;
 - sélecteurs natifs de dossiers et de fichiers macOS.
-- liste blanche des liens GitHub et PayPal ouverts dans le navigateur système ;
+- liste blanche limitée aux liens GitHub et à la page PayPal.Me validée ;
+- affichage local du QR PayPal sans redirection web trompeuse ;
 - fréquence, report et désactivation du rappel discret de soutien ;
 - contenu limité du fichier GitHub `FUNDING.yml`.
 

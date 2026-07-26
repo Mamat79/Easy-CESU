@@ -94,9 +94,13 @@ import app_server
 
             opened = []
             app_server.webbrowser.open = lambda url, new=0: opened.append((url, new)) or True
-            result = app_server.open_external_link("paypal")
-            assert result == {"opened": True, "link_id": "paypal"}
-            assert opened == [("https://www.paypal.com/qrcodes/p2pqrc/EQYCCDK8XFN5Y", 2)]
+            result = app_server.open_external_link("github_repository")
+            assert result == {"opened": True, "link_id": "github_repository"}
+            assert opened == [("https://github.com/Mamat79/easy-cesu", 2)]
+
+            result = app_server.open_external_link("paypal_me")
+            assert result == {"opened": True, "link_id": "paypal_me"}
+            assert opened[-1] == ("https://www.paypal.com/paypalme/MamatLeroy", 2)
 
             try:
                 app_server.open_external_link("https://example.invalid")
@@ -328,7 +332,7 @@ import app_server
             assert response.status == 200
             info = __import__("json").loads(response.read().decode("utf-8"))
             connection.close()
-            assert info["app_version"] == "3.1.0"
+            assert info["app_version"] == "3.1.1"
             runtime.stop()
             time.sleep(0.2)
             assert app_server.port_is_listening(port) is False

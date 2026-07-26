@@ -16,9 +16,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 class InstallerV3Tests(unittest.TestCase):
     def test_versions_are_synchronized(self) -> None:
         version = (PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip()
-        self.assertEqual(version, "3.1.0")
+        self.assertEqual(version, "3.1.1")
         self.assertEqual(installateur_windows.APP_VERSION, version)
-        self.assertEqual(installateur_windows.shortcut_label(), "Easy CESU V3.1.0")
+        self.assertEqual(installateur_windows.shortcut_label(), "Easy CESU V3.1.1")
 
     def test_every_installer_choice_has_an_icon_and_preview(self) -> None:
         for icon_key in installateur_windows.SHORTCUT_ICON_LABELS:
@@ -188,7 +188,7 @@ class CommunitySupportContractTests(unittest.TestCase):
 
         self.assertEqual(
             funding,
-            'custom:\n  - "https://www.paypal.com/qrcodes/p2pqrc/EQYCCDK8XFN5Y"\n',
+            'custom:\n  - "https://www.paypal.com/paypalme/MamatLeroy"\n',
         )
         self.assertNotIn("sponsors", funding.lower())
         self.assertNotIn("sponsors", readme.lower())
@@ -198,13 +198,20 @@ class CommunitySupportContractTests(unittest.TestCase):
             "githubStarBtn",
             "githubIssueBtn",
             "paypalSupportBtn",
+            "supportDialog",
+            "supportDialogPayPalBtn",
             "supportReminderEnabledInput",
             "supportReminder",
         ):
             self.assertIn(f'id="{element_id}"', html)
         self.assertIn('openExternal("github_repository")', javascript)
         self.assertIn('openExternal("github_issues")', javascript)
-        self.assertIn('openExternal("paypal")', javascript)
+        self.assertIn("showSupportDialog", javascript)
+        self.assertIn('openExternal("paypal_me")', javascript)
+        self.assertNotIn("paypal.com/qrcodes", javascript)
+        self.assertIn("/assets/paypal-support-qr.png", html)
+        qr_asset = PROJECT_ROOT / "application" / "static" / "assets" / "paypal-support-qr.png"
+        self.assertTrue(qr_asset.is_file())
 
 
 if __name__ == "__main__":

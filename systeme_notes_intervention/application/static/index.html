@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Easy CESU</title>
-    <link id="faviconLink" rel="icon" href="/icons/generique.png?v=20260726-v310" type="image/png" />
-    <link rel="stylesheet" href="/styles.css?v=20260726-v310" />
+    <link id="faviconLink" rel="icon" href="/icons/generique.png?v=20260726-v311" type="image/png" />
+    <link rel="stylesheet" href="/styles.css?v=20260726-v311" />
   </head>
   <body>
     <div class="app-shell">
@@ -426,7 +426,7 @@
             <div>
               <h2>Réglages</h2>
               <p class="section-note">Paramètres utilisés pour les nouvelles interventions et les générations.</p>
-              <p class="section-note">Easy CESU - Version <strong id="appVersion">3.1.0</strong></p>
+              <p class="section-note">Easy CESU - Version <strong id="appVersion">3.1.1</strong></p>
             </div>
           </div>
 
@@ -822,10 +822,32 @@
         </div>
       </section>
       <footer class="app-disclaimer">
-        <span>Easy CESU V<span id="footerVersion">3.1.0</span> est un outil indépendant de suivi d'activité. Il n'est ni affilié ni connecté automatiquement au service officiel CESU.</span>
+        <span>Easy CESU V<span id="footerVersion">3.1.1</span> est un outil indépendant de suivi d'activité. Il n'est ni affilié ni connecté automatiquement au service officiel CESU.</span>
         <button id="footerGithubBtn" class="footer-link" type="button">Projet GitHub</button>
       </footer>
     </div>
+
+    <dialog id="supportDialog" class="support-dialog" aria-labelledby="supportDialogTitle">
+      <div class="support-dialog-heading">
+        <div>
+          <h2 id="supportDialogTitle">Soutenir Easy CESU</h2>
+          <p>Un geste entièrement facultatif pour accompagner ce projet gratuit.</p>
+        </div>
+        <button id="supportDialogCloseIconBtn" class="icon-btn support-dialog-close" type="button" aria-label="Fermer">×</button>
+      </div>
+      <div class="support-dialog-content">
+        <img src="/assets/paypal-support-qr.png" alt="QR code PayPal de Mamat Leroy" width="500" height="500" />
+        <div class="support-dialog-copy">
+          <strong>Scanner avec l'application PayPal</strong>
+          <p>Ouvre PayPal sur ton téléphone, choisis l'option pour scanner un QR code, puis vise cette image.</p>
+          <p class="section-note">Easy CESU ne traite aucun paiement et ne reçoit aucune information financière.</p>
+        </div>
+      </div>
+      <div class="support-dialog-actions">
+        <button id="supportDialogPayPalBtn" class="primary" type="button">Ouvrir PayPal sur cet ordinateur</button>
+        <button id="supportDialogCloseBtn" class="secondary" type="button">Fermer</button>
+      </div>
+    </dialog>
 
     <dialog id="setupAssistantDialog" class="setup-assistant" aria-labelledby="setupAssistantTitle">
       <div class="setup-assistant-heading">
@@ -870,6 +892,6 @@
     </dialog>
 
     <div id="toast" class="toast" aria-live="polite"></div>
-    <script src="/app.js?v=20260726-v310"></script>
+    <script src="/app.js?v=20260726-v311"></script>
   </body>
 </html>

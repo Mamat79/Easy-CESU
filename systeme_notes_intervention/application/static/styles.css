@@ -1401,6 +1401,74 @@ button:disabled {
   justify-content: flex-end;
 }
 
+.support-dialog {
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 24px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--ink);
+  box-shadow: 0 24px 64px rgba(16, 32, 35, 0.32);
+}
+
+.support-dialog::backdrop {
+  background: rgba(16, 32, 35, 0.58);
+}
+
+.support-dialog-heading {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.support-dialog-heading h2,
+.support-dialog-heading p,
+.support-dialog-copy p {
+  margin: 0;
+}
+
+.support-dialog-heading p {
+  margin-top: 5px;
+  color: var(--muted);
+}
+
+.support-dialog-close {
+  flex: 0 0 auto;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.support-dialog-content {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) minmax(220px, 1fr);
+  gap: 24px;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.support-dialog-content img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border: 1px solid var(--line);
+}
+
+.support-dialog-copy {
+  display: grid;
+  gap: 12px;
+  line-height: 1.5;
+}
+
+.support-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
 .section-note {
   margin-top: 4px;
   color: var(--muted);
@@ -1871,6 +1939,25 @@ tbody tr:nth-child(even) {
 
   .client-form-actions {
     justify-content: stretch;
+  }
+}
+
+@media (max-width: 640px) {
+  .support-dialog {
+    padding: 18px;
+  }
+
+  .support-dialog-content {
+    grid-template-columns: 1fr;
+  }
+
+  .support-dialog-content img {
+    width: min(300px, 100%);
+    justify-self: center;
+  }
+
+  .support-dialog-actions button {
+    width: 100%;
   }
 }
 

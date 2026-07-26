@@ -38,7 +38,7 @@ def section(number: str, title: str, lines: list[str], styles: dict[str, Paragra
                 ("LEFTPADDING", (0, 0), (-1, -1), 0),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 0),
                 ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 1.5 * mm),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 1.1 * mm),
             ]
         )
     )
@@ -65,7 +65,7 @@ def section(number: str, title: str, lines: list[str], styles: dict[str, Paragra
             ]
         )
     )
-    return KeepTogether([table, Spacer(1, 1.5 * mm)])
+    return KeepTogether([table, Spacer(1, 1.2 * mm)])
 
 
 def footer(canvas, document) -> None:
@@ -304,7 +304,7 @@ def build_notice(output: Path) -> None:
                 "Aide et communauté",
                 [
                     "Ouvrir <b>Réglages &gt; Aide et communauté</b> pour consulter le code, la documentation ou signaler un problème sur le dépôt public Easy CESU.",
-                    "Le soutien PayPal est entièrement facultatif. Il ne débloque aucune fonction, ne crée aucun abonnement et peut être ignoré sans limiter l'application.",
+                    "Le soutien PayPal est entièrement facultatif. La fenêtre affiche un QR code à scanner avec l'application PayPal du téléphone et un bouton PayPal.Me utilisable sur ordinateur. Il ne débloque aucune fonction, ne crée aucun abonnement et peut être ignoré sans limiter l'application.",
                     "Le rappel de soutien apparaît au maximum une fois par trimestre et peut être désactivé définitivement dans les réglages.",
                 ],
                 styles,

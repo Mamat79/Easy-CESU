@@ -203,6 +203,10 @@ const els = {
   githubStarBtn: document.querySelector("#githubStarBtn"),
   githubIssueBtn: document.querySelector("#githubIssueBtn"),
   paypalSupportBtn: document.querySelector("#paypalSupportBtn"),
+  supportDialog: document.querySelector("#supportDialog"),
+  supportDialogPayPalBtn: document.querySelector("#supportDialogPayPalBtn"),
+  supportDialogCloseBtn: document.querySelector("#supportDialogCloseBtn"),
+  supportDialogCloseIconBtn: document.querySelector("#supportDialogCloseIconBtn"),
   supportReminderEnabledInput: document.querySelector("#supportReminderEnabledInput"),
   supportReminder: document.querySelector("#supportReminder"),
   supportReminderOpenBtn: document.querySelector("#supportReminderOpenBtn"),
@@ -619,7 +623,23 @@ async function updateSupportReminder(action) {
 
 async function openSupportFromReminder() {
   await updateSupportReminder("dismiss");
-  await openExternal("paypal");
+  showSupportDialog();
+}
+
+function showSupportDialog() {
+  if (typeof els.supportDialog.showModal === "function") {
+    els.supportDialog.showModal();
+  } else {
+    els.supportDialog.setAttribute("open", "");
+  }
+}
+
+function closeSupportDialog() {
+  if (typeof els.supportDialog.close === "function") {
+    els.supportDialog.close();
+  } else {
+    els.supportDialog.removeAttribute("open");
+  }
 }
 
 function selectedYear() {
@@ -2010,7 +2030,13 @@ function bindEvents() {
   els.githubSourceBtn.addEventListener("click", () => openExternal("github_repository").catch((error) => showToast(error.message)));
   els.githubStarBtn.addEventListener("click", () => openExternal("github_star").catch((error) => showToast(error.message)));
   els.githubIssueBtn.addEventListener("click", () => openExternal("github_issues").catch((error) => showToast(error.message)));
-  els.paypalSupportBtn.addEventListener("click", () => openExternal("paypal").catch((error) => showToast(error.message)));
+  els.paypalSupportBtn.addEventListener("click", showSupportDialog);
+  els.supportDialogPayPalBtn.addEventListener("click", () => openExternal("paypal_me").catch((error) => showToast(error.message)));
+  els.supportDialogCloseBtn.addEventListener("click", closeSupportDialog);
+  els.supportDialogCloseIconBtn.addEventListener("click", closeSupportDialog);
+  els.supportDialog.addEventListener("click", (event) => {
+    if (event.target === els.supportDialog) closeSupportDialog();
+  });
   els.footerGithubBtn.addEventListener("click", () => openExternal("github_repository").catch((error) => showToast(error.message)));
   els.supportReminderOpenBtn.addEventListener("click", () => openSupportFromReminder().catch((error) => showToast(error.message)));
   els.supportReminderDismissBtn.addEventListener("click", () => updateSupportReminder("dismiss").catch((error) => showToast(error.message)));

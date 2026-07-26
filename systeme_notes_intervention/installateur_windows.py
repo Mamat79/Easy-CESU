@@ -18,7 +18,7 @@ from tkinter import filedialog, messagebox, ttk
 
 APP_NAME = "Easy CESU"
 EXE_NAME = "Easy CESU.exe"
-APP_VERSION = "3.1.0"
+APP_VERSION = "3.1.1"
 APP_ID = "EasyCESU.Windows.x64"
 NOTICE_NAME = "Easy_CESU_V3_Notice_Installation_et_Utilisation.pdf"
 WEBVIEW2_BOOTSTRAPPER_NAME = "MicrosoftEdgeWebview2Setup.exe"

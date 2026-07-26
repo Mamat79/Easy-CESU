@@ -1,5 +1,15 @@
 # Journal des changements
 
+## 3.1.1 - 2026-07-26
+
+- Le bouton `Soutenir Easy CESU` affiche désormais le QR PayPal directement
+  dans l'application au lieu d'ouvrir une page web inadaptée sur ordinateur.
+- Un bouton ouvre aussi la page PayPal.Me `MamatLeroy` sur ordinateur.
+- Le rappel de soutien ouvre la même fenêtre intégrée.
+- Le lien GitHub Funding mène à une page d'aide contenant le QR et des
+  explications claires.
+- Aucun paiement ni aucune donnée financière ne transitent par Easy CESU.
+
 ## 3.1.0 - 2026-07-26
 
 - Ajout d'une section `Aide et communauté` dans les réglages.
