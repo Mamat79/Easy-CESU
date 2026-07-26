@@ -30,21 +30,23 @@ class FakeRuntime:
 
 class NativeWindowTests(unittest.TestCase):
     def test_server_stop_remains_bounded_when_shutdown_blocks(self) -> None:
-        release_shutdown = threading.Event()
+        socket_closed = threading.Event()
 
         class BlockingServer:
-            def shutdown(self) -> None:
-                release_shutdown.wait(10)
+            server_address = ("127.0.0.1", 1)
 
-            def server_close(self) -> None:
-                release_shutdown.set()
+            class Socket:
+                def close(self) -> None:
+                    socket_closed.set()
+
+            socket = Socket()
 
         runtime = desktop_app.LocalAppServer(preferred_port=0)
         runtime.server = BlockingServer()
         runtime.shutdown_timeout_seconds = 0.05
         runtime.stop()
 
-        self.assertTrue(release_shutdown.is_set())
+        self.assertTrue(socket_closed.is_set())
         self.assertIsNone(runtime.server)
 
     def test_native_engine_matches_the_operating_system(self) -> None:

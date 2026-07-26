@@ -3723,6 +3723,21 @@ def select_server_port(preferred_port: int, attempts: int = 50) -> tuple[int, bo
     raise RuntimeError("Aucun port local disponible pour Easy CESU.")
 
 
+def request_server_stop(server: ThreadingHTTPServer) -> None:
+    """Réveille et arrête la boucle HTTP sans dépendre d'un shutdown bloquant."""
+
+    setattr(server, "_BaseServer__shutdown_request", True)
+    try:
+        with socket.create_connection(server.server_address, timeout=0.2):
+            pass
+    except OSError:
+        pass
+    try:
+        server.socket.close()
+    except OSError:
+        pass
+
+
 class LocalAppServer:
     """Pilote le serveur HTTP local indépendamment de la fenêtre d'affichage."""
 
@@ -3792,24 +3807,7 @@ class LocalAppServer:
         if self.monitor_stop is not None:
             self.monitor_stop.set()
         server = self.server
-
-        # Sur macOS, shutdown() peut exceptionnellement rester bloqué lorsqu'un
-        # gestionnaire HTTP termine au même moment. L'appel borné garantit que
-        # la fermeture de la fenêtre rend toujours la main à l'application.
-        shutdown_thread = threading.Thread(
-            target=server.shutdown,
-            name="easy-cesu-server-shutdown",
-            daemon=True,
-        )
-        shutdown_thread.start()
-        shutdown_thread.join(timeout=self.shutdown_timeout_seconds)
-        close_thread = threading.Thread(
-            target=server.server_close,
-            name="easy-cesu-server-close",
-            daemon=True,
-        )
-        close_thread.start()
-        close_thread.join(timeout=self.shutdown_timeout_seconds)
+        request_server_stop(server)
         if self.server_thread is not None and self.server_thread.is_alive():
             self.server_thread.join(timeout=self.shutdown_timeout_seconds)
         self.server = None
@@ -3902,7 +3900,7 @@ def monitor_browser_sessions(server: ThreadingHTTPServer, stop_event: threading.
                 elif now - BROWSER_EMPTY_SINCE >= BROWSER_CLOSE_GRACE_SECONDS:
                     should_stop = True
         if should_stop:
-            server.shutdown()
+            request_server_stop(server)
             return
 
 
@@ -4044,7 +4042,7 @@ class AppHandler(SimpleHTTPRequestHandler):
             if parsed.path == "/api/shutdown":
                 json_response(self, {"ok": True, "message": "Arrêt de Easy CESU."})
                 self.wfile.flush()
-                threading.Thread(target=self.server.shutdown, daemon=True).start()
+                threading.Thread(target=request_server_stop, args=(self.server,), daemon=True).start()
                 return
             if parsed.path == "/api/clients":
                 json_response(self, {"client": create_client(body)}, HTTPStatus.CREATED)
