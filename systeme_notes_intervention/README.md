@@ -1,6 +1,9 @@
 # Easy CESU
 
-Easy CESU est une application Windows locale de suivi d'activité pour les prestations à domicile. Elle permet de gérer les clients, saisir des interventions, produire des notes d'intervention PDF, exporter un bilan Excel, planifier des rappels et transférer un compte par sauvegarde ZIP vérifiée.
+Easy CESU est une application locale Windows et macOS de suivi d'activité pour
+les prestations à domicile. Elle permet de gérer les clients, saisir des
+interventions, produire des notes d'intervention PDF, exporter un bilan Excel,
+planifier des rappels et transférer un compte par sauvegarde ZIP vérifiée.
 
 La V3 s'ouvre dans sa propre fenêtre, sans onglet Chrome. Elle reste utilisable pour tous les métiers CESU : l'activité et l'icône des raccourcis sont configurables. Les durées se règlent par pas de 30 minutes et les tarifs ou montants par pas de 0,50 euro grâce à de grands boutons moins et plus.
 
@@ -21,9 +24,17 @@ Easy CESU est un outil indépendant de suivi d'activité. Il n'est ni affilié n
 
 Au premier lancement, l'assistant propose de commencer avec une base vide ou de restaurer une sauvegarde. Il demande ensuite un dossier principal et y crée des sous-dossiers séparés pour la base, les notes et les exports.
 
-Les données permanentes de la version installée sont séparées du programme dans `%LOCALAPPDATA%\EasyCESU` : `data`, `attachments`, `backups`, `config`, `logs`, `temp` et les données techniques de la fenêtre. Une mise à jour ne les supprime pas.
+Les données permanentes sont séparées du programme :
 
-L'installateur contient Python, les bibliothèques de l'application et le programme officiel Microsoft qui installe WebView2 seulement s'il manque.
+- Windows : `%LOCALAPPDATA%\EasyCESU` ;
+- macOS : `~/Library/Application Support/EasyCESU`.
+
+Les sous-dossiers `data`, `attachments`, `backups`, `config`, `logs`, `temp`
+et les données techniques de la fenêtre restent conservés lors d'une mise à
+jour.
+
+L'installateur contient Python et les bibliothèques de l'application. Windows
+utilise Microsoft WebView2 et macOS utilise le moteur Cocoa/WebKit du système.
 
 ## Développement
 
@@ -38,5 +49,9 @@ Le contrôle visuel V3 s'exécute avec :
 ```powershell
 .\.build_venv\Scripts\python.exe tests\v3_ui_smoke.py
 ```
+
+Sur macOS, `bash Construire_macOS.sh` construit l'application `.app`, vérifie
+son lancement et produit le fichier `.dmg`. GitHub Actions exécute ce processus
+séparément pour les Mac Apple Silicon et Intel.
 
 Les documents de référence sont dans `ARCHITECTURE.md`, `DATA_MODEL.md`, `ROADMAP.md`, `TESTING.md` et `KNOWN_LIMITATIONS.md`.

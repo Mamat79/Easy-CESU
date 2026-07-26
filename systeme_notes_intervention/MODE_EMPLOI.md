@@ -6,11 +6,13 @@ Easy CESU est un outil indépendant de suivi d'activité. Il n'est ni affilié n
 
 ## Utiliser l'application
 
-Depuis le Bureau ou le menu Démarrer, ouvre :
+Sous Windows, depuis le Bureau ou le menu Démarrer, ouvre :
 
 ```text
 Easy CESU V3
 ```
+
+Sous macOS, ouvre `Easy CESU` depuis le dossier `Applications`.
 
 Easy CESU s'ouvre dans sa propre fenêtre. Il n'est plus nécessaire d'ouvrir Chrome ni de conserver une fenêtre de commande.
 
@@ -70,6 +72,22 @@ systeme_notes_intervention\sorties\EasyCESU-Setup-x64-3.0.0.exe
 Cet installateur contient Easy CESU, Python, ses bibliothèques et le programme officiel Microsoft WebView2 utilisé seulement si ce composant manque. Il installe par défaut dans `C:\Program Files\Easy CESU`, permet de choisir un autre dossier, propose une icône selon le métier, crée les raccourcis Bureau/Menu Démarrer au choix et peut ouvrir la notice à la fin. Si tu gardes `Program Files`, Windows demandera une autorisation.
 Si une version est deja installee, l'installateur le signale et propose soit de la remplacer, soit d'installer une copie en plus. Pour une mise a jour, il ferme automatiquement Easy CESU avant de remplacer les fichiers puis relance la nouvelle version si l'option est cochee.
 La configuration et la base sont conservées dans `%LOCALAPPDATA%\EasyCESU` et ne sont pas remplacées lors d'une mise à jour.
+
+## Installation macOS
+
+Télécharge le DMG adapté au Mac :
+
+- `EasyCESU-macOS-Apple-Silicon-3.0.0.dmg` pour les Mac M1 et suivants ;
+- `EasyCESU-macOS-Intel-3.0.0.dmg` pour les Mac Intel.
+
+Ouvre le DMG, puis glisse `Easy CESU` dans le dossier `Applications`. Au
+premier lancement, si macOS bloque l'ouverture, fais un clic droit sur
+`Easy CESU`, choisis `Ouvrir`, puis confirme.
+
+Les données macOS sont conservées dans
+`~/Library/Application Support/EasyCESU`. Une sauvegarde ZIP créée sous
+Windows peut être restaurée sur Mac ; l'assistant demande ensuite les nouveaux
+dossiers à utiliser sur cet ordinateur.
 
 L'installateur n'embarque pas ta base de donnees. Pour transmettre l'etat actuel a quelqu'un :
 

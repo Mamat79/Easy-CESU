@@ -9,6 +9,7 @@ RACINE = Path(__file__).resolve().parent
 SOURCE = RACINE / "application" / "assets" / "easy-cesu-icon-transparent.png"
 ICONE_PNG = RACINE / "application" / "assets" / "easy-cesu-icon.png"
 ICONE_ICO = RACINE / "application" / "assets" / "easy-cesu.ico"
+ICONE_ICNS = RACINE / "application" / "assets" / "easy-cesu.icns"
 FAVICON_ICO = RACINE / "application" / "static" / "favicon.ico"
 ICONES_METIER = RACINE / "application" / "assets" / "shortcut-icons"
 ICONES_INTERFACE = RACINE / "application" / "static" / "icons"
@@ -187,11 +188,13 @@ def main() -> None:
 
     icone.save(ICONE_PNG, format="PNG", optimize=True)
     icone.save(ICONE_ICO, format="ICO", sizes=[(taille, taille) for taille in TAILLES_WINDOWS])
+    icone.save(ICONE_ICNS, format="ICNS")
     FAVICON_ICO.write_bytes(ICONE_ICO.read_bytes())
     generer_icones_metier(icone)
 
     print(f"Icone PNG : {ICONE_PNG}")
     print(f"Icone Windows : {ICONE_ICO}")
+    print(f"Icone macOS : {ICONE_ICNS}")
     print(f"Favicon : {FAVICON_ICO}")
     print(f"Icones metier : {ICONES_METIER}")
 

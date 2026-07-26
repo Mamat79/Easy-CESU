@@ -10,7 +10,10 @@ def configure_preview_runtime() -> None:
 
     executable_name = Path(sys.executable).stem.casefold()
     if getattr(sys, "frozen", False) and "v3 preview" in executable_name:
-        base = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+        if sys.platform == "darwin":
+            base = Path.home() / "Library" / "Application Support"
+        else:
+            base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
         os.environ.setdefault("EASY_CESU_DATA_ROOT", str(Path(base) / "EasyCESU-V3-Preview"))
         os.environ.setdefault("EASY_CESU_DISABLE_LEGACY_IMPORT", "1")
 
@@ -20,14 +23,20 @@ configure_preview_runtime()
 from app_server import APP_NAME, APP_VERSION, LocalAppServer, user_data_root  # noqa: E402
 
 
+def native_webview_gui() -> str:
+    if sys.platform == "darwin":
+        return "cocoa"
+    return "edgechromium"
+
+
 def main() -> int:
     try:
         import webview
     except ImportError as exc:
         raise RuntimeError("Le composant de fenêtre native pywebview est absent.") from exc
 
-    # La fenêtre native ne publie pas un port fixe : Windows lui attribue un
-    # port local libre, sans risque de conflit avec PATATE ou un autre projet.
+    # La fenêtre native ne publie pas un port fixe : le système lui attribue un
+    # port local libre, sans risque de conflit avec une autre application.
     runtime = LocalAppServer(preferred_port=0)
     url = runtime.start(background=True)
     storage_dir = user_data_root() / "webview"
@@ -45,7 +54,7 @@ def main() -> int:
             confirm_close=False,
         )
         webview.start(
-            gui="edgechromium",
+            gui=native_webview_gui(),
             debug=debug,
             private_mode=False,
             storage_path=str(storage_dir),

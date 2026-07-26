@@ -1,0 +1,51 @@
+name: Construire les installateurs macOS
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: macOS ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            label: Apple-Silicon
+          - runner: macos-15-intel
+            label: Intel
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        working-directory: systeme_notes_intervention
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            systeme_notes_intervention/requirements.txt
+            systeme_notes_intervention/requirements-build.txt
+            systeme_notes_intervention/requirements-macos.txt
+
+      - name: Construire et vérifier le DMG
+        env:
+          EASY_CESU_MAC_ARCH_LABEL: ${{ matrix.label }}
+        run: bash Construire_macOS.sh
+
+      - name: Publier l'artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EasyCESU-macOS-${{ matrix.label }}-3.0.0
+          path: |
+            systeme_notes_intervention/sorties/EasyCESU-macOS-${{ matrix.label }}-3.0.0.dmg
+            systeme_notes_intervention/sorties/EasyCESU-macOS-${{ matrix.label }}-3.0.0.dmg.sha256
+          if-no-files-found: error

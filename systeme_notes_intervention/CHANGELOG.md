@@ -6,6 +6,12 @@
 - Fermer la fenêtre arrête automatiquement le serveur local et libère son port.
 - La fenêtre native utilise un port libre attribué par Windows afin de ne pas
   entrer en conflit avec PATATE ou un autre serveur local.
+- Ajout d'une application macOS native basée sur Cocoa/WebKit.
+- Ajout de deux installateurs DMG, pour Mac Apple Silicon et Mac Intel.
+- Les données macOS sont conservées dans
+  `~/Library/Application Support/EasyCESU`.
+- Les sélecteurs de dossiers et de fichiers utilisent les fenêtres natives de
+  macOS.
 - Nouvel onglet `Modèles` avec aperçu A4 en direct.
 - Création, duplication, import, export, sélection et suppression contrôlée des modèles de notes.
 - Personnalisation des textes, couleurs, tailles, marges, espacements et ordre des blocs.

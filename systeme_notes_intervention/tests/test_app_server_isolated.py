@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-PYTHON = PROJECT_ROOT / ".build_venv" / "Scripts" / "python.exe"
+PYTHON = Path(sys.executable)
 
 
 class AppServerIsolatedTests(unittest.TestCase):
@@ -287,6 +287,36 @@ import app_server
             runtime.stop()
             time.sleep(0.2)
             assert app_server.port_is_listening(port) is False
+            """
+        )
+
+    def test_macos_uses_application_support_and_native_dialogs(self) -> None:
+        self.run_scenario(
+            """
+            import subprocess
+            from pathlib import Path
+            from unittest.mock import patch
+
+            fake_home = Path(os.environ["EASY_CESU_TEST_WORKSPACE"]) / "mac-home"
+            fake_home.mkdir(parents=True, exist_ok=True)
+            with (
+                patch.object(app_server.sys, "platform", "darwin"),
+                patch.object(app_server.Path, "home", return_value=fake_home),
+                patch.dict(os.environ, {"EASY_CESU_DATA_ROOT": ""}, clear=False),
+            ):
+                assert app_server.user_data_root() == fake_home / "Library" / "Application Support" / "EasyCESU"
+                selected = subprocess.CompletedProcess([], 0, "/Users/test/Documents\\n", "")
+                with patch.object(app_server.subprocess, "run", return_value=selected) as runner:
+                    folder, cancelled = app_server.choose_folder("Choisir", fake_home)
+                assert folder == Path("/Users/test/Documents")
+                assert cancelled is False
+                assert runner.call_args.args[0][0] == "/usr/bin/osascript"
+
+                cancelled_result = subprocess.CompletedProcess([], 0, "__EASY_CESU_CANCELLED__\\n", "")
+                with patch.object(app_server.subprocess, "run", return_value=cancelled_result):
+                    file_path, cancelled = app_server.choose_file("Choisir", fake_home, "")
+                assert file_path is None
+                assert cancelled is True
             """
         )
 

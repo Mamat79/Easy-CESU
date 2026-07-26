@@ -28,6 +28,12 @@ class FakeRuntime:
 
 
 class NativeWindowTests(unittest.TestCase):
+    def test_native_engine_matches_the_operating_system(self) -> None:
+        with patch.object(desktop_app.sys, "platform", "darwin"):
+            self.assertEqual(desktop_app.native_webview_gui(), "cocoa")
+        with patch.object(desktop_app.sys, "platform", "win32"):
+            self.assertEqual(desktop_app.native_webview_gui(), "edgechromium")
+
     def test_preview_named_executable_uses_an_isolated_data_root(self) -> None:
         with tempfile.TemporaryDirectory(prefix="easy-cesu-preview-root-") as temporary:
             with (
@@ -42,6 +48,24 @@ class NativeWindowTests(unittest.TestCase):
                     Path(temporary) / "EasyCESU-V3-Preview",
                 )
                 self.assertEqual(desktop_app.os.environ["EASY_CESU_DISABLE_LEGACY_IMPORT"], "1")
+                desktop_app.os.environ.pop("EASY_CESU_DATA_ROOT", None)
+                desktop_app.os.environ.pop("EASY_CESU_DISABLE_LEGACY_IMPORT", None)
+
+    def test_macos_preview_uses_application_support(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="easy-cesu-preview-macos-") as temporary:
+            with (
+                patch.object(desktop_app.sys, "frozen", True, create=True),
+                patch.object(desktop_app.sys, "platform", "darwin"),
+                patch.object(desktop_app.sys, "executable", "/Applications/Easy CESU V3 Preview.app"),
+                patch.object(desktop_app.Path, "home", return_value=Path(temporary)),
+            ):
+                desktop_app.os.environ.pop("EASY_CESU_DATA_ROOT", None)
+                desktop_app.os.environ.pop("EASY_CESU_DISABLE_LEGACY_IMPORT", None)
+                desktop_app.configure_preview_runtime()
+                self.assertEqual(
+                    Path(desktop_app.os.environ["EASY_CESU_DATA_ROOT"]),
+                    Path(temporary) / "Library" / "Application Support" / "EasyCESU-V3-Preview",
+                )
                 desktop_app.os.environ.pop("EASY_CESU_DATA_ROOT", None)
                 desktop_app.os.environ.pop("EASY_CESU_DISABLE_LEGACY_IMPORT", None)
 

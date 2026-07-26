@@ -169,10 +169,12 @@ def build_notice(output: Path) -> None:
 
     files_box = Table(
         [
-            [Paragraph("Les deux fichiers à conserver", styles["box_title"])],
+            [Paragraph("Les fichiers à conserver", styles["box_title"])],
             [
                 Paragraph(
-                    f"<b>EasyCESU-Setup-x64-{APP_VERSION}.exe</b> pour installer l'application<br/>"
+                    f"<b>EasyCESU-Setup-x64-{APP_VERSION}.exe</b> pour Windows<br/>"
+                    f"<b>EasyCESU-macOS-Apple-Silicon-{APP_VERSION}.dmg</b> pour les Mac M1 et suivants<br/>"
+                    f"<b>EasyCESU-macOS-Intel-{APP_VERSION}.dmg</b> pour les Mac Intel<br/>"
                     "<b>EasyCESU-....zip</b> pour récupérer un compte, les clients, les tarifs, les interventions, les rappels et les notes",
                     styles["box"],
                 )
@@ -200,8 +202,9 @@ def build_notice(output: Path) -> None:
                 "1",
                 "Installer Easy CESU",
                 [
-                    f"Double-cliquer sur <b>EasyCESU-Setup-x64-{APP_VERSION}.exe</b>.",
-                    "Choisir le dossier d'installation, l'icône correspondant au métier, puis les raccourcis Bureau et menu Démarrer.",
+                    f"Sous Windows, double-cliquer sur <b>EasyCESU-Setup-x64-{APP_VERSION}.exe</b>, puis choisir le dossier, l'icône et les raccourcis.",
+                    "Sous macOS, ouvrir le DMG correspondant au processeur du Mac puis glisser Easy CESU dans Applications.",
+                    "Au premier lancement sur Mac, faire un clic droit sur Easy CESU puis choisir Ouvrir si macOS signale un développeur non identifié.",
                     "Lors d'une mise à jour, choisir <b>Oui</b> pour remplacer la version existante : l'installateur ferme l'ancienne version automatiquement.",
                     "Easy CESU s'ouvre ensuite dans sa propre fenêtre. Aucun onglet Chrome n'est nécessaire.",
                 ],
@@ -271,7 +274,7 @@ def build_notice(output: Path) -> None:
                 [
                     "Fermer Easy CESU, puis lancer le nouvel installateur.",
                     "Quand une version existante est détectée, choisir <b>Oui : remplacer / mettre à jour</b> et conserver le dossier proposé.",
-                    "Le programme est remplacé, mais la configuration et la base restent dans le dossier de données Windows de l'utilisateur.",
+                    "Le programme est remplacé, mais la configuration et la base restent dans le dossier de données de l'utilisateur.",
                     "Aucune restauration n'est nécessaire pour une simple mise à jour.",
                 ],
                 styles,
@@ -280,7 +283,7 @@ def build_notice(output: Path) -> None:
                 "8",
                 "Choisir l'icône selon le métier",
                 [
-                    "Dans l'installateur, choisir l'icône souhaitée avant de créer les raccourcis.",
+                    "Sous Windows, choisir l'icône souhaitée dans l'installateur avant de créer les raccourcis.",
                     "L'icône Jardinage d'origine reste disponible, ainsi que les icônes ménage, bricolage, aide à domicile, garde d'enfants, soutien scolaire, accompagnement, administratif, informatique et générique.",
                     "Le choix peut aussi être mémorisé dans <b>Réglages &gt; Icône des raccourcis</b> pour la prochaine mise à jour.",
                 ],

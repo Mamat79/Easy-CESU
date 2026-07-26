@@ -6,7 +6,7 @@ La suite isolée n'utilise jamais la base personnelle installée :
 .\.build_venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-La V3.0.0 comporte 20 tests automatisés couvrant notamment :
+La V3.0.0 comporte 25 tests automatisés couvrant notamment :
 
 - première installation et profil générique ;
 - création, renommage et séparation des clients ;
@@ -29,6 +29,9 @@ La V3.0.0 comporte 20 tests automatisés couvrant notamment :
   avec les autres applications ;
 - isolation complète de la préversion par rapport aux données installées ;
 - détection et installation conditionnelle du runtime Microsoft WebView2.
+- sélection du moteur natif WebView2 ou Cocoa selon le système ;
+- emplacement des données dans `Application Support` sous macOS ;
+- sélecteurs natifs de dossiers et de fichiers macOS.
 
 Contrôles complémentaires réalisés pour chaque livraison :
 
@@ -41,3 +44,8 @@ Contrôles complémentaires réalisés pour chaque livraison :
 - installation réelle par-dessus la version précédente uniquement après validation du candidat ;
 - comparaison de la configuration et de la base avant/après ;
 - contrôle visuel et textuel de la notice PDF.
+
+Le workflow GitHub Actions `Construire les installateurs macOS` exécute les
+tests portables sur deux machines macOS natives, construit les applications
+Apple Silicon et Intel, vérifie le bundle, lance réellement l'exécutable et
+contrôle son API locale avant de produire chaque DMG.

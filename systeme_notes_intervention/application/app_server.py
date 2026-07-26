@@ -76,12 +76,22 @@ def user_data_root() -> Path:
     override = str(os.environ.get("EASY_CESU_DATA_ROOT") or "").strip()
     if override:
         return Path(override).expanduser()
-    base = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+    if sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    elif os.name == "nt":
+        base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
+    else:
+        base = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share")
     return Path(base) / "EasyCESU"
 
 
 def legacy_user_data_root() -> Path:
-    base = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+    if sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    elif os.name == "nt":
+        base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
+    else:
+        base = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share")
     return Path(base) / APP_NAME
 
 
@@ -1767,7 +1777,87 @@ def powershell_executable() -> str:
     return str(candidate) if candidate.exists() else "powershell.exe"
 
 
+def run_macos_dialog(script: str, *arguments: str) -> tuple[Path | None, bool]:
+    """Exécute un sélecteur Cocoa via AppleScript et distingue l'annulation."""
+
+    try:
+        completed = subprocess.run(
+            ["/usr/bin/osascript", "-e", script, *arguments],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=300,
+            check=False,
+        )
+    except FileNotFoundError as exc:
+        raise ValueError("Le sélecteur de fichiers macOS est introuvable.") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise ValueError("Le choix de fichier a pris trop de temps.") from exc
+    selected = completed.stdout.strip().splitlines()[-1] if completed.stdout.strip() else ""
+    if selected == "__EASY_CESU_CANCELLED__":
+        return None, True
+    if completed.returncode != 0:
+        message = completed.stderr.strip() or "Impossible d'ouvrir le sélecteur macOS."
+        raise ValueError(message)
+    if not selected:
+        return None, True
+    return Path(selected), False
+
+
+def choose_folder_macos(description: str, current_dir: Path) -> tuple[Path | None, bool]:
+    script = """
+on run argv
+    set dialogPrompt to item 1 of argv
+    set initialPath to item 2 of argv
+    try
+        if initialPath is not "" then
+            set selectedFolder to choose folder with prompt dialogPrompt default location POSIX file initialPath
+        else
+            set selectedFolder to choose folder with prompt dialogPrompt
+        end if
+        return POSIX path of selectedFolder
+    on error number -128
+        return "__EASY_CESU_CANCELLED__"
+    end try
+end run
+"""
+    initial = current_dir if current_dir.exists() else Path.home()
+    return run_macos_dialog(script, description, str(initial))
+
+
+def choose_file_macos(description: str, current_file: Path) -> tuple[Path | None, bool]:
+    script = """
+on run argv
+    set dialogPrompt to item 1 of argv
+    set initialPath to item 2 of argv
+    try
+        if initialPath is not "" then
+            set selectedFile to choose file with prompt dialogPrompt default location POSIX file initialPath
+        else
+            set selectedFile to choose file with prompt dialogPrompt
+        end if
+        return POSIX path of selectedFile
+    on error number -128
+        return "__EASY_CESU_CANCELLED__"
+    end try
+end run
+"""
+    if current_file.is_file():
+        initial = current_file.parent
+    elif current_file.is_dir():
+        initial = current_file
+    else:
+        initial = Path.home()
+    return run_macos_dialog(script, description, str(initial))
+
+
 def choose_folder(description: str, current_dir: Path) -> tuple[Path | None, bool]:
+    if sys.platform == "darwin":
+        return choose_folder_macos(description, current_dir)
+    if os.name != "nt":
+        raise ValueError("Le choix de dossier natif n'est pas disponible sur ce système.")
     script = r"""
 Add-Type -AssemblyName System.Windows.Forms
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -1824,6 +1914,10 @@ exit 2
 
 
 def choose_file(description: str, current_file: Path, file_filter: str) -> tuple[Path | None, bool]:
+    if sys.platform == "darwin":
+        return choose_file_macos(description, current_file)
+    if os.name != "nt":
+        raise ValueError("Le choix de fichier natif n'est pas disponible sur ce système.")
     script = r"""
 Add-Type -AssemblyName System.Windows.Forms
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
