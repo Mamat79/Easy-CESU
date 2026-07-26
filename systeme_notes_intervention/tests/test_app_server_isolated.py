@@ -42,14 +42,17 @@ import app_server
             environment = os.environ.copy()
             environment["PYTHONDONTWRITEBYTECODE"] = "1"
             environment["EASY_CESU_TEST_WORKSPACE"] = str(workspace_dir)
-            completed = subprocess.run(
-                [str(PYTHON), "-c", script],
-                cwd=PROJECT_ROOT,
-                env=environment,
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
+            try:
+                completed = subprocess.run(
+                    [str(PYTHON), "-c", script],
+                    cwd=PROJECT_ROOT,
+                    env=environment,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+            except subprocess.TimeoutExpired as exc:
+                self.fail(f"Scénario expiré. stdout={exc.stdout!r} stderr={exc.stderr!r}")
             self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
 
     def test_new_install_uses_generic_profile_and_workspace(self) -> None:
@@ -277,8 +280,10 @@ import app_server
             import time
             import http.client
 
+            print("MARK:init", flush=True)
             runtime = app_server.LocalAppServer(preferred_port=0)
             url = runtime.start(background=True)
+            print("MARK:started", flush=True)
             port = runtime.port
             assert port > 0
             assert f":{port}/" in url
@@ -289,15 +294,19 @@ import app_server
             info = __import__("json").loads(response.read().decode("utf-8"))
             connection.close()
             assert info["app_version"] == "3.0.0"
+            print("MARK:request-ok", flush=True)
             runtime.stop()
+            print("MARK:stopped", flush=True)
             time.sleep(0.2)
             assert app_server.port_is_listening(port) is False
+            print("MARK:port-closed", flush=True)
             remaining_threads = [
                 (thread.name, thread.daemon)
                 for thread in __import__("threading").enumerate()
                 if thread is not __import__("threading").main_thread()
             ]
             assert not remaining_threads, remaining_threads
+            print("MARK:no-threads", flush=True)
             # Certains runtimes Python macOS restent dans leur finalisation
             # native après un serveur HTTP, alors que tous les contrôles et
             # threads Python sont déjà terminés.
