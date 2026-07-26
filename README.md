@@ -12,7 +12,7 @@ La version 3 s'adapte aux principaux métiers CESU : jardinage, bricolage,
 ménage, aide à domicile, garde d'enfants, soutien scolaire, accompagnement,
 assistance administrative, informatique et autres services.
 
-**[Télécharger la dernière version Windows ou macOS](https://github.com/Mamat79/easy-cesu/releases/latest)**
+**[Télécharger la dernière version Windows ou macOS](https://github.com/Mamat79/Easy-CESU/releases/latest)**
 
 ## Points clés
 
@@ -55,8 +55,8 @@ Les données sont enregistrées dans
 Easy CESU est développé par **Mamat Leroy** et reste entièrement gratuit et
 open source.
 
-- [Consulter le code et la documentation](https://github.com/Mamat79/easy-cesu)
-- [Signaler un problème ou proposer une amélioration](https://github.com/Mamat79/easy-cesu/issues/new)
+- [Consulter le code et la documentation](https://github.com/Mamat79/Easy-CESU)
+- [Signaler un problème ou proposer une amélioration](https://github.com/Mamat79/Easy-CESU/issues/new)
 - [Soutenir volontairement Easy CESU avec le QR ou PayPal.Me](SUPPORT.md)
 
 Une contribution financière est entièrement facultative. Elle ne débloque

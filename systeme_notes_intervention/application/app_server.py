@@ -73,9 +73,9 @@ BROWSER_EMPTY_SINCE: float | None = None
 SUPPORT_REMINDER_INITIAL_DAYS = 30
 SUPPORT_REMINDER_REPEAT_DAYS = 90
 SUPPORT_LINKS = {
-    "github_repository": "https://github.com/Mamat79/easy-cesu",
-    "github_star": "https://github.com/Mamat79/easy-cesu",
-    "github_issues": "https://github.com/Mamat79/easy-cesu/issues/new",
+    "github_repository": "https://github.com/Mamat79/Easy-CESU",
+    "github_star": "https://github.com/Mamat79/Easy-CESU",
+    "github_issues": "https://github.com/Mamat79/Easy-CESU/issues/new",
     "paypal_me": "https://www.paypal.com/paypalme/MamatLeroy",
 }
 

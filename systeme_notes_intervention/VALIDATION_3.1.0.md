@@ -32,7 +32,7 @@ Date : 26 juillet 2026
 - Relance depuis l'installation réussie dans une fenêtre native sur le port
   dynamique `28158`.
 - Construction et vérification des DMG Apple Silicon et Intel réussies :
-  `https://github.com/Mamat79/easy-cesu/actions/runs/30207183912`.
+  `https://github.com/Mamat79/Easy-CESU/actions/runs/30207183912`.
 
 ## Fichiers candidats
 

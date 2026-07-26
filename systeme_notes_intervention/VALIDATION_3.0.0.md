@@ -40,7 +40,7 @@ Date : 26 juillet 2026
 - Construction, signature ad hoc, lancement réel et vérification du DMG sur
   les runners GitHub macOS Apple Silicon et Intel.
 - Workflow macOS réussi :
-  `https://github.com/Mamat79/easy-cesu/actions/runs/30194291945`.
+  `https://github.com/Mamat79/Easy-CESU/actions/runs/30194291945`.
 - Rendu visuel final des deux pages A4 de la notice V3.
 
 ## Fichiers candidats

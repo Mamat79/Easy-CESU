@@ -96,7 +96,7 @@ import app_server
             app_server.webbrowser.open = lambda url, new=0: opened.append((url, new)) or True
             result = app_server.open_external_link("github_repository")
             assert result == {"opened": True, "link_id": "github_repository"}
-            assert opened == [("https://github.com/Mamat79/easy-cesu", 2)]
+            assert opened == [("https://github.com/Mamat79/Easy-CESU", 2)]
 
             result = app_server.open_external_link("paypal_me")
             assert result == {"opened": True, "link_id": "paypal_me"}
