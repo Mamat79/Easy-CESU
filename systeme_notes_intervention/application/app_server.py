@@ -3759,6 +3759,7 @@ class LocalAppServer:
         self.url = f"http://127.0.0.1:{self.port}"
         self.browser_url = f"{self.url}/?v=20260725-v300"
         self.server.daemon_threads = True
+        self.server.block_on_close = False
         self.monitor_stop = threading.Event()
         threading.Thread(
             target=monitor_browser_sessions,
