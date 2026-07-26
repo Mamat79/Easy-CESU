@@ -29,6 +29,7 @@ from pathlib import Path
 
 project = Path(r"{PROJECT_ROOT}")
 os.environ["LOCALAPPDATA"] = r"{local_app_data}"
+os.environ["EASY_CESU_DATA_ROOT"] = r"{local_app_data / 'EasyCESU'}"
 sys.frozen = True
 sys._MEIPASS = r"{resource_dir}"
 sys.executable = str(Path(os.environ["LOCALAPPDATA"]) / "Easy CESU.exe")

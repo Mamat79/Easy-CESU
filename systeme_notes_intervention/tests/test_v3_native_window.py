@@ -38,6 +38,7 @@ class NativeWindowTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="easy-cesu-preview-root-") as temporary:
             with (
                 patch.object(desktop_app.sys, "frozen", True, create=True),
+                patch.object(desktop_app.sys, "platform", "win32"),
                 patch.object(desktop_app.sys, "executable", str(Path(temporary) / "Easy CESU V3 Preview.exe")),
                 patch.dict(desktop_app.os.environ, {"LOCALAPPDATA": temporary}, clear=False),
             ):
@@ -98,7 +99,7 @@ class NativeWindowTests(unittest.TestCase):
         title, url = calls["create"][0][:2]
         self.assertEqual(title, "Easy CESU V3")
         self.assertEqual(url, "http://127.0.0.1:9999/?v=test")
-        self.assertEqual(calls["start"]["gui"], "edgechromium")
+        self.assertEqual(calls["start"]["gui"], desktop_app.native_webview_gui())
         self.assertFalse(calls["start"]["private_mode"])
 
     def test_native_window_stops_server_when_webview_fails(self) -> None:
