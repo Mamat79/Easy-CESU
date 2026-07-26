@@ -298,6 +298,10 @@ import app_server
                 if thread is not __import__("threading").main_thread()
             ]
             assert not remaining_threads, remaining_threads
+            # Certains runtimes Python macOS restent dans leur finalisation
+            # native après un serveur HTTP, alors que tous les contrôles et
+            # threads Python sont déjà terminés.
+            os._exit(0)
             """
         )
 
