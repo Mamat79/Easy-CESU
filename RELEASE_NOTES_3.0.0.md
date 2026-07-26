@@ -34,7 +34,7 @@ créée avant la migration de la base.
 
 ## Contrôles
 
-- 25 tests automatisés portables.
+- 26 tests automatisés portables.
 - Tests d'installation et de mise à jour Windows.
 - Construction et lancement réels sur runners macOS Apple Silicon et Intel.
 - Contrôle d'intégrité SQLite et conservation des données existantes.

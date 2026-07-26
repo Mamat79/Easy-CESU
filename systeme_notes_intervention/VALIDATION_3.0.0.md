@@ -1,17 +1,20 @@
 # Validation Easy CESU 3.0.0
 
-Date : 25 juillet 2026
+Date : 26 juillet 2026
 
 ## Portée
 
-- Branche : `v3/native-desktop-template-editor`
+- Branche principale : `main`.
+- Commit candidat : `4e2c695be86fd823eba29cde1a0641218a91f8aa`.
 - Mise à jour réelle de la V2.1.0 vers la V3.0.0 sur le PC de développement.
 - Installation active : `C:\Users\mamat\AppData\Local\Easy CESU`.
 - Bases et configurations personnelles exclues du dépôt et des paquets.
 
 ## Contrôles exécutés
 
-- 22 tests unitaires isolés réussis.
+- 26 tests automatisés réussis sous Windows.
+- 18 tests portables exécutés sur chaque runner macOS, avec un test de cycle
+  serveur remplacé sur Mac par le lancement réel du bundle construit.
 - Compilation Python réussie.
 - Contrôle syntaxique JavaScript réussi.
 - Contrôle `git diff --check` réussi.
@@ -32,6 +35,24 @@ Date : 25 juillet 2026
 - Version 3.0.0 enregistrée dans la liste des applications Windows.
 - Lancement depuis l'installation, serveur local limité à `127.0.0.1` sur un
   port dynamique et réponse `/api/app-info` indiquant la version 3.0.0.
+- Fermeture de la vraie fenêtre Windows : processus terminé et port libéré,
+  tandis que PATATE est resté actif sur le port 8766.
+- Construction, signature ad hoc, lancement réel et vérification du DMG sur
+  les runners GitHub macOS Apple Silicon et Intel.
+- Workflow macOS réussi :
+  `https://github.com/Mamat79/easy-cesu/actions/runs/30194291945`.
+- Rendu visuel final des deux pages A4 de la notice V3.
+
+## Fichiers candidats
+
+- Windows x64, 41 391 927 octets :
+  `e9782d039673ac8525105038e5ea04d62c872ed15dffdaf8bbe18a4431fed2b5`.
+- macOS Apple Silicon, 22 573 569 octets :
+  `9a0977f7b7b2e7b242c087a726f14c455490dfffde1392d5bcda9a2ab47f372b`.
+- macOS Intel, 23 995 283 octets :
+  `5fcdcaefbbbf8ecbef3002e1ada6dfd34c2584b04c67e5afa8179b194ae2e64f`.
+- Notice PDF, 7 192 octets :
+  `b80fcaa1b11bd64559f2bb8f15999e919ce24d546614394428447bf27fb99573`.
 
 ## Protection des données
 
@@ -56,9 +77,11 @@ le bascule en une opération rapide. Le nettoyage de l'ancien moteur est limité
 Windows conserve encore une ancienne DLL inactive de 124 Ko ; elle est hors du
 moteur utilisé par la V3 et n'a aucun effet fonctionnel.
 
-## Reste à faire avant publication stable
+## Limites connues
 
-- Tester l'installateur candidat sur une seconde machine Windows 11 x64.
-- Tester la mise à jour logicielle sur le PC de Clothilde, sans remplacer sa
-  base déjà restaurée.
-- Publier la version stable seulement après ces contrôles.
+- L'exécutable Windows n'est pas signé par un certificat commercial et peut
+  donc déclencher Microsoft SmartScreen.
+- Les applications macOS utilisent une signature ad hoc et ne sont pas
+  notariées par Apple. Le premier lancement peut demander `Clic droit > Ouvrir`.
+- Le candidat Windows a été validé sur le PC de développement avec la base
+  existante. La mise à jour du PC de Clothilde reste une opération séparée.
