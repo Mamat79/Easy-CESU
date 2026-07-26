@@ -3803,7 +3803,13 @@ class LocalAppServer:
         )
         shutdown_thread.start()
         shutdown_thread.join(timeout=self.shutdown_timeout_seconds)
-        server.server_close()
+        close_thread = threading.Thread(
+            target=server.server_close,
+            name="easy-cesu-server-close",
+            daemon=True,
+        )
+        close_thread.start()
+        close_thread.join(timeout=self.shutdown_timeout_seconds)
         if self.server_thread is not None and self.server_thread.is_alive():
             self.server_thread.join(timeout=self.shutdown_timeout_seconds)
         self.server = None
