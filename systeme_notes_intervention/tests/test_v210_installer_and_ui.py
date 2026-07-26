@@ -16,9 +16,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 class InstallerV3Tests(unittest.TestCase):
     def test_versions_are_synchronized(self) -> None:
         version = (PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip()
-        self.assertEqual(version, "3.1.1")
+        self.assertEqual(version, "3.1.2")
         self.assertEqual(installateur_windows.APP_VERSION, version)
-        self.assertEqual(installateur_windows.shortcut_label(), "Easy CESU V3.1.1")
+        self.assertEqual(installateur_windows.shortcut_label(), "Easy CESU V3.1.2")
 
     def test_every_installer_choice_has_an_icon_and_preview(self) -> None:
         for icon_key in installateur_windows.SHORTCUT_ICON_LABELS:
@@ -176,6 +176,25 @@ class NumericStepperContractTests(unittest.TestCase):
         self.assertIn('els.durationInput.value = "1:00"', javascript)
         self.assertIn("function adjustSteppedNumber", javascript)
         self.assertIn("const step = 0.5", javascript)
+
+
+class DisplayScalingContractTests(unittest.TestCase):
+    def test_display_modes_are_local_and_immediately_accessible(self) -> None:
+        html = (PROJECT_ROOT / "application" / "static" / "index.html").read_text(encoding="utf-8")
+        javascript = (PROJECT_ROOT / "application" / "static" / "app.js").read_text(encoding="utf-8")
+        stylesheet = (PROJECT_ROOT / "application" / "static" / "styles.css").read_text(encoding="utf-8")
+
+        self.assertIn('id="displayModeSelect"', html)
+        for mode in ("auto", "compact", "normal", "large"):
+            self.assertIn(f'value="{mode}"', html)
+        self.assertIn('const storageKey = "easyCesuDisplayMode"', html)
+        self.assertIn("localStorage.getItem(storageKey)", html)
+        self.assertIn('const DISPLAY_STORAGE_KEY = "easyCesuDisplayMode"', javascript)
+        self.assertIn("function automaticDisplayScale", javascript)
+        self.assertIn("1 / dpr", javascript)
+        self.assertIn("document.documentElement.style.zoom", javascript)
+        self.assertIn("localStorage.setItem(DISPLAY_STORAGE_KEY, mode)", javascript)
+        self.assertIn(".display-control", stylesheet)
 
 
 class CommunitySupportContractTests(unittest.TestCase):

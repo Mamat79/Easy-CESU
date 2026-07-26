@@ -6,7 +6,7 @@ La suite isolée n'utilise jamais la base personnelle installée :
 .\.build_venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-La V3.1.1 comporte les tests automatisés couvrant notamment :
+La V3.1.2 comporte les tests automatisés couvrant notamment :
 
 - première installation et profil générique ;
 - création, renommage et séparation des clients ;
@@ -29,6 +29,7 @@ La V3.1.1 comporte les tests automatisés couvrant notamment :
   avec les autres applications ;
 - isolation complète de la préversion par rapport aux données installées ;
 - détection et installation conditionnelle du runtime Microsoft WebView2.
+- quatre modes d'affichage, adaptation au DPI et mémorisation locale par ordinateur ;
 - sélection du moteur natif WebView2 ou Cocoa selon le système ;
 - emplacement des données dans `Application Support` sous macOS ;
 - sélecteurs natifs de dossiers et de fichiers macOS.

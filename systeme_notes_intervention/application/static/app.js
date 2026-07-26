@@ -16,6 +16,35 @@ const months = [
 const browserSessionId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
 let browserHeartbeatTimer = null;
 let browserEventSource = null;
+const DISPLAY_STORAGE_KEY = "easyCesuDisplayMode";
+const DISPLAY_MANUAL_SCALES = { compact: 0.8, normal: 1, large: 1.1 };
+const DISPLAY_MODES = new Set(["auto", ...Object.keys(DISPLAY_MANUAL_SCALES)]);
+
+function automaticDisplayScale() {
+  const dpr = Math.max(1, Number(window.devicePixelRatio) || 1);
+  const physicalWidth = Math.round((window.screen?.width || window.innerWidth) * dpr);
+  const physicalHeight = Math.round((window.screen?.height || window.innerHeight) * dpr);
+  if (dpr > 1 && physicalWidth <= 1920 && physicalHeight <= 1200) {
+    return Math.max(0.75, Math.min(1, 1 / dpr));
+  }
+  return 1;
+}
+
+function storedDisplayMode() {
+  const mode = localStorage.getItem(DISPLAY_STORAGE_KEY);
+  return DISPLAY_MODES.has(mode) ? mode : "auto";
+}
+
+function applyDisplayMode(requestedMode, { persist = true } = {}) {
+  const mode = DISPLAY_MODES.has(requestedMode) ? requestedMode : "auto";
+  const scale = DISPLAY_MANUAL_SCALES[mode] || automaticDisplayScale();
+  document.documentElement.style.zoom = String(scale);
+  window.easyCesuDisplayPreference = { mode, scale };
+  if (persist) localStorage.setItem(DISPLAY_STORAGE_KEY, mode);
+  if (els.displayModeSelect) els.displayModeSelect.value = mode;
+  if (els.displayScaleValue) els.displayScaleValue.value = `${Math.round(scale * 100)} %`;
+  return scale;
+}
 
 function sendBrowserHeartbeat() {
   fetch("/api/browser-session", {
@@ -92,6 +121,8 @@ const els = {
   generateBtn: document.querySelector("#generateBtn"),
   exportBtn: document.querySelector("#exportBtn"),
   clientsTopBtn: document.querySelector("#clientsTopBtn"),
+  displayModeSelect: document.querySelector("#displayModeSelect"),
+  displayScaleValue: document.querySelector("#displayScaleValue"),
   form: document.querySelector("#interventionForm"),
   editingId: document.querySelector("#editingId"),
   formTitle: document.querySelector("#formTitle"),
@@ -1968,6 +1999,10 @@ async function savePayment(event) {
 }
 
 function bindEvents() {
+  els.displayModeSelect.addEventListener("change", () => {
+    const scale = applyDisplayMode(els.displayModeSelect.value);
+    showToast(`Affichage réglé à ${Math.round(scale * 100)} %. Ce choix reste propre à cet ordinateur.`);
+  });
   els.form.addEventListener("submit", saveIntervention);
   els.resetBtn.addEventListener("click", resetForm);
   els.durationInput.addEventListener("blur", () => {
@@ -2105,6 +2140,7 @@ function bindEvents() {
   els.templateTestPdfBtn.addEventListener("click", () => generateTemplateTestPdf().catch((error) => showToast(error.message)));
   els.templateExportBtn.addEventListener("click", () => exportDocumentTemplate().catch((error) => showToast(error.message)));
   window.addEventListener("resize", () => {
+    if (storedDisplayMode() === "auto") applyDisplayMode("auto", { persist: false });
     if (!els.templatesPanel.hidden && state.templateDraft) renderTemplatePreview();
   });
   els.clientsTopBtn.addEventListener("click", () => setActiveView("clients"));
@@ -2203,6 +2239,7 @@ function applySelectedClientDefaults() {
 }
 
 async function init() {
+  applyDisplayMode(storedDisplayMode(), { persist: false });
   fillMonthSelect();
   bindEvents();
   const bootstrap = await api("/api/bootstrap");

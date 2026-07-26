@@ -1,5 +1,12 @@
 # Journal des changements
 
+## 3.1.2 - 2026-07-26
+
+- ajout d'un réglage d'affichage local : Automatique, Compact, Normal ou Agrandi ;
+- compensation automatique de la mise à l'échelle Windows sur les écrans Full HD ;
+- affichage choisi mémorisé séparément sur chaque ordinateur, sans modifier la base partagée ;
+- maintien de la compatibilité avec les configurations et bases de données existantes.
+
 ## 3.1.1 - 2026-07-26
 
 - Le bouton `Soutenir Easy CESU` affiche désormais le QR PayPal directement

@@ -66,7 +66,7 @@ Construire installateur Easy CESU.cmd
 Le resultat est cree ici, avec son numero de version et `x64` dans le nom :
 
 ```text
-systeme_notes_intervention\sorties\EasyCESU-Setup-x64-3.1.1.exe
+systeme_notes_intervention\sorties\EasyCESU-Setup-x64-3.1.2.exe
 ```
 
 Cet installateur contient Easy CESU, Python, ses bibliothèques et le programme officiel Microsoft WebView2 utilisé seulement si ce composant manque. Il installe par défaut dans `C:\Program Files\Easy CESU`, permet de choisir un autre dossier, propose une icône selon le métier, crée les raccourcis Bureau/Menu Démarrer au choix et peut ouvrir la notice à la fin. Si tu gardes `Program Files`, Windows demandera une autorisation.
@@ -77,8 +77,8 @@ La configuration et la base sont conservées dans `%LOCALAPPDATA%\EasyCESU` et n
 
 Télécharge le DMG adapté au Mac :
 
-- `EasyCESU-macOS-Apple-Silicon-3.1.1.dmg` pour les Mac M1 et suivants ;
-- `EasyCESU-macOS-Intel-3.1.1.dmg` pour les Mac Intel.
+- `EasyCESU-macOS-Apple-Silicon-3.1.2.dmg` pour les Mac M1 et suivants ;
+- `EasyCESU-macOS-Intel-3.1.2.dmg` pour les Mac Intel.
 
 Ouvre le DMG, puis glisse `Easy CESU` dans le dossier `Applications`. Au
 premier lancement, si macOS bloque l'ouverture, fais un clic droit sur
@@ -92,7 +92,7 @@ dossiers à utiliser sur cet ordinateur.
 L'installateur n'embarque pas ta base de donnees. Pour transmettre l'etat actuel a quelqu'un :
 
 1. Sur ton PC, va dans `Base de donnees` > `Creer la sauvegarde`, puis choisis un dossier.
-2. Donne a la personne `EasyCESU-Setup-x64-3.1.1.exe` et le fichier `.zip` cree.
+2. Donne a la personne `EasyCESU-Setup-x64-3.1.2.exe` et le fichier `.zip` cree.
 3. Sur son PC, elle lance l'installateur, choisit le repertoire d'installation puis ouvre Easy CESU.
 4. Au premier lancement, elle choisit `Restaurer une sauvegarde` et selectionne le fichier `.zip` recu.
 5. L'assistant demande ensuite un seul dossier principal et cree automatiquement les dossiers de la base, des notes et des bilans Excel.
