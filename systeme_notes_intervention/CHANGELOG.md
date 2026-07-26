@@ -1,5 +1,18 @@
 # Journal des changements
 
+## 3.1.0 - 2026-07-26
+
+- Ajout d'une section `Aide et communauté` dans les réglages.
+- Accès au dépôt GitHub public, au code, à la documentation et au signalement
+  d'un problème depuis l'application.
+- Ajout d'un soutien PayPal entièrement facultatif, sans paiement traité dans
+  Easy CESU et sans fonctionnalité réservée.
+- Les liens externes sont limités à une liste fixe et s'ouvrent dans le
+  navigateur système.
+- Ajout d'un rappel discret après 30 jours, renouvelable au maximum tous les
+  90 jours et désactivable définitivement.
+- Ajout du financement personnalisé PayPal à la page GitHub du dépôt.
+
 ## 3.0.0 - 2026-07-25
 
 - Easy CESU s'ouvre dans une fenêtre Windows dédiée basée sur Microsoft WebView2, sans onglet Chrome.

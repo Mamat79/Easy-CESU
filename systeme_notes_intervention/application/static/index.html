@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Easy CESU</title>
-    <link id="faviconLink" rel="icon" href="/icons/generique.png?v=20260725-v300" type="image/png" />
-    <link rel="stylesheet" href="/styles.css?v=20260725-v300" />
+    <link id="faviconLink" rel="icon" href="/icons/generique.png?v=20260726-v310" type="image/png" />
+    <link rel="stylesheet" href="/styles.css?v=20260726-v310" />
   </head>
   <body>
     <div class="app-shell">
@@ -426,7 +426,7 @@
             <div>
               <h2>Réglages</h2>
               <p class="section-note">Paramètres utilisés pour les nouvelles interventions et les générations.</p>
-              <p class="section-note">Easy CESU - Version <strong id="appVersion">3.0.0</strong></p>
+              <p class="section-note">Easy CESU - Version <strong id="appVersion">3.1.0</strong></p>
             </div>
           </div>
 
@@ -586,6 +586,24 @@
                 </div>
               </div>
             </details>
+
+            <section class="community-section setting-block-full" aria-labelledby="communityTitle">
+              <div class="community-copy">
+                <h3 id="communityTitle">Aide et communauté</h3>
+                <p>Easy CESU reste entièrement gratuit et open source. Le soutien est facultatif et ne débloque aucune fonctionnalité.</p>
+                <p class="section-note">Projet développé par Mamat Leroy.</p>
+              </div>
+              <div class="community-actions">
+                <button id="githubSourceBtn" class="secondary" type="button">Code et documentation</button>
+                <button id="githubStarBtn" class="secondary" type="button">Mettre une étoile</button>
+                <button id="githubIssueBtn" class="secondary" type="button">Signaler un problème</button>
+                <button id="paypalSupportBtn" class="primary" type="button">Soutenir Easy CESU</button>
+              </div>
+              <label class="check-label community-reminder-setting" for="supportReminderEnabledInput">
+                <input id="supportReminderEnabledInput" type="checkbox" />
+                Afficher occasionnellement un rappel discret
+              </label>
+            </section>
 
             <div class="settings-actions">
               <button id="deleteProfileBtn" class="ghost danger-action" type="button">Supprimer le compte</button>
@@ -792,8 +810,20 @@
           </div>
         </section>
       </main>
+      <section id="supportReminder" class="support-reminder" aria-live="polite" hidden>
+        <div>
+          <strong>Easy CESU reste gratuit et open source.</strong>
+          <p>Si tu le souhaites, tu peux soutenir volontairement son développement.</p>
+        </div>
+        <div class="support-reminder-actions">
+          <button id="supportReminderOpenBtn" class="primary" type="button">En savoir plus</button>
+          <button id="supportReminderDismissBtn" class="secondary" type="button">Plus tard</button>
+          <button id="supportReminderDisableBtn" class="ghost" type="button">Ne plus afficher</button>
+        </div>
+      </section>
       <footer class="app-disclaimer">
-        Easy CESU V<span id="footerVersion">3.0.0</span> est un outil indépendant de suivi d'activité. Il n'est ni affilié ni connecté automatiquement au service officiel CESU.
+        <span>Easy CESU V<span id="footerVersion">3.1.0</span> est un outil indépendant de suivi d'activité. Il n'est ni affilié ni connecté automatiquement au service officiel CESU.</span>
+        <button id="footerGithubBtn" class="footer-link" type="button">Projet GitHub</button>
       </footer>
     </div>
 
@@ -840,6 +870,6 @@
     </dialog>
 
     <div id="toast" class="toast" aria-live="polite"></div>
-    <script src="/app.js?v=20260725-v300"></script>
+    <script src="/app.js?v=20260726-v310"></script>
   </body>
 </html>

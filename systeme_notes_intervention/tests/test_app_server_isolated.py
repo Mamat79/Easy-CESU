@@ -71,6 +71,42 @@ import app_server
             """
         )
 
+    def test_community_links_and_discreet_support_reminder(self) -> None:
+        self.run_scenario(
+            """
+            from datetime import date
+
+            app_server.CONFIG["support_reminder_enabled"] = True
+            app_server.CONFIG["support_reminder_started_on"] = "2026-01-01"
+            app_server.CONFIG["support_reminder_last_seen_on"] = ""
+
+            assert app_server.support_reminder_status(date(2026, 1, 30))["due"] is False
+            assert app_server.support_reminder_status(date(2026, 1, 31))["due"] is True
+
+            dismissed = app_server.update_support_reminder("dismiss", date(2026, 1, 31))
+            assert dismissed["due"] is False
+            assert app_server.support_reminder_status(date(2026, 4, 30))["due"] is False
+            assert app_server.support_reminder_status(date(2026, 5, 1))["due"] is True
+
+            disabled = app_server.update_support_reminder("disable", date(2026, 5, 1))
+            assert disabled["enabled"] is False
+            assert disabled["due"] is False
+
+            opened = []
+            app_server.webbrowser.open = lambda url, new=0: opened.append((url, new)) or True
+            result = app_server.open_external_link("paypal")
+            assert result == {"opened": True, "link_id": "paypal"}
+            assert opened == [("https://www.paypal.com/qrcodes/p2pqrc/EQYCCDK8XFN5Y", 2)]
+
+            try:
+                app_server.open_external_link("https://example.invalid")
+            except ValueError as error:
+                assert str(error) == "Lien externe non autorisé."
+            else:
+                raise AssertionError("Une URL arbitraire ne doit jamais être ouverte.")
+            """
+        )
+
     def test_client_creation_and_renaming_keeps_interventions(self) -> None:
         self.run_scenario(
             """
@@ -292,7 +328,7 @@ import app_server
             assert response.status == 200
             info = __import__("json").loads(response.read().decode("utf-8"))
             connection.close()
-            assert info["app_version"] == "3.0.0"
+            assert info["app_version"] == "3.1.0"
             runtime.stop()
             time.sleep(0.2)
             assert app_server.port_is_listening(port) is False

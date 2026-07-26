@@ -36,11 +36,26 @@ textarea {
 }
 
 .app-disclaimer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  justify-content: center;
   padding: 14px 24px 20px;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
   text-align: center;
+}
+
+.footer-link {
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--teal);
+  font-size: 12px;
+  text-decoration: underline;
 }
 
 .intervention-details {
@@ -1326,6 +1341,66 @@ button:disabled {
   justify-content: flex-end;
 }
 
+.community-section {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(360px, auto);
+  gap: 12px 24px;
+  align-items: center;
+  margin-top: 4px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.community-copy h3,
+.community-copy p,
+.support-reminder p {
+  margin: 0;
+}
+
+.community-copy {
+  display: grid;
+  gap: 7px;
+}
+
+.community-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.community-reminder-setting {
+  grid-column: 1 / -1;
+  justify-self: end;
+}
+
+.support-reminder {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  gap: 14px 24px;
+  align-items: center;
+  padding: 14px 24px;
+  border-top: 1px solid #d79d42;
+  border-bottom: 1px solid #d79d42;
+  background: #fff8e9;
+}
+
+.support-reminder[hidden] {
+  display: none;
+}
+
+.support-reminder > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.support-reminder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .section-note {
   margin-top: 4px;
   color: var(--muted);
@@ -1660,6 +1735,22 @@ tbody tr:nth-child(even) {
   margin: 16px 0;
 }
 
+@media (max-width: 1180px) {
+  .community-section,
+  .support-reminder {
+    grid-template-columns: 1fr;
+  }
+
+  .community-actions,
+  .support-reminder-actions {
+    justify-content: flex-start;
+  }
+
+  .community-reminder-setting {
+    justify-self: start;
+  }
+}
+
 @media (max-width: 960px) {
   .topbar {
     align-items: stretch;
@@ -1957,6 +2048,17 @@ tbody tr:nth-child(even) {
 
   .client-form-actions {
     grid-template-columns: 1fr;
+  }
+
+  .community-actions,
+  .support-reminder-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .community-actions button,
+  .support-reminder-actions button {
+    width: 100%;
   }
 
   th,

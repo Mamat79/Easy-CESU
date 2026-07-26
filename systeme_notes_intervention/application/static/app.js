@@ -78,6 +78,7 @@ const state = {
   selectedTemplateId: null,
   templateDraft: null,
   templateDirty: false,
+  community: null,
 };
 
 const els = {
@@ -85,6 +86,7 @@ const els = {
   statusLine: document.querySelector("#statusLine"),
   appVersion: document.querySelector("#appVersion"),
   footerVersion: document.querySelector("#footerVersion"),
+  footerGithubBtn: document.querySelector("#footerGithubBtn"),
   yearFilter: document.querySelector("#yearFilter"),
   monthFilter: document.querySelector("#monthFilter"),
   generateBtn: document.querySelector("#generateBtn"),
@@ -197,6 +199,15 @@ const els = {
   browseExportDirBtn: document.querySelector("#browseExportDirBtn"),
   deleteProfileBtn: document.querySelector("#deleteProfileBtn"),
   saveSettingsBtn: document.querySelector("#saveSettingsBtn"),
+  githubSourceBtn: document.querySelector("#githubSourceBtn"),
+  githubStarBtn: document.querySelector("#githubStarBtn"),
+  githubIssueBtn: document.querySelector("#githubIssueBtn"),
+  paypalSupportBtn: document.querySelector("#paypalSupportBtn"),
+  supportReminderEnabledInput: document.querySelector("#supportReminderEnabledInput"),
+  supportReminder: document.querySelector("#supportReminder"),
+  supportReminderOpenBtn: document.querySelector("#supportReminderOpenBtn"),
+  supportReminderDismissBtn: document.querySelector("#supportReminderDismissBtn"),
+  supportReminderDisableBtn: document.querySelector("#supportReminderDisableBtn"),
   monthTitle: document.querySelector("#monthTitle"),
   searchInput: document.querySelector("#searchInput"),
   clientsShortcutBtn: document.querySelector("#clientsShortcutBtn"),
@@ -577,6 +588,38 @@ async function api(path, options = {}) {
     throw new Error(payload.error || "Erreur inconnue");
   }
   return payload;
+}
+
+function applyCommunity(payload) {
+  state.community = payload;
+  const reminder = payload?.support_reminder || {};
+  els.supportReminderEnabledInput.checked = Boolean(reminder.enabled);
+  els.supportReminder.hidden = !reminder.due;
+}
+
+async function loadCommunity() {
+  applyCommunity(await api("/api/community"));
+}
+
+async function openExternal(linkId) {
+  const result = await api("/api/open-external", {
+    method: "POST",
+    body: JSON.stringify({ link_id: linkId }),
+  });
+  showToast(result.opened ? "Ouverture dans le navigateur." : "Le navigateur n’a pas pu être ouvert.");
+}
+
+async function updateSupportReminder(action) {
+  const payload = await api("/api/support-reminder", {
+    method: "POST",
+    body: JSON.stringify({ action }),
+  });
+  applyCommunity({ ...(state.community || {}), support_reminder: payload.support_reminder });
+}
+
+async function openSupportFromReminder() {
+  await updateSupportReminder("dismiss");
+  await openExternal("paypal");
 }
 
 function selectedYear() {
@@ -1964,6 +2007,17 @@ function bindEvents() {
   els.saveSettingsBtn.addEventListener("click", () => {
     saveSettings().catch((error) => showToast(error.message));
   });
+  els.githubSourceBtn.addEventListener("click", () => openExternal("github_repository").catch((error) => showToast(error.message)));
+  els.githubStarBtn.addEventListener("click", () => openExternal("github_star").catch((error) => showToast(error.message)));
+  els.githubIssueBtn.addEventListener("click", () => openExternal("github_issues").catch((error) => showToast(error.message)));
+  els.paypalSupportBtn.addEventListener("click", () => openExternal("paypal").catch((error) => showToast(error.message)));
+  els.footerGithubBtn.addEventListener("click", () => openExternal("github_repository").catch((error) => showToast(error.message)));
+  els.supportReminderOpenBtn.addEventListener("click", () => openSupportFromReminder().catch((error) => showToast(error.message)));
+  els.supportReminderDismissBtn.addEventListener("click", () => updateSupportReminder("dismiss").catch((error) => showToast(error.message)));
+  els.supportReminderDisableBtn.addEventListener("click", () => updateSupportReminder("disable").catch((error) => showToast(error.message)));
+  els.supportReminderEnabledInput.addEventListener("change", () => {
+    updateSupportReminder(els.supportReminderEnabledInput.checked ? "enable" : "disable").catch((error) => showToast(error.message));
+  });
   els.shortcutIconInput.addEventListener("change", () => applyProfileIcon(els.shortcutIconInput.value));
   els.newProfileBtn.addEventListener("click", beginNewProfile);
   els.cancelNewProfileBtn.addEventListener("click", cancelNewProfile);
@@ -2130,6 +2184,7 @@ async function init() {
   const appInfo = await api("/api/app-info");
   els.appVersion.textContent = appInfo.app_version || "inconnue";
   els.footerVersion.textContent = appInfo.app_version || "inconnue";
+  await loadCommunity();
   setActiveView("interventions");
   await loadMonth();
   await loadPlanning();

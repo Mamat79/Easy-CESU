@@ -16,9 +16,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 class InstallerV3Tests(unittest.TestCase):
     def test_versions_are_synchronized(self) -> None:
         version = (PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip()
-        self.assertEqual(version, "3.0.0")
+        self.assertEqual(version, "3.1.0")
         self.assertEqual(installateur_windows.APP_VERSION, version)
-        self.assertEqual(installateur_windows.shortcut_label(), "Easy CESU V3")
+        self.assertEqual(installateur_windows.shortcut_label(), "Easy CESU V3.1.0")
 
     def test_every_installer_choice_has_an_icon_and_preview(self) -> None:
         for icon_key in installateur_windows.SHORTCUT_ICON_LABELS:
@@ -176,6 +176,35 @@ class NumericStepperContractTests(unittest.TestCase):
         self.assertIn('els.durationInput.value = "1:00"', javascript)
         self.assertIn("function adjustSteppedNumber", javascript)
         self.assertIn("const step = 0.5", javascript)
+
+
+class CommunitySupportContractTests(unittest.TestCase):
+    def test_funding_and_interface_are_limited_to_easy_cesu(self) -> None:
+        repository_root = PROJECT_ROOT.parent
+        funding = (repository_root / ".github" / "FUNDING.yml").read_text(encoding="utf-8")
+        readme = (repository_root / "README.md").read_text(encoding="utf-8")
+        html = (PROJECT_ROOT / "application" / "static" / "index.html").read_text(encoding="utf-8")
+        javascript = (PROJECT_ROOT / "application" / "static" / "app.js").read_text(encoding="utf-8")
+
+        self.assertEqual(
+            funding,
+            'custom:\n  - "https://www.paypal.com/qrcodes/p2pqrc/EQYCCDK8XFN5Y"\n',
+        )
+        self.assertNotIn("sponsors", funding.lower())
+        self.assertNotIn("sponsors", readme.lower())
+        self.assertNotIn("sponsors", html.lower())
+        for element_id in (
+            "githubSourceBtn",
+            "githubStarBtn",
+            "githubIssueBtn",
+            "paypalSupportBtn",
+            "supportReminderEnabledInput",
+            "supportReminder",
+        ):
+            self.assertIn(f'id="{element_id}"', html)
+        self.assertIn('openExternal("github_repository")', javascript)
+        self.assertIn('openExternal("github_issues")', javascript)
+        self.assertIn('openExternal("paypal")', javascript)
 
 
 if __name__ == "__main__":

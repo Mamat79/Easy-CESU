@@ -21,6 +21,8 @@ Easy CESU est un outil indépendant de suivi d'activité. Il n'est ni affilié n
 - Utiliser `Clients` pour ajouter les rappels liés à une personne.
 - Utiliser `Base de données` pour créer ou restaurer une sauvegarde ZIP complète.
 - Utiliser `Réglages` pour les dossiers, les coordonnées et le tarif par défaut.
+- Utiliser `Réglages > Aide et communauté` pour consulter le projet public,
+  signaler un problème ou soutenir facultativement son développement.
 
 Au premier lancement, l'assistant propose de commencer avec une base vide ou de restaurer une sauvegarde. Il demande ensuite un dossier principal et y crée des sous-dossiers séparés pour la base, les notes et les exports.
 

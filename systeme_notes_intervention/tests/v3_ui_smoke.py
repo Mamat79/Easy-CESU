@@ -61,10 +61,18 @@ def main() -> int:
         if page.locator("#templateTitleInput").input_value() != "RELEVÉ DES PRESTATIONS":
             raise AssertionError("Le modèle enregistré n'est pas rechargé.")
 
+        page.locator('[data-view="settings"]').click()
+        page.locator("#communityTitle").wait_for(state="visible")
+        if not page.locator("#supportReminderEnabledInput").is_checked():
+            raise AssertionError("Le rappel discret doit être activé par défaut.")
+        if page.locator("#supportReminder").is_visible():
+            raise AssertionError("Le rappel de soutien ne doit pas apparaître avant 30 jours.")
+        page.screenshot(path=str(OUTPUT_DIR / "community-desktop.png"), full_page=True)
+
         page.set_viewport_size({"width": 1024, "height": 768})
-        page.screenshot(path=str(OUTPUT_DIR / "templates-compact.png"))
+        page.screenshot(path=str(OUTPUT_DIR / "community-compact.png"), full_page=True)
         if page.locator("body").evaluate("(element) => element.scrollWidth > element.clientWidth + 2"):
-            raise AssertionError("L'éditeur crée un débordement horizontal à 1024 px.")
+            raise AssertionError("L'interface crée un débordement horizontal à 1024 px.")
         browser.close()
 
     if console_errors:

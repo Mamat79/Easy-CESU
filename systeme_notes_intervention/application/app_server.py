@@ -60,7 +60,7 @@ else:
 
 STATIC_DIR = APP_DIR / "static"
 APP_NAME = "Easy CESU"
-APP_VERSION = "3.0.0"
+APP_VERSION = "3.1.0"
 V2_SCHEMA_VERSION = 2
 DATABASE_SCHEMA_VERSION = 3
 BROWSER_CLOSE_GRACE_SECONDS = 5.0
@@ -70,6 +70,14 @@ BROWSER_SESSIONS: dict[str, float] = {}
 BROWSER_STREAM_TOKENS: dict[str, object] = {}
 BROWSER_CONNECTED_ONCE = False
 BROWSER_EMPTY_SINCE: float | None = None
+SUPPORT_REMINDER_INITIAL_DAYS = 30
+SUPPORT_REMINDER_REPEAT_DAYS = 90
+SUPPORT_LINKS = {
+    "github_repository": "https://github.com/Mamat79/easy-cesu",
+    "github_star": "https://github.com/Mamat79/easy-cesu",
+    "github_issues": "https://github.com/Mamat79/easy-cesu/issues/new",
+    "paypal": "https://www.paypal.com/qrcodes/p2pqrc/EQYCCDK8XFN5Y",
+}
 
 
 def user_data_root() -> Path:
@@ -144,6 +152,9 @@ DEFAULT_CONFIG = {
     "coefficient_brut_defaut": 1.2873125,
     "ecraser_notes_existantes": False,
     "initial_setup_completed": False,
+    "support_reminder_enabled": True,
+    "support_reminder_started_on": "",
+    "support_reminder_last_seen_on": "",
 }
 
 PROFILE_METADATA_KEY = "active_profile"
@@ -316,6 +327,15 @@ def normalize_profile(profile: dict) -> dict:
 
 def ensure_profiles_config() -> None:
     changed = False
+    if "support_reminder_enabled" not in CONFIG:
+        CONFIG["support_reminder_enabled"] = True
+        changed = True
+    if not str(CONFIG.get("support_reminder_started_on") or "").strip():
+        CONFIG["support_reminder_started_on"] = date.today().isoformat()
+        changed = True
+    if "support_reminder_last_seen_on" not in CONFIG:
+        CONFIG["support_reminder_last_seen_on"] = ""
+        changed = True
     if "initial_setup_completed" not in CONFIG:
         # Une configuration existante ne doit pas relancer l'assistant apres une mise a jour.
         CONFIG["initial_setup_completed"] = not CONFIG_CREATED_THIS_RUN
@@ -1445,6 +1465,71 @@ def app_settings() -> dict:
         "profile": public_profile(profile),
         "profiles": [public_profile(item) for item in CONFIG.get("profiles", [])],
     }
+
+
+def optional_config_date(value: object) -> date | None:
+    raw = clean_text(value)
+    if not raw:
+        return None
+    try:
+        return date.fromisoformat(raw)
+    except ValueError:
+        return None
+
+
+def support_reminder_status(current_date: date | None = None) -> dict:
+    today = current_date or date.today()
+    enabled = bool(CONFIG.get("support_reminder_enabled", True))
+    started_on = optional_config_date(CONFIG.get("support_reminder_started_on")) or today
+    last_seen_on = optional_config_date(CONFIG.get("support_reminder_last_seen_on"))
+    first_due_on = started_on + timedelta(days=SUPPORT_REMINDER_INITIAL_DAYS)
+    next_due_on = (
+        last_seen_on + timedelta(days=SUPPORT_REMINDER_REPEAT_DAYS)
+        if last_seen_on is not None
+        else first_due_on
+    )
+    return {
+        "enabled": enabled,
+        "due": enabled and today >= next_due_on,
+        "next_due_on": next_due_on.isoformat(),
+    }
+
+
+def community_info(current_date: date | None = None) -> dict:
+    return {
+        "developer_name": "Mamat Leroy",
+        "repository_url": SUPPORT_LINKS["github_repository"],
+        "issues_url": SUPPORT_LINKS["github_issues"],
+        "support_url": SUPPORT_LINKS["paypal"],
+        "support_reminder": support_reminder_status(current_date),
+    }
+
+
+def update_support_reminder(action: object, current_date: date | None = None) -> dict:
+    today = current_date or date.today()
+    normalized_action = clean_text(action).lower()
+    if normalized_action == "dismiss":
+        CONFIG["support_reminder_last_seen_on"] = today.isoformat()
+    elif normalized_action == "disable":
+        CONFIG["support_reminder_enabled"] = False
+        CONFIG["support_reminder_last_seen_on"] = today.isoformat()
+    elif normalized_action == "enable":
+        if not bool(CONFIG.get("support_reminder_enabled", True)):
+            CONFIG["support_reminder_started_on"] = today.isoformat()
+            CONFIG["support_reminder_last_seen_on"] = ""
+        CONFIG["support_reminder_enabled"] = True
+    else:
+        raise ValueError("Action de rappel de soutien invalide.")
+    save_config()
+    return support_reminder_status(today)
+
+
+def open_external_link(link_id: object) -> dict:
+    normalized_id = clean_text(link_id)
+    url = SUPPORT_LINKS.get(normalized_id)
+    if url is None:
+        raise ValueError("Lien externe non autorisé.")
+    return {"opened": bool(webbrowser.open(url, new=2)), "link_id": normalized_id}
 
 
 def set_default_hourly_rate(value: object) -> float:
@@ -3765,14 +3850,14 @@ class LocalAppServer:
             self.port, self.existing_server = select_server_port(self.preferred_port)
         if self.existing_server:
             self.url = f"http://127.0.0.1:{self.port}"
-            self.browser_url = f"{self.url}/?v=20260725-v300"
+            self.browser_url = f"{self.url}/?v=20260726-v310"
             return self.browser_url
 
         init_db()
         self.server = ThreadingHTTPServer(("127.0.0.1", self.port), AppHandler)
         self.port = int(self.server.server_address[1])
         self.url = f"http://127.0.0.1:{self.port}"
-        self.browser_url = f"{self.url}/?v=20260725-v300"
+        self.browser_url = f"{self.url}/?v=20260726-v310"
         self.server.daemon_threads = True
         self.server.block_on_close = False
         self.monitor_stop = threading.Event()
@@ -3948,6 +4033,9 @@ class AppHandler(SimpleHTTPRequestHandler):
         if parsed.path == "/api/settings":
             json_response(self, {"settings": app_settings()})
             return
+        if parsed.path == "/api/community":
+            json_response(self, community_info())
+            return
         if parsed.path == "/api/profiles":
             json_response(
                 self,
@@ -4043,6 +4131,12 @@ class AppHandler(SimpleHTTPRequestHandler):
                 json_response(self, {"ok": True, "message": "Arrêt de Easy CESU."})
                 self.wfile.flush()
                 threading.Thread(target=request_server_stop, args=(self.server,), daemon=True).start()
+                return
+            if parsed.path == "/api/open-external":
+                json_response(self, open_external_link(body.get("link_id")))
+                return
+            if parsed.path == "/api/support-reminder":
+                json_response(self, {"support_reminder": update_support_reminder(body.get("action"))})
                 return
             if parsed.path == "/api/clients":
                 json_response(self, {"client": create_client(body)}, HTTPStatus.CREATED)

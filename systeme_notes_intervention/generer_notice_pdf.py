@@ -38,7 +38,7 @@ def section(number: str, title: str, lines: list[str], styles: dict[str, Paragra
                 ("LEFTPADDING", (0, 0), (-1, -1), 0),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 0),
                 ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 2.2 * mm),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 1.5 * mm),
             ]
         )
     )
@@ -65,7 +65,7 @@ def section(number: str, title: str, lines: list[str], styles: dict[str, Paragra
             ]
         )
     )
-    return KeepTogether([table, Spacer(1, 2.5 * mm)])
+    return KeepTogether([table, Spacer(1, 1.5 * mm)])
 
 
 def footer(canvas, document) -> None:
@@ -299,6 +299,16 @@ def build_notice(output: Path) -> None:
                 ],
                 styles,
             ),
+            section(
+                "10",
+                "Aide et communauté",
+                [
+                    "Ouvrir <b>Réglages &gt; Aide et communauté</b> pour consulter le code, la documentation ou signaler un problème sur le dépôt public Easy CESU.",
+                    "Le soutien PayPal est entièrement facultatif. Il ne débloque aucune fonction, ne crée aucun abonnement et peut être ignoré sans limiter l'application.",
+                    "Le rappel de soutien apparaît au maximum une fois par trimestre et peut être désactivé définitivement dans les réglages.",
+                ],
+                styles,
+            ),
         ]
     )
 
@@ -309,7 +319,7 @@ def build_notice(output: Path) -> None:
                 Paragraph(
                     "Chaque compte possède ses propres clients, tarifs et interventions. "
                     "L'installateur ne contient aucune donnée personnelle. Easy CESU est un outil indépendant de suivi d'activité, sans lien automatique avec le service officiel CESU. "
-                    "Easy CESU s'arrête automatiquement lorsque sa fenêtre est fermée.",
+                    "Easy CESU s'arrête automatiquement lorsque sa fenêtre est fermée. Le projet reste gratuit et open source.",
                     styles["box"],
                 )
             ],
@@ -328,7 +338,7 @@ def build_notice(output: Path) -> None:
             ]
         )
     )
-    story.append(reminder)
+    story.append(KeepTogether([reminder]))
 
     doc.build(story, onFirstPage=footer, onLaterPages=footer)
 
