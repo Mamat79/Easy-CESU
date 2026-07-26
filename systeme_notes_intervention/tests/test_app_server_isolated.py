@@ -297,7 +297,7 @@ import app_server
                 for thread in __import__("threading").enumerate()
                 if thread is not __import__("threading").main_thread()
             ]
-            assert all(is_daemon for _, is_daemon in remaining_threads), remaining_threads
+            assert not remaining_threads, remaining_threads
             """
         )
 
