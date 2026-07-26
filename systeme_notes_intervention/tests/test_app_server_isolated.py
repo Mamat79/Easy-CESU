@@ -288,6 +288,12 @@ import app_server
             runtime.stop()
             time.sleep(0.2)
             assert app_server.port_is_listening(port) is False
+            remaining_threads = [
+                (thread.name, thread.daemon)
+                for thread in __import__("threading").enumerate()
+                if thread is not __import__("threading").main_thread()
+            ]
+            assert all(is_daemon for _, is_daemon in remaining_threads), remaining_threads
             """
         )
 
