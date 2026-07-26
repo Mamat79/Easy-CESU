@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import tempfile
+import threading
 import types
 import unittest
 from pathlib import Path
@@ -28,6 +29,24 @@ class FakeRuntime:
 
 
 class NativeWindowTests(unittest.TestCase):
+    def test_server_stop_remains_bounded_when_shutdown_blocks(self) -> None:
+        release_shutdown = threading.Event()
+
+        class BlockingServer:
+            def shutdown(self) -> None:
+                release_shutdown.wait(10)
+
+            def server_close(self) -> None:
+                release_shutdown.set()
+
+        runtime = desktop_app.LocalAppServer(preferred_port=0)
+        runtime.server = BlockingServer()
+        runtime.shutdown_timeout_seconds = 0.05
+        runtime.stop()
+
+        self.assertTrue(release_shutdown.is_set())
+        self.assertIsNone(runtime.server)
+
     def test_native_engine_matches_the_operating_system(self) -> None:
         with patch.object(desktop_app.sys, "platform", "darwin"):
             self.assertEqual(desktop_app.native_webview_gui(), "cocoa")

@@ -3739,6 +3739,7 @@ class LocalAppServer:
         self.server: ThreadingHTTPServer | None = None
         self.monitor_stop: threading.Event | None = None
         self.server_thread: threading.Thread | None = None
+        self.shutdown_timeout_seconds = 5.0
 
     def start(self, background: bool = True) -> str:
         if self.preferred_port == 0:
@@ -3789,10 +3790,21 @@ class LocalAppServer:
             return
         if self.monitor_stop is not None:
             self.monitor_stop.set()
-        self.server.shutdown()
+        server = self.server
+
+        # Sur macOS, shutdown() peut exceptionnellement rester bloqué lorsqu'un
+        # gestionnaire HTTP termine au même moment. L'appel borné garantit que
+        # la fermeture de la fenêtre rend toujours la main à l'application.
+        shutdown_thread = threading.Thread(
+            target=server.shutdown,
+            name="easy-cesu-server-shutdown",
+            daemon=True,
+        )
+        shutdown_thread.start()
+        shutdown_thread.join(timeout=self.shutdown_timeout_seconds)
+        server.server_close()
         if self.server_thread is not None and self.server_thread.is_alive():
-            self.server_thread.join(timeout=5)
-        self.server.server_close()
+            self.server_thread.join(timeout=self.shutdown_timeout_seconds)
         self.server = None
 
 
