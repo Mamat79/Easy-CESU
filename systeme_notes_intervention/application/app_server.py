@@ -49,6 +49,37 @@ try:
 except ImportError:  # pragma: no cover - used by packaged executable
     from application.excel_export import export_bilan_excel
 
+try:
+    from email_service import (
+        DEFAULT_EMAIL_BODY,
+        DEFAULT_EMAIL_SUBJECT,
+        EMAIL_TEMPLATE_FIELDS,
+        build_email_message,
+        delete_smtp_password,
+        get_smtp_password,
+        normalize_smtp_settings,
+        password_saved,
+        render_email_template,
+        save_smtp_password,
+        smtp_connection,
+        smtp_defaults,
+    )
+except ImportError:  # pragma: no cover - used by packaged executable
+    from application.email_service import (
+        DEFAULT_EMAIL_BODY,
+        DEFAULT_EMAIL_SUBJECT,
+        EMAIL_TEMPLATE_FIELDS,
+        build_email_message,
+        delete_smtp_password,
+        get_smtp_password,
+        normalize_smtp_settings,
+        password_saved,
+        render_email_template,
+        save_smtp_password,
+        smtp_connection,
+        smtp_defaults,
+    )
+
 if getattr(sys, "frozen", False):
     ROOT_DIR = Path(sys.executable).resolve().parent
     RESOURCE_DIR = Path(getattr(sys, "_MEIPASS", ROOT_DIR))
@@ -60,9 +91,10 @@ else:
 
 STATIC_DIR = APP_DIR / "static"
 APP_NAME = "Easy CESU"
-APP_VERSION = "3.1.2"
+APP_VERSION = "3.1.3"
 V2_SCHEMA_VERSION = 2
-DATABASE_SCHEMA_VERSION = 3
+V3_SCHEMA_VERSION = 3
+DATABASE_SCHEMA_VERSION = 4
 BROWSER_CLOSE_GRACE_SECONDS = 5.0
 BROWSER_STALE_SECONDS = 90.0
 BROWSER_SESSION_LOCK = threading.Lock()
@@ -133,11 +165,14 @@ from generer_notes_et_donnees import (  # noqa: E402
     default_note_template_configuration,
     generate_note_pdf,
     generate_notes,
+    french_money,
     hours_label,
+    matching_existing_note,
     money,
     normalize_note_template_configuration,
     normalize_name,
     register_fonts,
+    safe_filename,
     sorted_name_key,
 )
 
@@ -183,6 +218,14 @@ PROFILE_METADATA_FIELDS = (
     "backup_dir",
     "backup_retention_days",
     "daily_backup_enabled",
+    "smtp_host",
+    "smtp_port",
+    "smtp_security",
+    "smtp_username",
+    "smtp_sender_name",
+    "smtp_sender_email",
+    "email_subject_template",
+    "email_body_template",
 )
 
 ACTIVITIES = (
@@ -266,7 +309,7 @@ def profile_id_from_label(label: str) -> str:
 
 
 def default_profile() -> dict:
-    return {
+    profile = {
         "id": "mon-compte",
         "label": "Mon compte",
         "name": "",
@@ -289,6 +332,8 @@ def default_profile() -> dict:
         "backup_retention_days": 30,
         "daily_backup_enabled": True,
     }
+    profile.update(smtp_defaults())
+    return profile
 
 
 def normalize_profile(profile: dict) -> dict:
@@ -322,6 +367,8 @@ def normalize_profile(profile: dict) -> dict:
     profile.setdefault("backup_dir", str(BACKUPS_DIR / profile["id"]))
     profile.setdefault("backup_retention_days", 30)
     profile.setdefault("daily_backup_enabled", True)
+    for field, value in smtp_defaults().items():
+        profile.setdefault(field, value)
     return profile
 
 
@@ -367,7 +414,7 @@ def active_profile() -> dict:
 
 
 def public_profile(profile: dict) -> dict:
-    return {
+    result = {
         "id": profile["id"],
         "label": profile.get("label", ""),
         "name": profile.get("name", ""),
@@ -398,6 +445,10 @@ def public_profile(profile: dict) -> dict:
         "backup_retention_days": int(profile.get("backup_retention_days") or 30),
         "daily_backup_enabled": bool(profile.get("daily_backup_enabled", True)),
     }
+    result.update(normalize_smtp_settings(profile))
+    result["smtp_password_saved"] = password_saved(profile["id"])
+    result["email_template_fields"] = sorted(EMAIL_TEMPLATE_FIELDS)
+    return result
 
 
 def sync_active_profile_runtime() -> None:
@@ -655,7 +706,7 @@ def apply_v3_schema_migrations() -> None:
             """
         )
         applied = {int(row["version"]) for row in db.execute("SELECT version FROM schema_migrations").fetchall()}
-        needs_v3 = DATABASE_SCHEMA_VERSION not in applied
+        needs_v3 = V3_SCHEMA_VERSION not in applied
         has_user_data = database_contains_user_data(db)
 
     if not needs_v3:
@@ -682,7 +733,42 @@ def apply_v3_schema_migrations() -> None:
         )
         db.execute(
             "INSERT OR IGNORE INTO schema_migrations (version, applied_at, details) VALUES (?, ?, ?)",
-            (DATABASE_SCHEMA_VERSION, now_stamp(), "Fenêtre native et modèles de notes V3"),
+            (V3_SCHEMA_VERSION, now_stamp(), "Fenêtre native et modèles de notes V3"),
+        )
+
+
+def apply_v4_schema_migrations() -> None:
+    """Ajoute la préférence d'envoi des notes sans modifier les fiches existantes."""
+
+    with db_connection() as db:
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                version INTEGER PRIMARY KEY,
+                applied_at TEXT NOT NULL,
+                details TEXT NOT NULL DEFAULT ''
+            )
+            """
+        )
+        applied = {int(row["version"]) for row in db.execute("SELECT version FROM schema_migrations").fetchall()}
+        needs_v4 = DATABASE_SCHEMA_VERSION not in applied
+        has_user_data = database_contains_user_data(db)
+    if not needs_v4:
+        return
+    if has_user_data:
+        backup_profile_to(BACKUPS_DIR, "avant-migration-v4")
+    with db_connection() as db:
+        add_missing_columns(
+            db,
+            "clients",
+            {
+                "email_notes_enabled": "INTEGER NOT NULL DEFAULT 0",
+                "email_review_before_send": "INTEGER NOT NULL DEFAULT 0",
+            },
+        )
+        db.execute(
+            "INSERT OR IGNORE INTO schema_migrations (version, applied_at, details) VALUES (?, ?, ?)",
+            (DATABASE_SCHEMA_VERSION, now_stamp(), "Envoi sélectionné des notes par email"),
         )
 
 
@@ -694,6 +780,8 @@ def init_db() -> None:
                 name TEXT PRIMARY KEY,
                 cesu TEXT NOT NULL DEFAULT '',
                 email TEXT NOT NULL DEFAULT '',
+                email_notes_enabled INTEGER NOT NULL DEFAULT 0,
+                email_review_before_send INTEGER NOT NULL DEFAULT 0,
                 hourly_rate REAL NOT NULL DEFAULT 0,
                 hourly_rate_custom INTEGER NOT NULL DEFAULT 0,
                 address TEXT NOT NULL DEFAULT '',
@@ -781,6 +869,7 @@ def init_db() -> None:
             db.execute("UPDATE clients SET hourly_rate = 0 WHERE hourly_rate_custom = 0")
     apply_v2_schema_migrations()
     apply_v3_schema_migrations()
+    apply_v4_schema_migrations()
     ensure_default_document_template()
     refresh_clients()
     seed_interventions_if_empty()
@@ -1715,6 +1804,16 @@ def apply_profile_fields(profile: dict, data: dict, *, allow_label_empty: bool =
         profile["backup_retention_days"] = retention
     if "daily_backup_enabled" in data:
         profile["daily_backup_enabled"] = bool(data.get("daily_backup_enabled"))
+    smtp_fields = set(smtp_defaults())
+    if smtp_fields.intersection(data):
+        combined = {field: profile.get(field) for field in smtp_fields}
+        combined.update({field: data.get(field) for field in smtp_fields if field in data})
+        profile.update(normalize_smtp_settings(combined))
+    password = str(data.get("smtp_password") or "")
+    if password:
+        save_smtp_password(profile["id"], password)
+    if data.get("smtp_clear_password"):
+        delete_smtp_password(profile["id"])
     if "notes_intervention_dir" in data:
         raw_notes_dir = clean_text(data.get("notes_intervention_dir"))
         if raw_notes_dir:
@@ -1847,6 +1946,7 @@ def delete_profile(profile_id: str) -> dict:
     profile = profile_by_id(profile_id)
     if profile is None:
         raise KeyError("Compte introuvable.")
+    delete_smtp_password(profile_id)
     CONFIG["profiles"] = [item for item in profiles if item.get("id") != profile_id]
     if CONFIG.get("active_profile_id") == profile_id:
         CONFIG["active_profile_id"] = CONFIG["profiles"][0]["id"]
@@ -2396,6 +2496,8 @@ def clients_list() -> list[dict]:
     for row in rows:
         item = dict(row)
         item["hourly_rate_custom"] = bool(item.get("hourly_rate_custom"))
+        item["email_notes_enabled"] = bool(item.get("email_notes_enabled"))
+        item["email_review_before_send"] = bool(item.get("email_review_before_send"))
         item["hourly_rate"] = round(float(item.get("hourly_rate") or 0), 4) if item["hourly_rate_custom"] else 0
         clients.append(item)
     return clients
@@ -2425,6 +2527,8 @@ def validate_client(data: dict) -> tuple[dict, str | None]:
         "name": name,
         "cesu": str(data.get("cesu", "") or "").strip(),
         "email": email,
+        "email_notes_enabled": 1 if data.get("email_notes_enabled") else 0,
+        "email_review_before_send": 1 if data.get("email_review_before_send") else 0,
         "hourly_rate": round(hourly_rate, 4),
         "hourly_rate_custom": 1 if hourly_rate_custom else 0,
         "address": str(data.get("address", "") or "").strip(),
@@ -2462,15 +2566,17 @@ def create_client(data: dict) -> dict:
             db.execute(
                 """
                 INSERT INTO clients
-                    (name, cesu, email, hourly_rate, hourly_rate_custom, address, phone, activity, instructions,
+                    (name, cesu, email, email_notes_enabled, email_review_before_send, hourly_rate, hourly_rate_custom, address, phone, activity, instructions,
                     access_info, payment_preferences, usual_duration_hours, usual_frequency, preferred_days,
                     is_archived, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     item["name"],
                     item["cesu"],
                     item["email"],
+                    item["email_notes_enabled"],
+                    item["email_review_before_send"],
                     item["hourly_rate"],
                     item["hourly_rate_custom"],
                     item["address"],
@@ -2512,7 +2618,7 @@ def update_client(original_name: str, data: dict) -> dict:
         db.execute(
             """
             UPDATE clients
-            SET name = ?, cesu = ?, email = ?, hourly_rate = ?, hourly_rate_custom = ?, address = ?, phone = ?,
+            SET name = ?, cesu = ?, email = ?, email_notes_enabled = ?, email_review_before_send = ?, hourly_rate = ?, hourly_rate_custom = ?, address = ?, phone = ?,
                 activity = ?, instructions = ?, access_info = ?, payment_preferences = ?, usual_duration_hours = ?,
                 usual_frequency = ?, preferred_days = ?, is_archived = ?, updated_at = ?
             WHERE name = ?
@@ -2521,6 +2627,8 @@ def update_client(original_name: str, data: dict) -> dict:
                 item["name"],
                 item["cesu"],
                 item["email"],
+                item["email_notes_enabled"],
+                item["email_review_before_send"],
                 item["hourly_rate"],
                 item["hourly_rate_custom"],
                 item["address"],
@@ -3701,10 +3809,158 @@ def generate_month_notes(year: int, month: int, replace: bool = False, output_di
     return {
         "month_label": f"{MONTH_LABELS[month]} {year}",
         "output_base": str(base_dir),
-        "output_dir": str(base_dir / str(year) / f"{month:02d}. {MONTH_LABELS[month]} {year}"),
+        "output_dir": str(base_dir),
         "summary": month_summary(year, month),
         "template": {"id": template["id"], "name": template["name"]},
         "notes": result,
+    }
+
+
+def email_configuration_status(profile: dict | None = None) -> dict:
+    selected_profile = profile or active_profile()
+    try:
+        settings = normalize_smtp_settings(selected_profile, require_complete=True)
+    except ValueError as exc:
+        return {"ready": False, "message": str(exc)}
+    if settings["smtp_username"] and not password_saved(selected_profile["id"]):
+        return {
+            "ready": False,
+            "message": "Renseigne le mot de passe SMTP dans les réglages.",
+        }
+    return {"ready": True, "message": "Configuration email prête."}
+
+
+def test_email_configuration() -> dict:
+    profile = active_profile()
+    settings = normalize_smtp_settings(profile, require_complete=True)
+    password = get_smtp_password(profile["id"])
+    with smtp_connection(settings, password):
+        pass
+    return {"ok": True, "message": "Connexion au serveur de messagerie réussie."}
+
+
+def month_email_preview(year: int, month: int) -> dict:
+    rows = list_interventions(year, month)
+    if not rows:
+        raise ValueError("Aucune intervention pour ce mois.")
+    clients = {item["name"]: item for item in clients_list()}
+    profile = active_profile()
+    settings = normalize_smtp_settings(profile)
+    grouped: dict[str, list[dict]] = {}
+    for row in rows:
+        grouped.setdefault(row["client"], []).append(row)
+    recipients = []
+    for client_name in sorted(grouped, key=sorted_name_key):
+        client_rows = grouped[client_name]
+        client = clients.get(client_name, {})
+        email = clean_text(client.get("email"))
+        total_hours = sum(float(row["duration_hours"]) for row in client_rows)
+        total_amount = sum(
+            float(row["duration_hours"]) * float(row["hourly_rate"])
+            for row in client_rows
+        )
+        values = {
+            "client": client_name,
+            "mois": MONTH_LABELS[month],
+            "annee": str(year),
+            "heures": hours_label(total_hours),
+            "montant": french_money(total_amount),
+            "nom": clean_text(settings["smtp_sender_name"])
+            or clean_text(profile.get("name"))
+            or clean_text(profile.get("label")),
+        }
+        recipients.append(
+            {
+                "client": client_name,
+                "email": email,
+                "selectable": bool(email),
+                "selected": bool(email and client.get("email_notes_enabled")),
+                "review_before_send": bool(client.get("email_review_before_send")),
+                "hours": values["heures"],
+                "amount": values["montant"],
+                "interventions": len(client_rows),
+                "subject": render_email_template(settings["email_subject_template"], values),
+                "body": render_email_template(settings["email_body_template"], values),
+            }
+        )
+    return {
+        "month_label": f"{MONTH_LABELS[month]} {year}",
+        "configuration": email_configuration_status(),
+        "recipients": recipients,
+    }
+
+
+def send_month_emails(
+    year: int,
+    month: int,
+    client_names: object,
+    message_overrides: object = None,
+) -> dict:
+    if not isinstance(client_names, list):
+        raise ValueError("La liste des clients à contacter est invalide.")
+    requested = {clean_text(name) for name in client_names if clean_text(name)}
+    if not requested:
+        raise ValueError("Coche au moins un client.")
+    if message_overrides is None:
+        message_overrides = {}
+    if not isinstance(message_overrides, dict):
+        raise ValueError("Les modifications des mails sont invalides.")
+
+    preview = month_email_preview(year, month)
+    candidates = {item["client"]: item for item in preview["recipients"]}
+    unknown = requested - set(candidates)
+    if unknown:
+        raise ValueError("Un client sélectionné n'appartient pas au mois choisi.")
+    missing_email = sorted(name for name in requested if not candidates[name]["selectable"])
+    if missing_email:
+        raise ValueError(f"Adresse email manquante pour : {', '.join(missing_email)}.")
+
+    profile = active_profile()
+    settings = normalize_smtp_settings(profile, require_complete=True)
+    password = get_smtp_password(profile["id"])
+    if settings["smtp_username"] and not password:
+        raise ValueError("Renseigne le mot de passe SMTP dans les réglages.")
+
+    generated = generate_month_notes(year, month, replace=False)
+    notes_folder = Path(generated["output_dir"])
+    sent: list[dict] = []
+    errors: list[dict] = []
+    with smtp_connection(settings, password) as server:
+        for client_name in sorted(requested, key=sorted_name_key):
+            recipient = candidates[client_name]
+            try:
+                note_path = matching_existing_note(notes_folder, year, month, client_name)
+                if note_path is None:
+                    raise ValueError("Le PDF de la note d'intervention est introuvable.")
+                override = message_overrides.get(client_name, {})
+                if not isinstance(override, dict):
+                    override = {}
+                subject = clean_text(override.get("subject")) or recipient["subject"]
+                body = str(override.get("body") or recipient["body"]).strip()
+                if not subject or not body:
+                    raise ValueError("L'objet et le texte du mail ne peuvent pas être vides.")
+                message = build_email_message(
+                    settings,
+                    recipient["email"],
+                    subject,
+                    body,
+                    note_path,
+                )
+                server.send_message(message)
+                sent.append(
+                    {
+                        "client": client_name,
+                        "email": recipient["email"],
+                        "note": str(note_path),
+                    }
+                )
+            except Exception as exc:  # noqa: BLE001 - une erreur client ne bloque pas les suivants
+                errors.append({"client": client_name, "error": str(exc)})
+    return {
+        "month_label": preview["month_label"],
+        "sent": sent,
+        "errors": errors,
+        "output_dir": str(notes_folder),
     }
 
 
@@ -3850,14 +4106,14 @@ class LocalAppServer:
             self.port, self.existing_server = select_server_port(self.preferred_port)
         if self.existing_server:
             self.url = f"http://127.0.0.1:{self.port}"
-            self.browser_url = f"{self.url}/?v=20260726-v312"
+            self.browser_url = f"{self.url}/?v=20260730-v313"
             return self.browser_url
 
         init_db()
         self.server = ThreadingHTTPServer(("127.0.0.1", self.port), AppHandler)
         self.port = int(self.server.server_address[1])
         self.url = f"http://127.0.0.1:{self.port}"
-        self.browser_url = f"{self.url}/?v=20260726-v312"
+        self.browser_url = f"{self.url}/?v=20260730-v313"
         self.server.daemon_threads = True
         self.server.block_on_close = False
         self.monitor_stop = threading.Event()
@@ -4345,6 +4601,27 @@ class AppHandler(SimpleHTTPRequestHandler):
                 return
             if parsed.path == "/api/interventions":
                 json_response(self, {"intervention": create_intervention(body)}, HTTPStatus.CREATED)
+                return
+            if parsed.path == "/api/email-preview":
+                year = int(body.get("year", date.today().year))
+                month = int(body.get("month", date.today().month))
+                json_response(self, month_email_preview(year, month))
+                return
+            if parsed.path == "/api/test-email":
+                json_response(self, test_email_configuration())
+                return
+            if parsed.path == "/api/send-month-emails":
+                year = int(body.get("year", date.today().year))
+                month = int(body.get("month", date.today().month))
+                json_response(
+                    self,
+                    send_month_emails(
+                        year,
+                        month,
+                        body.get("clients"),
+                        body.get("message_overrides"),
+                    ),
+                )
                 return
             if parsed.path == "/api/generate-month":
                 year = int(body.get("year", date.today().year))

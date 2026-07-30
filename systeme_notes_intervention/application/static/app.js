@@ -19,6 +19,16 @@ let browserEventSource = null;
 const DISPLAY_STORAGE_KEY = "easyCesuDisplayMode";
 const DISPLAY_MANUAL_SCALES = { compact: 0.8, normal: 1, large: 1.1 };
 const DISPLAY_MODES = new Set(["auto", ...Object.keys(DISPLAY_MANUAL_SCALES)]);
+const DEFAULT_EMAIL_SUBJECT = "Note d'intervention - {mois} {annee} - {client}";
+const DEFAULT_EMAIL_BODY = `Bonjour,
+
+Veuillez trouver en pièce jointe votre note d'intervention pour {mois} {annee}.
+
+Nombre d'heures : {heures}
+Montant net : {montant}
+
+Cordialement,
+{nom}`;
 
 function automaticDisplayScale() {
   const dpr = Math.max(1, Number(window.devicePixelRatio) || 1);
@@ -108,6 +118,10 @@ const state = {
   templateDraft: null,
   templateDirty: false,
   community: null,
+  emailPreview: null,
+  emailReviewQueue: [],
+  emailMessageOverrides: {},
+  emailSelectedClients: [],
 };
 
 const els = {
@@ -119,6 +133,7 @@ const els = {
   yearFilter: document.querySelector("#yearFilter"),
   monthFilter: document.querySelector("#monthFilter"),
   generateBtn: document.querySelector("#generateBtn"),
+  emailNotesBtn: document.querySelector("#emailNotesBtn"),
   exportBtn: document.querySelector("#exportBtn"),
   clientsTopBtn: document.querySelector("#clientsTopBtn"),
   displayModeSelect: document.querySelector("#displayModeSelect"),
@@ -168,6 +183,18 @@ const els = {
   commercialNameInput: document.querySelector("#commercialNameInput"),
   backupDirInput: document.querySelector("#backupDirInput"),
   defaultRateInput: document.querySelector("#defaultRateInput"),
+  smtpSenderNameInput: document.querySelector("#smtpSenderNameInput"),
+  smtpSenderEmailInput: document.querySelector("#smtpSenderEmailInput"),
+  smtpHostInput: document.querySelector("#smtpHostInput"),
+  smtpPortInput: document.querySelector("#smtpPortInput"),
+  smtpSecurityInput: document.querySelector("#smtpSecurityInput"),
+  smtpUsernameInput: document.querySelector("#smtpUsernameInput"),
+  smtpPasswordInput: document.querySelector("#smtpPasswordInput"),
+  smtpClearPasswordInput: document.querySelector("#smtpClearPasswordInput"),
+  smtpGmailPresetBtn: document.querySelector("#smtpGmailPresetBtn"),
+  smtpTestBtn: document.querySelector("#smtpTestBtn"),
+  emailSubjectTemplateInput: document.querySelector("#emailSubjectTemplateInput"),
+  emailBodyTemplateInput: document.querySelector("#emailBodyTemplateInput"),
   sourceDirInput: document.querySelector("#sourceDirInput"),
   browseSourceDirBtn: document.querySelector("#browseSourceDirBtn"),
   sourcePatternInput: document.querySelector("#sourcePatternInput"),
@@ -253,12 +280,27 @@ const els = {
   clientOriginalName: document.querySelector("#clientOriginalName"),
   clientNameInput: document.querySelector("#clientNameInput"),
   clientEmailInput: document.querySelector("#clientEmailInput"),
+  clientEmailNotesInput: document.querySelector("#clientEmailNotesInput"),
+  clientEmailReviewInput: document.querySelector("#clientEmailReviewInput"),
   clientCesuInput: document.querySelector("#clientCesuInput"),
   clientRateInput: document.querySelector("#clientRateInput"),
   clientPhoneInput: document.querySelector("#clientPhoneInput"),
   clientAddressInput: document.querySelector("#clientAddressInput"),
   clientResetBtn: document.querySelector("#clientResetBtn"),
   clientSaveBtn: document.querySelector("#clientSaveBtn"),
+  emailNotesDialog: document.querySelector("#emailNotesDialog"),
+  emailNotesDialogPeriod: document.querySelector("#emailNotesDialogPeriod"),
+  emailNotesCloseIconBtn: document.querySelector("#emailNotesCloseIconBtn"),
+  emailNotesCancelBtn: document.querySelector("#emailNotesCancelBtn"),
+  emailNotesSendBtn: document.querySelector("#emailNotesSendBtn"),
+  emailRecipientsBody: document.querySelector("#emailRecipientsBody"),
+  emailReviewDialog: document.querySelector("#emailReviewDialog"),
+  emailReviewClient: document.querySelector("#emailReviewClient"),
+  emailReviewSubjectInput: document.querySelector("#emailReviewSubjectInput"),
+  emailReviewBodyInput: document.querySelector("#emailReviewBodyInput"),
+  emailReviewCloseIconBtn: document.querySelector("#emailReviewCloseIconBtn"),
+  emailReviewCancelBtn: document.querySelector("#emailReviewCancelBtn"),
+  emailReviewNextBtn: document.querySelector("#emailReviewNextBtn"),
   clientSearchInput: document.querySelector("#clientSearchInput"),
   clientsBody: document.querySelector("#clientsBody"),
   reminderForm: document.querySelector("#reminderForm"),
@@ -458,6 +500,20 @@ function setProfileForm(profile = {}) {
   els.notesDirInput.value = state.notesDir;
   state.exportDir = "export_dir" in profile ? profile.export_dir || "" : state.exportDir || "";
   els.exportDirInput.value = state.exportDir;
+  els.smtpSenderNameInput.value = profile.smtp_sender_name || profile.name || "";
+  els.smtpSenderEmailInput.value = profile.smtp_sender_email || profile.email || "";
+  els.smtpHostInput.value = profile.smtp_host || "";
+  els.smtpPortInput.value = profile.smtp_port || 587;
+  els.smtpSecurityInput.value = profile.smtp_security || "starttls";
+  els.smtpUsernameInput.value = profile.smtp_username || "";
+  els.smtpPasswordInput.value = "";
+  els.smtpPasswordInput.placeholder = profile.smtp_password_saved
+    ? "Mot de passe déjà enregistré"
+    : "Mot de passe ou mot de passe d'application";
+  els.smtpClearPasswordInput.checked = false;
+  els.emailSubjectTemplateInput.value =
+    profile.email_subject_template || DEFAULT_EMAIL_SUBJECT;
+  els.emailBodyTemplateInput.value = profile.email_body_template || DEFAULT_EMAIL_BODY;
 }
 
 function setProfileEditorMode(creating) {
@@ -489,6 +545,16 @@ function profilePayload() {
     data_dir: els.dataDirInput.value.trim(),
     notes_intervention_dir: els.notesDirInput.value.trim(),
     export_dir: els.exportDirInput.value.trim(),
+    smtp_sender_name: els.smtpSenderNameInput.value.trim(),
+    smtp_sender_email: els.smtpSenderEmailInput.value.trim(),
+    smtp_host: els.smtpHostInput.value.trim(),
+    smtp_port: Number(els.smtpPortInput.value),
+    smtp_security: els.smtpSecurityInput.value,
+    smtp_username: els.smtpUsernameInput.value.trim(),
+    smtp_password: els.smtpPasswordInput.value,
+    smtp_clear_password: els.smtpClearPasswordInput.checked,
+    email_subject_template: els.emailSubjectTemplateInput.value,
+    email_body_template: els.emailBodyTemplateInput.value,
   };
 }
 
@@ -1077,6 +1143,8 @@ function resetClientForm() {
   els.clientOriginalName.value = "";
   els.clientForm.reset();
   els.clientRateInput.value = "";
+  els.clientEmailNotesInput.checked = false;
+  els.clientEmailReviewInput.checked = false;
   els.clientSaveBtn.textContent = "Ajouter client";
   state.selectedClientName = "";
   state.clientReminders = [];
@@ -1114,6 +1182,8 @@ function clientPayload() {
   return {
     name: els.clientNameInput.value,
     email: els.clientEmailInput.value,
+    email_notes_enabled: els.clientEmailNotesInput.checked,
+    email_review_before_send: els.clientEmailReviewInput.checked,
     cesu: els.clientCesuInput.value,
     hourly_rate: hasCustomRate ? Number(rawRate) : 0,
     hourly_rate_custom: hasCustomRate,
@@ -1149,6 +1219,8 @@ function loadIntoClientForm(client) {
   els.clientOriginalName.value = client.name;
   els.clientNameInput.value = client.name || "";
   els.clientEmailInput.value = client.email || "";
+  els.clientEmailNotesInput.checked = Boolean(client.email_notes_enabled);
+  els.clientEmailReviewInput.checked = Boolean(client.email_review_before_send);
   els.clientCesuInput.value = client.cesu || "";
   els.clientRateInput.value =
     client.hourly_rate_custom && Number(client.hourly_rate || 0) > 0 ? Number(client.hourly_rate).toFixed(2) : "";
@@ -1783,6 +1855,175 @@ async function generateNotes() {
   }
 }
 
+function applyGmailPreset() {
+  const accountEmail = els.smtpSenderEmailInput.value.trim() || els.employeeEmailInput.value.trim();
+  els.smtpHostInput.value = "smtp.gmail.com";
+  els.smtpPortInput.value = "587";
+  els.smtpSecurityInput.value = "starttls";
+  if (accountEmail) {
+    els.smtpSenderEmailInput.value = accountEmail;
+    els.smtpUsernameInput.value = accountEmail;
+  }
+  showToast("Réglages Gmail préparés. Utilise un mot de passe d'application Google.");
+}
+
+async function testEmailSettings() {
+  els.smtpTestBtn.disabled = true;
+  try {
+    await saveSettings({ silent: true });
+    const payload = await api("/api/test-email", { method: "POST", body: "{}" });
+    showToast(payload.message);
+  } finally {
+    els.smtpTestBtn.disabled = false;
+  }
+}
+
+function selectedEmailRows() {
+  return [...els.emailRecipientsBody.querySelectorAll("[data-email-client]")]
+    .filter((checkbox) => checkbox.checked)
+    .map((checkbox) => {
+      const client = checkbox.dataset.emailClient;
+      const review = els.emailRecipientsBody.querySelector(`[data-email-review="${CSS.escape(client)}"]`);
+      return {
+        ...state.emailPreview.recipients.find((item) => item.client === client),
+        review_before_send: Boolean(review?.checked),
+      };
+    });
+}
+
+function updateEmailSendButton() {
+  const count = selectedEmailRows().length;
+  els.emailNotesSendBtn.disabled = count === 0;
+  els.emailNotesSendBtn.textContent = count > 1 ? `Continuer avec ${count} clients` : count === 1 ? "Continuer avec 1 client" : "Choisir un client";
+}
+
+function renderEmailRecipients(payload) {
+  state.emailPreview = payload;
+  els.emailNotesDialogPeriod.textContent = `${payload.month_label} · vérifie les destinataires avant l'envoi.`;
+  els.emailRecipientsBody.innerHTML = payload.recipients.map((item) => `
+    <tr>
+      <td>
+        <input type="checkbox" data-email-client="${escapeHtml(item.client)}"
+          ${item.selected ? "checked" : ""} ${item.selectable ? "" : "disabled"}
+          aria-label="Envoyer la note à ${escapeHtml(item.client)}" />
+      </td>
+      <td>
+        <input type="checkbox" data-email-review="${escapeHtml(item.client)}"
+          ${item.review_before_send ? "checked" : ""} ${item.selectable ? "" : "disabled"}
+          aria-label="Relire le mail de ${escapeHtml(item.client)}" />
+      </td>
+      <td><strong>${escapeHtml(item.client)}</strong></td>
+      <td>${item.email ? escapeHtml(item.email) : '<span class="missing-email">Adresse manquante</span>'}</td>
+      <td>${escapeHtml(item.hours)}</td>
+      <td>${escapeHtml(item.amount)}</td>
+    </tr>
+  `).join("");
+  updateEmailSendButton();
+}
+
+async function openEmailNotesDialog() {
+  els.emailNotesBtn.disabled = true;
+  try {
+    const payload = await api("/api/email-preview", {
+      method: "POST",
+      body: JSON.stringify({ year: selectedYear(), month: selectedMonth() }),
+    });
+    if (!payload.configuration.ready) {
+      setActiveView("settings");
+      showToast(`${payload.configuration.message}\nOuvre « Envoi des notes par email » dans les réglages.`);
+      return;
+    }
+    renderEmailRecipients(payload);
+    els.emailNotesDialog.showModal();
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    els.emailNotesBtn.disabled = false;
+  }
+}
+
+function closeEmailNotesDialog() {
+  if (els.emailNotesDialog.open) els.emailNotesDialog.close();
+}
+
+function closeEmailReviewDialog() {
+  state.emailReviewQueue = [];
+  state.emailSelectedClients = [];
+  state.emailMessageOverrides = {};
+  if (els.emailReviewDialog.open) els.emailReviewDialog.close();
+}
+
+function showNextEmailForReview() {
+  const recipient = state.emailReviewQueue[0];
+  if (!recipient) {
+    if (els.emailReviewDialog.open) els.emailReviewDialog.close();
+    sendSelectedMonthEmails().catch((error) => showToast(error.message));
+    return;
+  }
+  els.emailReviewClient.textContent = `${recipient.client} · ${recipient.email}`;
+  els.emailReviewSubjectInput.value = recipient.subject || "";
+  els.emailReviewBodyInput.value = recipient.body || "";
+  els.emailReviewNextBtn.textContent =
+    state.emailReviewQueue.length > 1
+      ? `Valider puis relire le suivant (${state.emailReviewQueue.length - 1})`
+      : "Valider puis envoyer";
+  if (!els.emailReviewDialog.open) els.emailReviewDialog.showModal();
+  els.emailReviewSubjectInput.focus();
+}
+
+function validateReviewedEmail() {
+  const recipient = state.emailReviewQueue[0];
+  if (!recipient) return;
+  const subject = els.emailReviewSubjectInput.value.trim();
+  const body = els.emailReviewBodyInput.value.trim();
+  if (!subject || !body) {
+    showToast("L'objet et le texte du mail ne peuvent pas être vides.");
+    return;
+  }
+  state.emailMessageOverrides[recipient.client] = { subject, body };
+  state.emailReviewQueue.shift();
+  showNextEmailForReview();
+}
+
+function beginSelectedEmailSend() {
+  const selected = selectedEmailRows();
+  if (!selected.length) return;
+  state.emailSelectedClients = selected.map((item) => item.client);
+  state.emailMessageOverrides = {};
+  state.emailReviewQueue = selected.filter((item) => item.review_before_send);
+  closeEmailNotesDialog();
+  if (state.emailReviewQueue.length) {
+    showNextEmailForReview();
+  } else {
+    sendSelectedMonthEmails().catch((error) => showToast(error.message));
+  }
+}
+
+async function sendSelectedMonthEmails() {
+  els.emailNotesBtn.disabled = true;
+  try {
+    showToast("Création des PDF manquants et envoi en cours...");
+    const payload = await api("/api/send-month-emails", {
+      method: "POST",
+      body: JSON.stringify({
+        year: selectedYear(),
+        month: selectedMonth(),
+        clients: state.emailSelectedClients,
+        message_overrides: state.emailMessageOverrides,
+      }),
+    });
+    const details = payload.errors.length
+      ? `\nErreurs : ${payload.errors.map((item) => `${item.client} (${item.error})`).join(", ")}`
+      : "";
+    showToast(`${payload.sent.length} mail(s) envoyé(s) pour ${payload.month_label}.${details}`);
+  } finally {
+    state.emailReviewQueue = [];
+    state.emailSelectedClients = [];
+    state.emailMessageOverrides = {};
+    els.emailNotesBtn.disabled = false;
+  }
+}
+
 async function exportYear() {
   els.exportBtn.disabled = true;
   try {
@@ -2028,6 +2269,7 @@ function bindEvents() {
   els.searchInput.addEventListener("input", renderInterventions);
   els.clientSearchInput.addEventListener("input", renderClientsTable);
   els.generateBtn.addEventListener("click", generateNotes);
+  els.emailNotesBtn.addEventListener("click", openEmailNotesDialog);
   els.exportBtn.addEventListener("click", exportYear);
   els.quickProfileSelect.addEventListener("change", () => {
     switchActiveProfile(els.quickProfileSelect.value).catch((error) => showToast(error.message));
@@ -2061,6 +2303,23 @@ function bindEvents() {
   });
   els.saveSettingsBtn.addEventListener("click", () => {
     saveSettings().catch((error) => showToast(error.message));
+  });
+  els.smtpGmailPresetBtn.addEventListener("click", applyGmailPreset);
+  els.smtpTestBtn.addEventListener("click", () => {
+    testEmailSettings().catch((error) => showToast(error.message));
+  });
+  els.emailRecipientsBody.addEventListener("change", updateEmailSendButton);
+  els.emailNotesSendBtn.addEventListener("click", beginSelectedEmailSend);
+  els.emailNotesCancelBtn.addEventListener("click", closeEmailNotesDialog);
+  els.emailNotesCloseIconBtn.addEventListener("click", closeEmailNotesDialog);
+  els.emailNotesDialog.addEventListener("click", (event) => {
+    if (event.target === els.emailNotesDialog) closeEmailNotesDialog();
+  });
+  els.emailReviewNextBtn.addEventListener("click", validateReviewedEmail);
+  els.emailReviewCancelBtn.addEventListener("click", closeEmailReviewDialog);
+  els.emailReviewCloseIconBtn.addEventListener("click", closeEmailReviewDialog);
+  els.emailReviewDialog.addEventListener("click", (event) => {
+    if (event.target === els.emailReviewDialog) closeEmailReviewDialog();
   });
   els.githubSourceBtn.addEventListener("click", () => openExternal("github_repository").catch((error) => showToast(error.message)));
   els.githubStarBtn.addEventListener("click", () => openExternal("github_star").catch((error) => showToast(error.message)));
@@ -2219,18 +2478,16 @@ function bindEvents() {
       deleteReminder(deleteButton.dataset.deleteReminder).catch((error) => showToast(error.message));
     }
   });
+  els.clientInput.addEventListener("input", applySelectedClientDefaults);
   els.clientInput.addEventListener("change", applySelectedClientDefaults);
 }
 
 function applySelectedClientDefaults() {
   const client = state.clients.find((item) => item.name === els.clientInput.value);
   if (!client) {
-    els.rateInput.value = state.defaultRate.toFixed(2);
     return;
   }
-  if (!els.locationInput.value) {
-    els.locationInput.value = client.address || "";
-  }
+  els.locationInput.value = client.address || "";
   if (client.hourly_rate_custom && Number(client.hourly_rate || 0) > 0) {
     els.rateInput.value = Number(client.hourly_rate).toFixed(2);
   } else {

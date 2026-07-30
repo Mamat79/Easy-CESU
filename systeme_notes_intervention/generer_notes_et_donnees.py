@@ -736,7 +736,7 @@ def generate_notes(
     font, bold_font = register_fonts()
     result = {"created": [], "skipped": [], "errors": []}
     for (year, month, client), rows in sorted(grouped.items(), key=lambda x: (x[0][0], x[0][1], x[0][2].lower())):
-        folder = notes_dir / str(year) / month_folder(year, month)
+        folder = notes_dir
         filename = f"Note d'intervention - {MONTH_LABELS[month]} {year} - {safe_filename(client)}.pdf"
         output = folder / filename
         existing = matching_existing_note(folder, year, month, client)

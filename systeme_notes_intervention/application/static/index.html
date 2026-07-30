@@ -21,8 +21,8 @@
         window.easyCesuDisplayPreference = { mode, scale };
       })();
     </script>
-    <link id="faviconLink" rel="icon" href="/icons/generique.png?v=20260726-v312" type="image/png" />
-    <link rel="stylesheet" href="/styles.css?v=20260726-v312" />
+    <link id="faviconLink" rel="icon" href="/icons/generique.png?v=20260730-v313" type="image/png" />
+    <link rel="stylesheet" href="/styles.css?v=20260730-v313" />
   </head>
   <body>
     <div class="app-shell">
@@ -38,6 +38,10 @@
           <button id="generateBtn" class="primary">
             <span class="button-icon">▣</span>
             Générer les notes
+          </button>
+          <button id="emailNotesBtn" class="secondary" type="button">
+            <span class="button-icon">✉</span>
+            Envoyer les notes
           </button>
           <button id="exportBtn" class="secondary">
             <span class="button-icon">⇩</span>
@@ -86,6 +90,7 @@
             <label for="clientInput">Client</label>
             <input id="clientInput" list="clientsList" autocomplete="off" required />
             <datalist id="clientsList"></datalist>
+            <input id="locationInput" type="hidden" />
 
             <div class="two-columns">
               <div>
@@ -105,9 +110,6 @@
                 </div>
               </div>
             </div>
-
-            <label for="locationInput">Lieu</label>
-            <input id="locationInput" autocomplete="off" />
 
             <label for="taskInput">Description de l'intervention</label>
             <textarea id="taskInput" rows="4"></textarea>
@@ -453,7 +455,7 @@
             <div>
               <h2>Réglages</h2>
               <p class="section-note">Paramètres utilisés pour les nouvelles interventions et les générations.</p>
-              <p class="section-note">Easy CESU - Version <strong id="appVersion">3.1.2</strong></p>
+              <p class="section-note">Easy CESU - Version <strong id="appVersion">3.1.3</strong></p>
             </div>
           </div>
 
@@ -571,6 +573,65 @@
               </div>
               <p class="section-note">Bilans Excel et fichiers JSON générés par le bouton Bilan Excel.</p>
             </div>
+
+            <details class="email-settings setting-block-full">
+              <summary>Envoi des notes par email</summary>
+              <p class="section-note">Le mot de passe est conservé dans le coffre sécurisé de cet ordinateur, jamais dans la base de données.</p>
+              <div class="email-settings-grid">
+                <div class="setting-block">
+                  <label for="smtpSenderNameInput">Nom de l'expéditeur</label>
+                  <input id="smtpSenderNameInput" autocomplete="name" />
+                </div>
+                <div class="setting-block">
+                  <label for="smtpSenderEmailInput">Adresse d'expédition</label>
+                  <input id="smtpSenderEmailInput" type="email" autocomplete="email" />
+                </div>
+                <div class="setting-block">
+                  <label for="smtpHostInput">Serveur SMTP</label>
+                  <input id="smtpHostInput" autocomplete="off" placeholder="smtp.gmail.com" />
+                </div>
+                <div class="setting-block">
+                  <label for="smtpPortInput">Port</label>
+                  <input id="smtpPortInput" type="number" min="1" max="65535" value="587" />
+                </div>
+                <div class="setting-block">
+                  <label for="smtpSecurityInput">Sécurité</label>
+                  <select id="smtpSecurityInput">
+                    <option value="starttls">STARTTLS</option>
+                    <option value="ssl">SSL/TLS</option>
+                    <option value="none">Aucune</option>
+                  </select>
+                </div>
+                <div class="setting-block">
+                  <label for="smtpUsernameInput">Identifiant SMTP</label>
+                  <input id="smtpUsernameInput" autocomplete="username" />
+                </div>
+                <div class="setting-block">
+                  <label for="smtpPasswordInput">Mot de passe SMTP</label>
+                  <input id="smtpPasswordInput" type="password" autocomplete="new-password" />
+                </div>
+                <div class="setting-block email-provider-actions">
+                  <label>Configuration rapide</label>
+                  <button id="smtpGmailPresetBtn" class="secondary" type="button">Préparer pour Gmail</button>
+                </div>
+                <label class="check-label setting-block-full" for="smtpClearPasswordInput">
+                  <input id="smtpClearPasswordInput" type="checkbox" />
+                  Effacer le mot de passe enregistré sur cet ordinateur
+                </label>
+                <div class="setting-block setting-block-full">
+                  <label for="emailSubjectTemplateInput">Objet du mail</label>
+                  <input id="emailSubjectTemplateInput" autocomplete="off" />
+                </div>
+                <div class="setting-block setting-block-full">
+                  <label for="emailBodyTemplateInput">Texte du mail</label>
+                  <textarea id="emailBodyTemplateInput" rows="8"></textarea>
+                  <p class="section-note">Champs disponibles : {client}, {mois}, {annee}, {heures}, {montant}, {nom}.</p>
+                </div>
+                <div class="email-test-actions setting-block-full">
+                  <button id="smtpTestBtn" class="secondary" type="button">Tester la connexion</button>
+                </div>
+              </div>
+            </details>
 
             <details class="advanced-settings setting-block-full">
               <summary>Options avancées</summary>
@@ -734,6 +795,14 @@
                 <label for="clientEmailInput">Mail</label>
                 <input id="clientEmailInput" type="email" autocomplete="off" />
               </div>
+              <label class="check-label client-email-default" for="clientEmailNotesInput">
+                <input id="clientEmailNotesInput" type="checkbox" />
+                Sélectionner ce client par défaut lors de l'envoi des notes
+              </label>
+              <label class="check-label client-email-default" for="clientEmailReviewInput">
+                <input id="clientEmailReviewInput" type="checkbox" />
+                Relire et modifier son mail avant l'envoi
+              </label>
               <div>
                 <label for="clientCesuInput">Numéro CESU</label>
                 <input id="clientCesuInput" autocomplete="off" />
@@ -849,10 +918,64 @@
         </div>
       </section>
       <footer class="app-disclaimer">
-        <span>Easy CESU V<span id="footerVersion">3.1.2</span> est un outil indépendant de suivi d'activité. Il n'est ni affilié ni connecté automatiquement au service officiel CESU.</span>
+        <span>Easy CESU V<span id="footerVersion">3.1.3</span> est un outil indépendant de suivi d'activité. Il n'est ni affilié ni connecté automatiquement au service officiel CESU.</span>
         <button id="footerGithubBtn" class="footer-link" type="button">Projet GitHub</button>
       </footer>
     </div>
+
+    <dialog id="emailNotesDialog" class="email-notes-dialog" aria-labelledby="emailNotesDialogTitle">
+      <div class="support-dialog-heading">
+        <div>
+          <h2 id="emailNotesDialogTitle">Envoyer les notes d'intervention</h2>
+          <p id="emailNotesDialogPeriod">Choisis les clients à contacter.</p>
+        </div>
+        <button id="emailNotesCloseIconBtn" class="icon-btn support-dialog-close" type="button" aria-label="Fermer">×</button>
+      </div>
+      <div class="email-recipient-table-wrap">
+        <table class="email-recipient-table">
+          <thead>
+            <tr>
+              <th scope="col">Envoyer</th>
+              <th scope="col">Relire</th>
+              <th scope="col">Client</th>
+              <th scope="col">Adresse email</th>
+              <th scope="col">Heures</th>
+              <th scope="col">Montant</th>
+            </tr>
+          </thead>
+          <tbody id="emailRecipientsBody"></tbody>
+        </table>
+      </div>
+      <p class="section-note">Les PDF manquants seront créés dans le dossier des notes avant l'envoi.</p>
+      <div class="support-dialog-actions">
+        <button id="emailNotesCancelBtn" class="secondary" type="button">Annuler</button>
+        <button id="emailNotesSendBtn" class="primary" type="button">Envoyer</button>
+      </div>
+    </dialog>
+
+    <dialog id="emailReviewDialog" class="email-review-dialog" aria-labelledby="emailReviewDialogTitle">
+      <div class="support-dialog-heading">
+        <div>
+          <h2 id="emailReviewDialogTitle">Relire le mail</h2>
+          <p id="emailReviewClient"></p>
+        </div>
+        <button id="emailReviewCloseIconBtn" class="icon-btn support-dialog-close" type="button" aria-label="Fermer">×</button>
+      </div>
+      <div class="email-review-form">
+        <div class="setting-block">
+          <label for="emailReviewSubjectInput">Objet</label>
+          <input id="emailReviewSubjectInput" autocomplete="off" />
+        </div>
+        <div class="setting-block">
+          <label for="emailReviewBodyInput">Texte</label>
+          <textarea id="emailReviewBodyInput" rows="12"></textarea>
+        </div>
+      </div>
+      <div class="support-dialog-actions">
+        <button id="emailReviewCancelBtn" class="secondary" type="button">Annuler l'envoi</button>
+        <button id="emailReviewNextBtn" class="primary" type="button">Valider ce mail</button>
+      </div>
+    </dialog>
 
     <dialog id="supportDialog" class="support-dialog" aria-labelledby="supportDialogTitle">
       <div class="support-dialog-heading">
@@ -919,6 +1042,6 @@
     </dialog>
 
     <div id="toast" class="toast" aria-live="polite"></div>
-    <script src="/app.js?v=20260726-v312"></script>
+    <script src="/app.js?v=20260730-v313"></script>
   </body>
 </html>

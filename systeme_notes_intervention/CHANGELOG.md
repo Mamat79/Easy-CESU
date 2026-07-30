@@ -1,5 +1,16 @@
 # Journal des changements
 
+## 3.1.3 - 2026-07-30
+
+- suppression du champ `Lieu` dans la saisie d'une intervention ;
+- export des notes PDF directement dans le dossier choisi, sans sous-dossiers année/mois ;
+- ajout de l'envoi SMTP des notes avec mot de passe conservé dans le coffre sécurisé du système ;
+- modèles personnalisables pour l'objet et le texte des mails ;
+- préférence d'envoi par défaut et préférence de relecture dans chaque fiche client ;
+- tableau mensuel permettant de choisir les destinataires avant tout envoi ;
+- relecture et modification individuelle des mails signalés avant l'envoi ;
+- migration additive de la base sans perte des clients ni des interventions.
+
 ## 3.1.2 - 2026-07-26
 
 - ajout d'un réglage d'affichage local : Automatique, Compact, Normal ou Agrandi ;

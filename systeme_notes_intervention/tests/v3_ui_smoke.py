@@ -58,11 +58,32 @@ def main() -> int:
             page.locator("#setupAssistantLaterBtn").click()
         page.locator('[data-view="templates"]').click()
         page.locator("#templatePaper").wait_for(state="visible")
+        page.wait_for_function("document.querySelectorAll('#templateSelect option').length > 0")
         if page.locator("#templateTitleInput").input_value() != "RELEVÉ DES PRESTATIONS":
             raise AssertionError("Le modèle enregistré n'est pas rechargé.")
 
         page.locator('[data-view="settings"]').click()
         page.locator("#communityTitle").wait_for(state="visible")
+        page.locator(".email-settings summary").click()
+        page.locator("#smtpHostInput").wait_for(state="visible")
+        if page.locator("#smtpHostInput").input_value() != "smtp.example.test":
+            raise AssertionError("La configuration email du compte n'est pas chargée.")
+        page.screenshot(path=str(OUTPUT_DIR / "email-settings-desktop.png"), full_page=True)
+
+        page.locator("#emailNotesBtn").click()
+        page.locator("#emailNotesDialog").wait_for(state="visible")
+        if page.locator("#emailRecipientsBody tr").count() != 3:
+            raise AssertionError("La liste d'envoi ne reprend pas les trois clients du mois.")
+        if page.locator('[data-email-client="Mme Bernard"]').is_enabled():
+            raise AssertionError("Un client sans adresse email ne doit pas être sélectionnable.")
+        page.screenshot(path=str(OUTPUT_DIR / "email-recipients-desktop.png"))
+        page.locator("#emailNotesSendBtn").click()
+        page.locator("#emailReviewDialog").wait_for(state="visible")
+        if "M. Dupont" not in page.locator("#emailReviewClient").inner_text():
+            raise AssertionError("Le client marqué pour relecture n'ouvre pas l'éditeur.")
+        page.screenshot(path=str(OUTPUT_DIR / "email-review-desktop.png"))
+        page.locator("#emailReviewCancelBtn").click()
+
         if not page.locator("#supportReminderEnabledInput").is_checked():
             raise AssertionError("Le rappel discret doit être activé par défaut.")
         if page.locator("#supportReminder").is_visible():

@@ -301,6 +301,9 @@ import app_server
             generated = app_server.generate_month_notes(2026, 7, output_dir=destination)
             note_path = Path(generated["notes"]["created"][0])
             assert note_path.exists() and note_path.read_bytes().startswith(b"%PDF")
+            assert note_path.parent == destination
+            assert generated["output_dir"] == str(destination)
+            assert not (destination / "2026").exists()
             assert generated["template"]["name"] == "Modèle personnalisé"
 
             exported = app_server.export_document_template(updated["id"], destination)
@@ -311,6 +314,97 @@ import app_server
                 assert db.execute("SELECT version FROM schema_migrations WHERE version = 3").fetchone()[0] == 3
                 assert db.execute("SELECT COUNT(*) FROM interventions").fetchone()[0] == 1
                 assert db.execute("SELECT COUNT(*) FROM clients").fetchone()[0] == 1
+            """
+        )
+
+    def test_email_preferences_preview_review_and_smtp_send(self) -> None:
+        self.run_scenario(
+            """
+            from contextlib import contextmanager
+
+            app_server.init_db()
+            app_server.create_client(
+                {
+                    "name": "Client Direct",
+                    "email": "direct@example.test",
+                    "email_notes_enabled": True,
+                }
+            )
+            app_server.create_client(
+                {
+                    "name": "Client Relu",
+                    "email": "relu@example.test",
+                    "email_notes_enabled": True,
+                    "email_review_before_send": True,
+                }
+            )
+            app_server.create_client(
+                {
+                    "name": "Client Sans Mail",
+                    "email_notes_enabled": True,
+                }
+            )
+            for name in ("Client Direct", "Client Relu", "Client Sans Mail"):
+                app_server.create_intervention(
+                    {"date": "2026-07-12", "client": name, "duration_hours": 1.5, "hourly_rate": 22}
+                )
+
+            profile = app_server.active_profile()
+            profile.update(
+                {
+                    "smtp_host": "smtp.example.test",
+                    "smtp_port": 587,
+                    "smtp_security": "starttls",
+                    "smtp_username": "sender@example.test",
+                    "smtp_sender_name": "Compte Test",
+                    "smtp_sender_email": "sender@example.test",
+                    "email_subject_template": "Note {mois} {annee} - {client}",
+                    "email_body_template": "Bonjour {client}, {heures}, {montant}. {nom}",
+                }
+            )
+            app_server.password_saved = lambda profile_id: True
+            app_server.get_smtp_password = lambda profile_id: "secret-test"
+
+            preview = app_server.month_email_preview(2026, 7)
+            assert preview["configuration"]["ready"] is True
+            recipients = {item["client"]: item for item in preview["recipients"]}
+            assert recipients["Client Direct"]["selected"] is True
+            assert recipients["Client Direct"]["review_before_send"] is False
+            assert recipients["Client Relu"]["review_before_send"] is True
+            assert recipients["Client Sans Mail"]["selectable"] is False
+            assert recipients["Client Relu"]["subject"] == "Note Juillet 2026 - Client Relu"
+            assert recipients["Client Relu"]["hours"] == "01:30"
+
+            messages = []
+            class FakeServer:
+                def send_message(self, message):
+                    messages.append(message)
+
+            @contextmanager
+            def fake_connection(settings, password):
+                assert settings["smtp_host"] == "smtp.example.test"
+                assert password == "secret-test"
+                yield FakeServer()
+
+            app_server.smtp_connection = fake_connection
+            result = app_server.send_month_emails(
+                2026,
+                7,
+                ["Client Direct", "Client Relu"],
+                {"Client Relu": {"subject": "Objet relu", "body": "Texte corrigé avant envoi."}},
+            )
+            assert not result["errors"]
+            assert len(result["sent"]) == 2
+            assert len(messages) == 2
+            by_recipient = {message["To"]: message for message in messages}
+            assert by_recipient["relu@example.test"]["Subject"] == "Objet relu"
+            assert "Texte corrigé" in by_recipient["relu@example.test"].get_body().get_content()
+            assert list(by_recipient["direct@example.test"].iter_attachments())[0].get_filename().endswith(".pdf")
+            with app_server.db_connection() as db:
+                columns = {row["name"] for row in db.execute("PRAGMA table_info(clients)")}
+                assert "email_notes_enabled" in columns
+                assert "email_review_before_send" in columns
+                assert db.execute("SELECT version FROM schema_migrations WHERE version = 4").fetchone()[0] == 4
             """
         )
 
@@ -332,7 +426,7 @@ import app_server
             assert response.status == 200
             info = __import__("json").loads(response.read().decode("utf-8"))
             connection.close()
-            assert info["app_version"] == "3.1.2"
+            assert info["app_version"] == "3.1.3"
             runtime.stop()
             time.sleep(0.2)
             assert app_server.port_is_listening(port) is False

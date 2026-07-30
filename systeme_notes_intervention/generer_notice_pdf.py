@@ -163,7 +163,7 @@ def build_notice(output: Path) -> None:
 
     story = [
         Paragraph("Easy CESU", styles["title"]),
-        Paragraph("Installer l'application, personnaliser les notes et retrouver une sauvegarde", styles["subtitle"]),
+        Paragraph("Installer l'application, personnaliser et envoyer les notes, retrouver une sauvegarde", styles["subtitle"]),
         Spacer(1, 5 * mm),
     ]
 
@@ -255,6 +255,18 @@ def build_notice(output: Path) -> None:
             ),
             section(
                 "6",
+                "Envoyer les notes par email",
+                [
+                    "Dans <b>Réglages &gt; Envoi des notes par email</b>, renseigner le serveur SMTP, l'adresse d'expédition et le mot de passe demandé par le fournisseur de messagerie.",
+                    "Le mot de passe reste dans le coffre sécurisé de l'ordinateur. Il n'est pas placé dans la base ni dans une sauvegarde transférée.",
+                    "Personnaliser l'objet et le texte avec les champs {client}, {mois}, {annee}, {heures}, {montant} et {nom}.",
+                    "Dans chaque fiche client, choisir si le client doit être sélectionné par défaut et si son mail doit être relu avant l'envoi.",
+                    "Cliquer sur <b>Envoyer les notes</b>, vérifier les cases du tableau, modifier les mails signalés puis valider. Aucun mail n'est envoyé automatiquement.",
+                ],
+                styles,
+            ),
+            section(
+                "7",
                 "Sauvegarder ou transférer les données",
                 [
                     "Sélectionner le bon compte en haut de la page.",
@@ -269,7 +281,7 @@ def build_notice(output: Path) -> None:
     story.extend(
         [
             section(
-                "7",
+                "8",
                 "Mettre à jour sans perdre les données",
                 [
                     "Fermer Easy CESU, puis lancer le nouvel installateur.",
@@ -280,7 +292,7 @@ def build_notice(output: Path) -> None:
                 styles,
             ),
             section(
-                "8",
+                "9",
                 "Choisir l'icône selon le métier",
                 [
                     "Sous Windows, choisir l'icône souhaitée dans l'installateur avant de créer les raccourcis.",
@@ -290,7 +302,7 @@ def build_notice(output: Path) -> None:
                 styles,
             ),
             section(
-                "9",
+                "10",
                 "Bonnes pratiques de sauvegarde",
                 [
                     "Créer régulièrement une sauvegarde ZIP dans un dossier différent de celui de la base.",
@@ -299,8 +311,9 @@ def build_notice(output: Path) -> None:
                 ],
                 styles,
             ),
+            Spacer(1, 7 * mm),
             section(
-                "10",
+                "11",
                 "Aide et communauté",
                 [
                     "Ouvrir <b>Réglages &gt; Aide et communauté</b> pour consulter le code, la documentation ou signaler un problème sur le dépôt public Easy CESU.",

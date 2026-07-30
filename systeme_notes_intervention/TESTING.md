@@ -6,7 +6,7 @@ La suite isolée n'utilise jamais la base personnelle installée :
 .\.build_venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-La V3.1.2 comporte les tests automatisés couvrant notamment :
+La V3.1.3 comporte les tests automatisés couvrant notamment :
 
 - première installation et profil générique ;
 - création, renommage et séparation des clients ;
@@ -37,6 +37,11 @@ La V3.1.2 comporte les tests automatisés couvrant notamment :
 - affichage local du QR PayPal sans redirection web trompeuse ;
 - fréquence, report et désactivation du rappel discret de soutien ;
 - contenu limité du fichier GitHub `FUNDING.yml`.
+- migration des préférences d'envoi et de relecture des mails par client ;
+- aperçu mensuel des destinataires et désactivation des clients sans adresse ;
+- modèles d'objet et de texte avec champs dynamiques ;
+- envoi SMTP simulé avec pièces jointes PDF, sans message réel ;
+- export des notes directement dans le dossier sélectionné.
 
 Contrôles complémentaires réalisés pour chaque livraison :
 
