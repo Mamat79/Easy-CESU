@@ -9,6 +9,11 @@
 - préférence d'envoi par défaut et préférence de relecture dans chaque fiche client ;
 - tableau mensuel permettant de choisir les destinataires avant tout envoi ;
 - relecture et modification individuelle des mails signalés avant l'envoi ;
+- bascule directe des états `Transmis` et `Payé` dans la liste des interventions ;
+- option de marquage automatique des interventions après chaque envoi réussi ;
+- retrait de l'onglet principal `Notes et paiements` pour alléger la navigation ;
+- éditeur commun de rappels accessible depuis le Planning et les fiches clients ;
+- rappels généraux ou liés à un client, ponctuels ou cycliques par jour, semaine, mois ou année ;
 - migration additive de la base sans perte des clients ni des interventions.
 
 ## 3.1.2 - 2026-07-26

@@ -60,7 +60,6 @@
         <button class="tab-btn" type="button" data-view="overview">Bilan</button>
         <button class="tab-btn" type="button" data-view="templates">Modèles</button>
         <button class="tab-btn" type="button" data-view="clients">Clients</button>
-        <button class="tab-btn" type="button" data-view="followup">Notes et paiements</button>
         <button class="tab-btn" type="button" data-view="database">Base de données</button>
         <button class="tab-btn" type="button" data-view="settings">Réglages</button>
         <div class="display-control">
@@ -193,6 +192,8 @@
                   <th>Durée</th>
                   <th>Net</th>
                   <th>Travaux</th>
+                  <th class="status-col">Transmis</th>
+                  <th class="status-col">Payé</th>
                   <th class="actions-col"></th>
                 </tr>
               </thead>
@@ -207,7 +208,10 @@
               <h2>Planning des rappels</h2>
               <p class="section-note">Les rappels en retard, du jour et à venir restent regroupés ici.</p>
             </div>
-            <button id="planningTodayBtn" class="secondary" type="button">Aujourd'hui</button>
+            <div class="heading-actions">
+              <button id="planningTodayBtn" class="secondary" type="button">Aujourd'hui</button>
+              <button id="planningAddReminderBtn" class="primary" type="button">Nouveau rappel</button>
+            </div>
           </div>
           <div class="planning-columns">
             <section class="planning-group planning-late">
@@ -834,57 +838,10 @@
             <div class="section-heading table-heading">
               <div>
                 <h3 id="reminderTitle">Rappels du client</h3>
-                <p id="reminderClientHint" class="section-note">Sélectionne ou enregistre un client pour ajouter un rappel.</p>
+                <p id="reminderClientHint" class="section-note">Sélectionne un client pour consulter ses rappels.</p>
               </div>
+              <button id="clientAddReminderBtn" class="primary" type="button" disabled>Ajouter un rappel</button>
             </div>
-            <form id="reminderForm" class="reminder-form">
-              <input id="reminderId" type="hidden" />
-              <div>
-                <label for="reminderTitleInput">Titre</label>
-                <input id="reminderTitleInput" autocomplete="off" required />
-              </div>
-              <div>
-                <label for="reminderDateInput">Première échéance</label>
-                <input id="reminderDateInput" type="date" required />
-              </div>
-              <div>
-                <label for="reminderTimeInput">Heure</label>
-                <input id="reminderTimeInput" type="time" />
-              </div>
-              <div>
-                <label for="reminderRecurrenceInput">Répétition</label>
-                <select id="reminderRecurrenceInput">
-                  <option value="once">Une fois</option>
-                  <option value="monthly">Chaque mois</option>
-                  <option value="yearly">Chaque année</option>
-                </select>
-              </div>
-              <div>
-                <label for="reminderIntervalInput">Tous les</label>
-                <input id="reminderIntervalInput" type="number" min="1" max="120" value="1" />
-              </div>
-              <div>
-                <label for="reminderAnticipationInput">Avertir avant</label>
-                <input id="reminderAnticipationInput" type="number" min="0" max="365" value="7" />
-              </div>
-              <div>
-                <label for="reminderUnitInput">Unité</label>
-                <select id="reminderUnitInput">
-                  <option value="days">jours</option>
-                  <option value="weeks">semaines</option>
-                  <option value="months">mois</option>
-                </select>
-              </div>
-              <div class="reminder-notes-field">
-                <label for="reminderDescriptionInput">Notes</label>
-                <input id="reminderDescriptionInput" autocomplete="off" />
-              </div>
-              <label class="check-label"><input id="reminderActiveInput" type="checkbox" checked /> Actif</label>
-              <div class="client-form-actions">
-                <button id="reminderResetBtn" class="ghost" type="button">Nouveau rappel</button>
-                <button id="reminderSaveBtn" class="primary" type="submit">Enregistrer le rappel</button>
-              </div>
-            </form>
             <div id="clientReminders" class="reminder-list"></div>
           </section>
 
@@ -923,6 +880,71 @@
       </footer>
     </div>
 
+    <dialog id="reminderDialog" class="reminder-dialog" aria-labelledby="reminderDialogTitle">
+      <div class="support-dialog-heading">
+        <div>
+          <h2 id="reminderDialogTitle">Nouveau rappel</h2>
+          <p>Planifie une échéance générale ou liée à un client.</p>
+        </div>
+        <button id="reminderCloseIconBtn" class="icon-btn support-dialog-close" type="button" aria-label="Fermer">×</button>
+      </div>
+      <form id="reminderForm" class="reminder-form">
+        <input id="reminderId" type="hidden" />
+        <div>
+          <label for="reminderClientInput">Pour</label>
+          <select id="reminderClientInput"><option value="">Rappel général</option></select>
+        </div>
+        <div>
+          <label for="reminderTitleInput">Titre</label>
+          <input id="reminderTitleInput" autocomplete="off" required />
+        </div>
+        <div>
+          <label for="reminderDateInput">Première échéance</label>
+          <input id="reminderDateInput" type="date" required />
+        </div>
+        <div>
+          <label for="reminderTimeInput">Heure</label>
+          <input id="reminderTimeInput" type="time" />
+        </div>
+        <div>
+          <label for="reminderRecurrenceInput">Répétition</label>
+          <select id="reminderRecurrenceInput">
+            <option value="once">Une fois</option>
+            <option value="daily">Tous les jours</option>
+            <option value="weekly">Toutes les semaines</option>
+            <option value="monthly">Tous les mois</option>
+            <option value="yearly">Tous les ans</option>
+          </select>
+        </div>
+        <div>
+          <label for="reminderIntervalInput">Répéter tous les</label>
+          <input id="reminderIntervalInput" type="number" min="1" max="120" value="1" />
+        </div>
+        <div>
+          <label for="reminderAnticipationInput">Avertir avant</label>
+          <input id="reminderAnticipationInput" type="number" min="0" max="365" value="7" />
+        </div>
+        <div>
+          <label for="reminderUnitInput">Unité</label>
+          <select id="reminderUnitInput">
+            <option value="days">jours</option>
+            <option value="weeks">semaines</option>
+            <option value="months">mois</option>
+          </select>
+        </div>
+        <div class="reminder-notes-field">
+          <label for="reminderDescriptionInput">Notes</label>
+          <input id="reminderDescriptionInput" autocomplete="off" />
+        </div>
+        <label class="check-label"><input id="reminderActiveInput" type="checkbox" checked /> Actif</label>
+        <div class="support-dialog-actions reminder-dialog-actions">
+          <button id="reminderResetBtn" class="ghost" type="button">Effacer</button>
+          <button id="reminderCancelBtn" class="secondary" type="button">Annuler</button>
+          <button id="reminderSaveBtn" class="primary" type="submit">Enregistrer le rappel</button>
+        </div>
+      </form>
+    </dialog>
+
     <dialog id="emailNotesDialog" class="email-notes-dialog" aria-labelledby="emailNotesDialogTitle">
       <div class="support-dialog-heading">
         <div>
@@ -946,6 +968,10 @@
           <tbody id="emailRecipientsBody"></tbody>
         </table>
       </div>
+      <label class="check-label email-send-option">
+        <input id="emailMarkTransmittedInput" type="checkbox" checked />
+        Marquer les interventions comme transmises après un envoi réussi
+      </label>
       <p class="section-note">Les PDF manquants seront créés dans le dossier des notes avant l'envoi.</p>
       <div class="support-dialog-actions">
         <button id="emailNotesCancelBtn" class="secondary" type="button">Annuler</button>

@@ -392,6 +392,7 @@ import app_server
                 7,
                 ["Client Direct", "Client Relu"],
                 {"Client Relu": {"subject": "Objet relu", "body": "Texte corrigé avant envoi."}},
+                mark_transmitted=True,
             )
             assert not result["errors"]
             assert len(result["sent"]) == 2
@@ -405,6 +406,24 @@ import app_server
                 assert "email_notes_enabled" in columns
                 assert "email_review_before_send" in columns
                 assert db.execute("SELECT version FROM schema_migrations WHERE version = 4").fetchone()[0] == 4
+                statuses = {
+                    row["client"]: bool(row["transmitted"])
+                    for row in db.execute("SELECT client, transmitted FROM interventions")
+                }
+                assert statuses["Client Direct"] is True
+                assert statuses["Client Relu"] is True
+                assert statuses["Client Sans Mail"] is False
+                direct_id = db.execute(
+                    "SELECT id FROM interventions WHERE client = 'Client Direct'"
+                ).fetchone()["id"]
+            paid = app_server.update_intervention(direct_id, {"paid": True})
+            assert paid["paid"] is True
+            assert paid["received_amount"] == 33
+            assert paid["payment_status"] == "recu"
+            unpaid = app_server.update_intervention(direct_id, {"paid": False})
+            assert unpaid["paid"] is False
+            assert unpaid["received_amount"] == 0
+            assert unpaid["payment_status"] == "a_recevoir"
             """
         )
 
@@ -495,6 +514,37 @@ import app_server
             assert renamed["name"] == "Client Rappel Renommé"
             history = app_server.list_reminder_occurrences("Client Rappel Renommé", include_processed=True)
             assert any(item["status"] == "completed" for item in history)
+            """
+        )
+
+    def test_general_weekly_reminder_is_available_from_planning(self) -> None:
+        self.run_scenario(
+            """
+            from datetime import date
+
+            app_server.init_db()
+            reminder = app_server.create_reminder(
+                {
+                    "client_name": "",
+                    "title": "Sauvegarde administrative",
+                    "reference_date": "2026-07-30",
+                    "recurrence_type": "weekly",
+                    "recurrence_interval": 2,
+                    "anticipation_value": 1,
+                    "anticipation_unit": "days",
+                }
+            )
+            assert reminder["client_name"] is None
+            occurrences = [
+                item for item in app_server.list_reminder_occurrences(
+                    start=date(2026, 7, 30),
+                    end=date(2026, 8, 31),
+                    include_processed=True,
+                )
+                if item["reminder_id"] == reminder["id"]
+            ]
+            assert [item["due_date"] for item in occurrences] == ["2026-07-30", "2026-08-13"]
+            assert occurrences[0]["reference_date"] == "2026-07-30"
             """
         )
 

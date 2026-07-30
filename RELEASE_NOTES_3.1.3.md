@@ -12,6 +12,12 @@ email avec une validation claire des destinataires.
 - préférence d'envoi par défaut dans chaque fiche client ;
 - préférence de relecture et modification avant envoi ;
 - tableau mensuel permettant de cocher ou décocher chaque destinataire ;
+- cases `Transmis` et `Payé` accessibles directement dans la liste des interventions ;
+- marquage automatique comme transmis, après chaque envoi de mail réussi ;
+- barre de navigation allégée : l'ancien onglet `Notes et paiements` n'est plus affiché ;
+- création de rappels généraux ou liés à un client depuis le Planning ;
+- rappels ponctuels ou répétés par jour, semaine, mois ou année ;
+- ajout d'un rappel également accessible depuis chaque fiche client ;
 - aucune expédition automatique : le bouton d'envoi reste une validation explicite.
 
 ## Téléchargements

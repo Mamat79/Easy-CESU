@@ -1450,11 +1450,13 @@ button:disabled {
 }
 
 .support-dialog::backdrop,
+.reminder-dialog::backdrop,
 .email-notes-dialog::backdrop,
 .email-review-dialog::backdrop {
   background: rgba(16, 32, 35, 0.58);
 }
 
+.reminder-dialog,
 .email-notes-dialog,
 .email-review-dialog {
   width: min(960px, calc(100vw - 32px));
@@ -1464,6 +1466,10 @@ button:disabled {
   border-radius: 8px;
   color: var(--ink);
   box-shadow: 0 24px 64px rgba(16, 32, 35, 0.32);
+}
+
+.reminder-dialog {
+  width: min(900px, calc(100vw - 32px));
 }
 
 .email-review-dialog {
@@ -1492,6 +1498,11 @@ button:disabled {
 .email-recipient-table input[type="checkbox"] {
   width: 20px;
   height: 20px;
+}
+
+.email-send-option {
+  margin-top: 16px;
+  font-weight: 700;
 }
 
 .missing-email {
@@ -1632,6 +1643,24 @@ tbody tr:nth-child(even) {
 .interventions-table td:nth-child(3),
 .interventions-table td:nth-child(4) {
   text-align: right;
+}
+
+.status-col,
+.status-cell {
+  width: 82px;
+  text-align: center;
+}
+
+.status-checkbox {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--teal);
+  cursor: pointer;
+}
+
+.status-checkbox:disabled {
+  cursor: wait;
 }
 
 .clients-table td:nth-child(1) {
@@ -1892,6 +1921,14 @@ tbody tr:nth-child(even) {
   align-items: end;
 }
 
+.reminder-dialog .reminder-form {
+  margin-top: 20px;
+}
+
+.reminder-dialog-actions {
+  grid-column: 1 / -1;
+}
+
 .reminder-notes-field {
   grid-column: span 2;
 }
@@ -2048,6 +2085,7 @@ tbody tr:nth-child(even) {
 
 @media (max-width: 640px) {
   .support-dialog,
+  .reminder-dialog,
   .email-notes-dialog,
   .email-review-dialog {
     padding: 18px;
