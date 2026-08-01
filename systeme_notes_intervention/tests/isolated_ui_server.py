@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA_ROOT = ROOT / "tmp" / "email-ui-data-v313"
+DATA_ROOT = ROOT / "tmp" / "email-ui-data-v314"
 os.environ["EASY_CESU_DATA_ROOT"] = str(DATA_ROOT)
 os.environ["NOTES_APP_PORT"] = os.environ.get("NOTES_APP_PORT", "8875")
 sys.frozen = True
@@ -24,11 +24,12 @@ def seed() -> None:
     with app_server.db_connection() as database:
         database.execute("DELETE FROM interventions")
         database.execute("DELETE FROM clients")
-    for name, email, enabled, review in (
+    intervention_ids: dict[str, int] = {}
+    for index, (name, email, enabled, review) in enumerate((
         ("Mme Martin", "martin@example.test", True, False),
         ("M. Dupont", "dupont@example.test", True, True),
         ("Mme Bernard", "", False, False),
-    ):
+    )):
         app_server.create_client(
             {
                 "name": name,
@@ -37,14 +38,23 @@ def seed() -> None:
                 "email_review_before_send": review,
             }
         )
-        app_server.create_intervention(
+        intervention = app_server.create_intervention(
             {
-                "date": "2026-07-12",
+                "date": f"2026-07-{12 + index:02d}",
                 "client": name,
-                "duration_hours": 1.5,
+                "duration_hours": 1.5 + index * 0.5,
                 "hourly_rate": 22,
+                "task": "Prestation de démonstration",
             }
         )
+        intervention_ids[name] = int(intervention["id"])
+
+    # Trois situations distinctes permettent de contrôler le tableau sans
+    # utiliser la base personnelle : tout à faire, déclaration seule, terminé.
+    for reminder_type in ("transmitted", "paid"):
+        app_server.update_intervention_administrative_status(intervention_ids["M. Dupont"], reminder_type, True)
+    for reminder_type in ("transmitted", "declared", "paid"):
+        app_server.update_intervention_administrative_status(intervention_ids["Mme Bernard"], reminder_type, True)
     profile = app_server.active_profile()
     profile.update(
         {

@@ -27,6 +27,73 @@ def main() -> int:
         page.wait_for_timeout(1000)
         if page.locator("#setupAssistantDialog").is_visible():
             page.locator("#setupAssistantLaterBtn").click()
+        page.locator("#yearFilter").fill("2026")
+        page.locator("#yearFilter").dispatch_event("change")
+        page.locator("#monthFilter").select_option("7")
+        page.wait_for_function("document.querySelectorAll('#interventionsBody tr').length === 3")
+
+        status_headers = page.locator(".interventions-table thead .status-col").all_inner_texts()
+        if status_headers != ["Transmis", "Déclaré", "Payé"]:
+            raise AssertionError(f"Ordre inattendu des états administratifs : {status_headers}")
+        if page.locator("#interventionsBody tr").count() != 3:
+            raise AssertionError("La liste principale ne reprend pas les trois interventions de contrôle.")
+        page.screenshot(path=str(OUTPUT_DIR / "interventions-desktop.png"), full_page=True)
+
+        dupont_row = page.locator("#interventionsBody tr", has_text="M. Dupont")
+        dupont_declared = dupont_row.locator('[data-administrative-status="declared"]')
+        if dupont_declared.is_checked():
+            raise AssertionError("L'intervention de contrôle doit commencer non déclarée.")
+        dupont_declared.click()
+        page.wait_for_function(
+            "document.querySelector('#interventionsBody tr:nth-child(2) [data-administrative-status=declared]').checked === true"
+        )
+        page.reload(wait_until="domcontentloaded")
+        page.wait_for_timeout(600)
+        if page.locator("#setupAssistantDialog").is_visible():
+            page.locator("#setupAssistantLaterBtn").click()
+        page.locator("#yearFilter").fill("2026")
+        page.locator("#yearFilter").dispatch_event("change")
+        page.locator("#monthFilter").select_option("7")
+        page.wait_for_function("document.querySelectorAll('#interventionsBody tr').length === 3")
+        dupont_declared = page.locator("#interventionsBody tr", has_text="M. Dupont").locator('[data-administrative-status="declared"]')
+        if not dupont_declared.is_checked():
+            raise AssertionError("L'état déclaré n'est pas conservé après rechargement.")
+        dupont_declared.click()
+        page.wait_for_function(
+            "document.querySelector('#interventionsBody tr:nth-child(2) [data-administrative-status=declared]').checked === false"
+        )
+
+        page.locator('[data-view="followup"]').click()
+        page.locator("#interventionFollowupsBody").wait_for(state="visible")
+        if page.locator("#interventionFollowupsBody tr").count() != 2:
+            raise AssertionError("Le tableau À suivre doit afficher deux interventions incomplètes, une seule fois chacune.")
+        page.screenshot(path=str(OUTPUT_DIR / "followup-desktop.png"), full_page=True)
+
+        page.locator("#followupTypeFilter").select_option("paid")
+        page.wait_for_function("document.querySelectorAll('#interventionFollowupsBody tr').length === 1")
+        if "Mme Martin" not in page.locator("#interventionFollowupsBody").inner_text():
+            raise AssertionError("Le filtre À payer n'affiche pas l'intervention attendue.")
+        page.locator("#followupTypeFilter").select_option("")
+        page.locator("#followupSearchInput").fill("Dupont")
+        page.wait_for_timeout(500)
+        if page.locator("#interventionFollowupsBody tr").count() != 1:
+            raise AssertionError("La recherche par client ne filtre pas le tableau À suivre.")
+        page.locator("#followupSearchInput").fill("")
+        page.wait_for_timeout(500)
+
+        martin_row = page.locator("#interventionFollowupsBody tr", has_text="Mme Martin")
+        martin_row.locator('[data-ignore-followup][data-reminder-type="transmitted"]').click()
+        page.wait_for_timeout(400)
+        page.locator("#followupShowIgnoredInput").check()
+        page.wait_for_timeout(400)
+        martin_row = page.locator("#interventionFollowupsBody tr", has_text="Mme Martin")
+        if "Transmission ignoré" not in martin_row.inner_text():
+            raise AssertionError("Le rappel ignoré n'est pas visible sur demande.")
+        martin_row.locator('[data-reactivate-followup][data-reminder-type="transmitted"]').click()
+        page.wait_for_timeout(400)
+        martin_row = page.locator("#interventionFollowupsBody tr", has_text="Mme Martin")
+        if "À transmettre" not in martin_row.inner_text():
+            raise AssertionError("Le rappel réactivé ne réapparaît pas immédiatement.")
 
         page.locator('[data-view="templates"]').click()
         page.locator("#templatePaper").wait_for(state="visible")
@@ -56,6 +123,10 @@ def main() -> int:
         page.wait_for_timeout(1000)
         if page.locator("#setupAssistantDialog").is_visible():
             page.locator("#setupAssistantLaterBtn").click()
+        page.locator("#yearFilter").fill("2026")
+        page.locator("#yearFilter").dispatch_event("change")
+        page.locator("#monthFilter").select_option("7")
+        page.wait_for_function("document.querySelectorAll('#interventionsBody tr').length === 3")
         page.locator('[data-view="templates"]').click()
         page.locator("#templatePaper").wait_for(state="visible")
         page.wait_for_function("document.querySelectorAll('#templateSelect option').length > 0")
@@ -92,6 +163,8 @@ def main() -> int:
 
         page.set_viewport_size({"width": 1024, "height": 768})
         page.screenshot(path=str(OUTPUT_DIR / "community-compact.png"), full_page=True)
+        page.locator('[data-view="followup"]').click()
+        page.screenshot(path=str(OUTPUT_DIR / "followup-compact.png"), full_page=True)
         if page.locator("body").evaluate("(element) => element.scrollWidth > element.clientWidth + 2"):
             raise AssertionError("L'interface crée un débordement horizontal à 1024 px.")
         browser.close()
