@@ -313,6 +313,9 @@ import app_server
                 )
                 db.execute("DELETE FROM schema_migrations WHERE version > 4")
                 db.execute(
+                    "INSERT INTO schema_migrations (version, applied_at, details) VALUES (6, '2026-07-31', 'incomplete')"
+                )
+                db.execute(
                     "INSERT INTO clients (name, updated_at) VALUES (?, ?)",
                     ("Client historique", "2026-01-01T10:00:00"),
                 )

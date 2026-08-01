@@ -789,9 +789,16 @@ def apply_v6_schema_migrations() -> None:
             """
         )
         applied = {int(row["version"]) for row in db.execute("SELECT version FROM schema_migrations").fetchall()}
-        needs_v6 = V6_SCHEMA_VERSION not in applied
         has_user_data = database_contains_user_data(db)
         had_declared_column = "declared" in table_columns(db, "interventions")
+        has_followup_table = bool(
+            db.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'intervention_followup_ignores'"
+            ).fetchone()
+        )
+        # Une ancienne tentative peut avoir inscrit le numéro de migration sans
+        # avoir terminé le schéma. La structure réelle reste la référence.
+        needs_v6 = V6_SCHEMA_VERSION not in applied or not had_declared_column or not has_followup_table
 
     if not needs_v6:
         return
