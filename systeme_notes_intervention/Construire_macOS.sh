@@ -40,6 +40,8 @@ mkdir -p "$OUTPUT_DIR"
   --name "Easy CESU" \
   --icon "$ICON" \
   --osx-bundle-identifier "fr.easycesu.desktop" \
+  --paths "$ROOT" \
+  --hidden-import generer_notes_et_donnees \
   --add-data "$ROOT/application/static:application/static" \
   --collect-data reportlab \
   "$ROOT/application/desktop_app.py"
