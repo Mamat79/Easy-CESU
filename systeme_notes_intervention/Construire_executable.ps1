@@ -7,6 +7,7 @@ $EntryPoint = Join-Path $Root "application\desktop_app.py"
 $IconPath = Join-Path $Root "application\assets\easy-cesu.ico"
 $Dist = Join-Path $Root "dist"
 $AppDist = Join-Path $Dist "Easy CESU"
+$AppBuild = Join-Path $Root "build\application"
 $Sorties = Join-Path $Root "sorties"
 $Stamp = Get-Date -Format "yyyyMMdd_HHmm"
 $ZipPath = Join-Path $Sorties "EasyCESU-Portable-x64-$Version-$Stamp.zip"
@@ -74,6 +75,11 @@ Write-Host "Construction de l'executable..."
     --windowed `
     --name "Easy CESU" `
     --icon $IconPath `
+    --distpath $Dist `
+    --workpath $AppBuild `
+    --specpath $AppBuild `
+    --paths $Root `
+    --hidden-import generer_notes_et_donnees `
     --add-data "$Root\application\static;application\static" `
     --collect-data reportlab `
     $EntryPoint

@@ -50,6 +50,7 @@ La V3.1.4 comporte les tests automatisés couvrant notamment :
 - ignorance et réactivation d'un rappel précis sans effet sur les autres interventions ;
 - nettoyage de l'ignorance lorsqu'un état est validé, puis réapparition normale s'il est décoché ;
 - marquage `Transmis` limité aux emails réellement envoyés lorsque l'option est activée.
+- packaging explicite de `generer_notes_et_donnees`, puis lancement du véritable exécutable pour prévenir l'erreur de module manquant.
 
 Contrôles complémentaires réalisés pour chaque livraison :
 

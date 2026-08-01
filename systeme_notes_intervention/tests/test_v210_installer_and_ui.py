@@ -20,6 +20,11 @@ class InstallerV3Tests(unittest.TestCase):
         self.assertEqual(installateur_windows.APP_VERSION, version)
         self.assertEqual(installateur_windows.shortcut_label(), "Easy CESU V3.1.4")
 
+    def test_packaging_includes_the_note_generator(self) -> None:
+        build_script = (PROJECT_ROOT / "Construire_executable.ps1").read_text(encoding="utf-8")
+        self.assertIn("--paths $Root", build_script)
+        self.assertIn("--hidden-import generer_notes_et_donnees", build_script)
+
     def test_every_installer_choice_has_an_icon_and_preview(self) -> None:
         for icon_key in installateur_windows.SHORTCUT_ICON_LABELS:
             self.assertTrue(
