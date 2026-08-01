@@ -225,25 +225,8 @@ class EmailNotesContractTests(unittest.TestCase):
             "emailBodyTemplateInput",
             "emailNotesDialog",
             "emailReviewDialog",
-            "emailMarkTransmittedInput",
         ):
             self.assertIn(f'id="{element_id}"', html)
-        self.assertIn('data-intervention-flag="transmitted"', javascript)
-        self.assertIn('data-intervention-flag="paid"', javascript)
-        self.assertIn("mark_transmitted: els.emailMarkTransmittedInput.checked", javascript)
-        self.assertIn("AND transmitted = 0", server)
-        self.assertNotIn('data-view="followup">Notes et paiements', html)
-        for element_id in (
-            "planningAddReminderBtn",
-            "clientAddReminderBtn",
-            "reminderDialog",
-            "reminderClientInput",
-        ):
-            self.assertIn(f'id="{element_id}"', html)
-        self.assertIn('<option value="">Rappel général</option>', html)
-        self.assertIn('<option value="daily">Tous les jours</option>', html)
-        self.assertIn('<option value="weekly">Toutes les semaines</option>', html)
-        self.assertIn('client_name: els.reminderClientInput.value', javascript)
         for placeholder in ("{client}", "{mois}", "{annee}", "{heures}", "{montant}", "{nom}"):
             self.assertIn(placeholder, html)
         self.assertIn("function openEmailNotesDialog", javascript)

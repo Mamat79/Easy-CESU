@@ -212,7 +212,6 @@ const els = {
   planningToday: document.querySelector("#planningToday"),
   planningUpcoming: document.querySelector("#planningUpcoming"),
   planningTodayBtn: document.querySelector("#planningTodayBtn"),
-  planningAddReminderBtn: document.querySelector("#planningAddReminderBtn"),
   overviewPanel: document.querySelector("#overviewPanel"),
   annualTitle: document.querySelector("#annualTitle"),
   annualSubtitle: document.querySelector("#annualSubtitle"),
@@ -294,7 +293,6 @@ const els = {
   emailNotesCloseIconBtn: document.querySelector("#emailNotesCloseIconBtn"),
   emailNotesCancelBtn: document.querySelector("#emailNotesCancelBtn"),
   emailNotesSendBtn: document.querySelector("#emailNotesSendBtn"),
-  emailMarkTransmittedInput: document.querySelector("#emailMarkTransmittedInput"),
   emailRecipientsBody: document.querySelector("#emailRecipientsBody"),
   emailReviewDialog: document.querySelector("#emailReviewDialog"),
   emailReviewClient: document.querySelector("#emailReviewClient"),
@@ -306,11 +304,6 @@ const els = {
   clientSearchInput: document.querySelector("#clientSearchInput"),
   clientsBody: document.querySelector("#clientsBody"),
   reminderForm: document.querySelector("#reminderForm"),
-  reminderDialog: document.querySelector("#reminderDialog"),
-  reminderDialogTitle: document.querySelector("#reminderDialogTitle"),
-  reminderCloseIconBtn: document.querySelector("#reminderCloseIconBtn"),
-  reminderCancelBtn: document.querySelector("#reminderCancelBtn"),
-  reminderClientInput: document.querySelector("#reminderClientInput"),
   reminderId: document.querySelector("#reminderId"),
   reminderTitleInput: document.querySelector("#reminderTitleInput"),
   reminderDateInput: document.querySelector("#reminderDateInput"),
@@ -324,7 +317,6 @@ const els = {
   reminderResetBtn: document.querySelector("#reminderResetBtn"),
   reminderSaveBtn: document.querySelector("#reminderSaveBtn"),
   reminderClientHint: document.querySelector("#reminderClientHint"),
-  clientAddReminderBtn: document.querySelector("#clientAddReminderBtn"),
   clientReminders: document.querySelector("#clientReminders"),
   toast: document.querySelector("#toast"),
   setupAssistantChoice: document.querySelector("#setupAssistantChoice"),
@@ -771,14 +763,6 @@ function renderClients() {
   const clientOptions = `<option value="">Choisir un client</option>${state.clients.map((client) => `<option value="${escapeHtml(client.name)}">${escapeHtml(client.name)}</option>`).join("")}`;
   if (els.noteClientInput) els.noteClientInput.innerHTML = clientOptions;
   if (els.paymentClientInput) els.paymentClientInput.innerHTML = clientOptions;
-  if (els.reminderClientInput) {
-    const selected = els.reminderClientInput.value;
-    els.reminderClientInput.innerHTML =
-      `<option value="">Rappel général</option>${state.clients
-        .map((client) => `<option value="${escapeHtml(client.name)}">${escapeHtml(client.name)}</option>`)
-        .join("")}`;
-    els.reminderClientInput.value = state.clients.some((client) => client.name === selected) ? selected : "";
-  }
 }
 
 function escapeHtml(value) {
@@ -1164,8 +1148,7 @@ function resetClientForm() {
   els.clientSaveBtn.textContent = "Ajouter client";
   state.selectedClientName = "";
   state.clientReminders = [];
-  els.clientAddReminderBtn.disabled = true;
-  els.reminderClientHint.textContent = "Sélectionne un client pour consulter ses rappels.";
+  resetReminderForm();
   renderClientReminders([]);
 }
 
@@ -1245,43 +1228,27 @@ function loadIntoClientForm(client) {
   els.clientAddressInput.value = client.address || "";
   els.clientSaveBtn.textContent = "Modifier client";
   state.selectedClientName = client.name;
-  els.clientAddReminderBtn.disabled = false;
-  els.reminderClientHint.textContent = `Rappels pour ${client.name}.`;
   loadClientReminders(client.name).catch((error) => showToast(error.message));
   setActiveView("clients");
 }
 
-function resetReminderForm(clientName = "") {
+function resetReminderForm() {
   els.reminderId.value = "";
   els.reminderForm.reset();
-  els.reminderClientInput.value = clientName;
   els.reminderDateInput.value = new Date().toISOString().slice(0, 10);
   els.reminderIntervalInput.value = "1";
   els.reminderAnticipationInput.value = "7";
   els.reminderUnitInput.value = "days";
   els.reminderActiveInput.checked = true;
   els.reminderSaveBtn.textContent = "Enregistrer le rappel";
-  els.reminderDialogTitle.textContent = "Nouveau rappel";
-  syncReminderRecurrenceControls();
-}
-
-function syncReminderRecurrenceControls() {
-  els.reminderIntervalInput.disabled = els.reminderRecurrenceInput.value === "once";
-}
-
-function openReminderDialog(clientName = "") {
-  resetReminderForm(clientName);
-  els.reminderDialog.showModal();
-  els.reminderTitleInput.focus();
-}
-
-function closeReminderDialog() {
-  if (els.reminderDialog.open) els.reminderDialog.close();
+  els.reminderClientHint.textContent = state.selectedClientName
+    ? `Rappels pour ${state.selectedClientName}.`
+    : "Sélectionne ou enregistre un client pour ajouter un rappel.";
 }
 
 function reminderPayload() {
   return {
-    client_name: els.reminderClientInput.value,
+    client_name: state.selectedClientName,
     title: els.reminderTitleInput.value.trim(),
     description: els.reminderDescriptionInput.value.trim(),
     reference_date: els.reminderDateInput.value,
@@ -1302,7 +1269,7 @@ function reminderCard(item, compact = false) {
     : `<button class="icon-btn" title="Modifier le rappel" data-edit-reminder="${item.reminder_id}">✎</button>
        <button class="icon-btn delete-btn" title="Supprimer le rappel" data-delete-reminder="${item.reminder_id}">×</button>`;
   return `<article class="reminder-card ${escapeHtml(item.state || "")}">
-    <div><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.client_name || "Rappel général")}</span></div>
+    <div><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.client_name || "")}</span></div>
     <p>${escapeHtml(item.description || due)}</p>
     <small>${compact ? due : `${due} · ${stateLabel}`}</small>
     <div class="row-actions"><button class="icon-btn" title="Marquer comme traité" data-complete-reminder="${item.reminder_id}" data-occurrence-id="${item.id}">✓</button>${managementActions}</div>
@@ -1311,7 +1278,7 @@ function reminderCard(item, compact = false) {
 
 function renderPlanning() {
   const render = (items, target, empty) => {
-    target.innerHTML = items.length ? items.map((item) => reminderCard(item)).join("") : `<p class="empty-note">${empty}</p>`;
+    target.innerHTML = items.length ? items.map((item) => reminderCard(item, true)).join("") : `<p class="empty-note">${empty}</p>`;
   };
   render(state.reminders.late || [], els.planningLate, "Aucun rappel en retard.");
   render(state.reminders.today_items || [], els.planningToday, "Rien à traiter aujourd'hui.");
@@ -1340,6 +1307,7 @@ async function loadClientReminders(clientName) {
   const payload = await api(`/api/reminders?client=${encodeURIComponent(clientName)}`);
   state.clientReminders = payload.reminders || [];
   renderClientReminders(state.clientReminders);
+  resetReminderForm();
 }
 
 async function refreshReminders() {
@@ -1562,7 +1530,7 @@ function renderInterventions() {
     return !term || haystack.includes(term);
   });
   if (!rows.length) {
-    els.interventionsBody.innerHTML = `<tr><td class="empty-row" colspan="8">Aucune intervention</td></tr>`;
+    els.interventionsBody.innerHTML = `<tr><td class="empty-row" colspan="6">Aucune intervention</td></tr>`;
     return;
   }
   els.interventionsBody.innerHTML = rows
@@ -1574,16 +1542,6 @@ function renderInterventions() {
         <td>${durationLabel(row.duration_hours)}</td>
         <td>${euro(row.amount_net)}</td>
         <td>${escapeHtml(row.task || row.location || "")}</td>
-        <td class="status-cell">
-          <input class="status-checkbox" type="checkbox" data-intervention-flag="transmitted"
-            data-intervention-id="${row.id}" ${row.transmitted ? "checked" : ""}
-            aria-label="Intervention de ${escapeHtml(row.client)} transmise" />
-        </td>
-        <td class="status-cell">
-          <input class="status-checkbox" type="checkbox" data-intervention-flag="paid"
-            data-intervention-id="${row.id}" ${row.paid ? "checked" : ""}
-            aria-label="Intervention de ${escapeHtml(row.client)} payée" />
-        </td>
         <td>
           <div class="row-actions">
             <button class="icon-btn" title="Modifier" data-edit="${row.id}">✎</button>
@@ -1627,26 +1585,6 @@ async function deleteIntervention(id) {
   await api(`/api/interventions/${id}`, { method: "DELETE" });
   showToast("Intervention supprimée.");
   await loadMonth();
-}
-
-async function toggleInterventionFlag(input) {
-  const id = input.dataset.interventionId;
-  const field = input.dataset.interventionFlag;
-  if (!id || !["transmitted", "paid"].includes(field)) return;
-  input.disabled = true;
-  try {
-    const payload = await api(`/api/interventions/${id}`, {
-      method: "PUT",
-      body: JSON.stringify({ [field]: input.checked }),
-    });
-    const index = state.interventions.findIndex((item) => String(item.id) === String(id));
-    if (index >= 0) state.interventions[index] = payload.intervention;
-    renderInterventions();
-  } catch (error) {
-    input.checked = !input.checked;
-    input.disabled = false;
-    showToast(error.message);
-  }
 }
 
 async function deleteClient(name) {
@@ -2072,21 +2010,12 @@ async function sendSelectedMonthEmails() {
         month: selectedMonth(),
         clients: state.emailSelectedClients,
         message_overrides: state.emailMessageOverrides,
-        mark_transmitted: els.emailMarkTransmittedInput.checked,
       }),
     });
-    const transmittedUpdated = payload.sent.reduce(
-      (total, item) => total + Number(item.transmitted_updated || 0),
-      0,
-    );
     const details = payload.errors.length
       ? `\nErreurs : ${payload.errors.map((item) => `${item.client} (${item.error})`).join(", ")}`
       : "";
-    const transmittedDetails = transmittedUpdated
-      ? `\n${transmittedUpdated} intervention(s) marquée(s) comme transmise(s).`
-      : "";
-    showToast(`${payload.sent.length} mail(s) envoyé(s) pour ${payload.month_label}.${transmittedDetails}${details}`);
-    await loadMonth();
+    showToast(`${payload.sent.length} mail(s) envoyé(s) pour ${payload.month_label}.${details}`);
   } finally {
     state.emailReviewQueue = [];
     state.emailSelectedClients = [];
@@ -2152,6 +2081,10 @@ async function saveClient(event) {
 
 async function saveReminder(event) {
   event.preventDefault();
+  if (!state.selectedClientName) {
+    showToast("Enregistre ou sélectionne d'abord le client.");
+    return;
+  }
   els.reminderSaveBtn.disabled = true;
   try {
     const reminderId = els.reminderId.value;
@@ -2161,7 +2094,6 @@ async function saveReminder(event) {
       body: JSON.stringify(payload),
     });
     showToast(reminderId ? "Rappel modifié." : "Rappel enregistré.");
-    closeReminderDialog();
     await refreshReminders();
   } catch (error) {
     showToast(error.message);
@@ -2180,25 +2112,19 @@ async function completeReminder(reminderId, occurrenceId) {
 }
 
 function loadReminderIntoForm(reminderId) {
-  const reminder =
-    (state.reminders.items || []).find((item) => String(item.reminder_id) === String(reminderId))
-    || state.clientReminders.find((item) => String(item.id) === String(reminderId));
+  const reminder = state.clientReminders.find((item) => String(item.id) === String(reminderId));
   if (!reminder) return;
-  els.reminderId.value = reminder.reminder_id || reminder.id;
-  els.reminderClientInput.value = reminder.client_name || "";
+  els.reminderId.value = reminder.id;
   els.reminderTitleInput.value = reminder.title || "";
   els.reminderDateInput.value = reminder.reference_date || "";
   els.reminderTimeInput.value = reminder.due_time || "";
   els.reminderRecurrenceInput.value = reminder.recurrence_type || "once";
   els.reminderIntervalInput.value = reminder.recurrence_interval || 1;
-  syncReminderRecurrenceControls();
   els.reminderAnticipationInput.value = reminder.anticipation_value || 0;
   els.reminderUnitInput.value = reminder.anticipation_unit || "days";
   els.reminderDescriptionInput.value = reminder.description || "";
   els.reminderActiveInput.checked = Boolean(reminder.is_active);
   els.reminderSaveBtn.textContent = "Modifier le rappel";
-  els.reminderDialogTitle.textContent = "Modifier le rappel";
-  if (!els.reminderDialog.open) els.reminderDialog.showModal();
   els.reminderTitleInput.focus();
 }
 
@@ -2492,23 +2418,7 @@ function bindEvents() {
     const id = event.target.dataset.receivePayment;
     if (id) api(`/api/pending-payments/${id}`, { method: "PUT", body: JSON.stringify({ status: "recu" }) }).then(loadFollowup).catch((error) => showToast(error.message));
   });
-  els.reminderResetBtn.addEventListener("click", () => {
-    resetReminderForm(els.reminderClientInput.value);
-  });
-  els.reminderRecurrenceInput.addEventListener("change", syncReminderRecurrenceControls);
-  els.planningAddReminderBtn.addEventListener("click", () => openReminderDialog());
-  els.clientAddReminderBtn.addEventListener("click", () => {
-    if (!state.selectedClientName) {
-      showToast("Sélectionne d'abord un client.");
-      return;
-    }
-    openReminderDialog(state.selectedClientName);
-  });
-  els.reminderCancelBtn.addEventListener("click", closeReminderDialog);
-  els.reminderCloseIconBtn.addEventListener("click", closeReminderDialog);
-  els.reminderDialog.addEventListener("click", (event) => {
-    if (event.target === els.reminderDialog) closeReminderDialog();
-  });
+  els.reminderResetBtn.addEventListener("click", resetReminderForm);
   els.planningTodayBtn.addEventListener("click", () => setActiveView("planning"));
   els.overviewApplyBtn.addEventListener("click", () => {
     loadOverview().catch((error) => showToast(error.message));
@@ -2522,11 +2432,6 @@ function bindEvents() {
     }
   });
   els.interventionsBody.addEventListener("click", async (event) => {
-    const statusInput = event.target.closest("[data-intervention-flag]");
-    if (statusInput) {
-      await toggleInterventionFlag(statusInput);
-      return;
-    }
     const editId = event.target.dataset.edit;
     const deleteId = event.target.dataset.delete;
     if (editId) {

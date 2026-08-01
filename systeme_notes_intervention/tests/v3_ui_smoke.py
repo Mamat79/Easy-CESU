@@ -28,16 +28,6 @@ def main() -> int:
         if page.locator("#setupAssistantDialog").is_visible():
             page.locator("#setupAssistantLaterBtn").click()
 
-        page.locator('[data-view="planning"]').click()
-        page.locator("#planningAddReminderBtn").click()
-        page.locator("#reminderDialog").wait_for(state="visible")
-        if page.locator("#reminderClientInput").input_value() != "":
-            raise AssertionError("Le rappel créé depuis Planning doit être général par défaut.")
-        if page.locator('#reminderRecurrenceInput option[value="weekly"]').count() != 1:
-            raise AssertionError("La répétition hebdomadaire n'est pas proposée.")
-        page.screenshot(path=str(OUTPUT_DIR / "planning-reminder-desktop.png"), full_page=True)
-        page.locator("#reminderCancelBtn").click()
-
         page.locator('[data-view="templates"]').click()
         page.locator("#templatePaper").wait_for(state="visible")
         page.wait_for_function("document.querySelectorAll('#templateSelect option').length > 0")
@@ -86,8 +76,6 @@ def main() -> int:
             raise AssertionError("La liste d'envoi ne reprend pas les trois clients du mois.")
         if page.locator('[data-email-client="Mme Bernard"]').is_enabled():
             raise AssertionError("Un client sans adresse email ne doit pas être sélectionnable.")
-        if not page.locator("#emailMarkTransmittedInput").is_checked():
-            raise AssertionError("Le marquage Transmis après envoi doit être proposé par défaut.")
         page.screenshot(path=str(OUTPUT_DIR / "email-recipients-desktop.png"))
         page.locator("#emailNotesSendBtn").click()
         page.locator("#emailReviewDialog").wait_for(state="visible")
@@ -95,14 +83,6 @@ def main() -> int:
             raise AssertionError("Le client marqué pour relecture n'ouvre pas l'éditeur.")
         page.screenshot(path=str(OUTPUT_DIR / "email-review-desktop.png"))
         page.locator("#emailReviewCancelBtn").click()
-
-        page.locator('[data-view="interventions"]').click()
-        page.locator('[data-intervention-flag="transmitted"]').first.wait_for(state="visible")
-        if page.locator('[data-intervention-flag="transmitted"]').count() != 3:
-            raise AssertionError("Chaque intervention doit afficher une case Transmis.")
-        if page.locator('[data-intervention-flag="paid"]').count() != 3:
-            raise AssertionError("Chaque intervention doit afficher une case Payé.")
-        page.screenshot(path=str(OUTPUT_DIR / "intervention-statuses-desktop.png"), full_page=True)
 
         if not page.locator("#supportReminderEnabledInput").is_checked():
             raise AssertionError("Le rappel discret doit être activé par défaut.")

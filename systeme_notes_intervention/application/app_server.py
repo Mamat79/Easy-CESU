@@ -94,8 +94,7 @@ APP_NAME = "Easy CESU"
 APP_VERSION = "3.1.3"
 V2_SCHEMA_VERSION = 2
 V3_SCHEMA_VERSION = 3
-V4_SCHEMA_VERSION = 4
-DATABASE_SCHEMA_VERSION = 5
+DATABASE_SCHEMA_VERSION = 4
 BROWSER_CLOSE_GRACE_SECONDS = 5.0
 BROWSER_STALE_SECONDS = 90.0
 BROWSER_SESSION_LOCK = threading.Lock()
@@ -752,7 +751,7 @@ def apply_v4_schema_migrations() -> None:
             """
         )
         applied = {int(row["version"]) for row in db.execute("SELECT version FROM schema_migrations").fetchall()}
-        needs_v4 = V4_SCHEMA_VERSION not in applied
+        needs_v4 = DATABASE_SCHEMA_VERSION not in applied
         has_user_data = database_contains_user_data(db)
     if not needs_v4:
         return
@@ -769,73 +768,7 @@ def apply_v4_schema_migrations() -> None:
         )
         db.execute(
             "INSERT OR IGNORE INTO schema_migrations (version, applied_at, details) VALUES (?, ?, ?)",
-            (V4_SCHEMA_VERSION, now_stamp(), "Envoi sélectionné des notes par email"),
-        )
-
-
-def apply_v5_schema_migrations() -> None:
-    """Autorise les rappels généraux tout en conservant les rappels clients."""
-
-    with db_connection() as db:
-        applied = {int(row["version"]) for row in db.execute("SELECT version FROM schema_migrations").fetchall()}
-        needs_v5 = DATABASE_SCHEMA_VERSION not in applied
-        has_user_data = database_contains_user_data(db)
-        client_column = next(
-            row for row in db.execute("PRAGMA table_info(reminders)").fetchall() if row["name"] == "client_name"
-        )
-        requires_rebuild = bool(client_column["notnull"])
-    if not needs_v5:
-        return
-    if has_user_data:
-        backup_profile_to(BACKUPS_DIR, "avant-migration-v5")
-    if requires_rebuild:
-        db = sqlite3.connect(active_db_path())
-        try:
-            db.execute("PRAGMA foreign_keys = OFF")
-            db.executescript(
-                """
-                BEGIN;
-                CREATE TABLE reminders_v5 (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    client_name TEXT,
-                    title TEXT NOT NULL,
-                    description TEXT NOT NULL DEFAULT '',
-                    reference_date TEXT NOT NULL,
-                    due_time TEXT NOT NULL DEFAULT '',
-                    recurrence_type TEXT NOT NULL DEFAULT 'once',
-                    recurrence_interval INTEGER NOT NULL DEFAULT 1,
-                    anticipation_value INTEGER NOT NULL DEFAULT 0,
-                    anticipation_unit TEXT NOT NULL DEFAULT 'days',
-                    is_active INTEGER NOT NULL DEFAULT 1,
-                    next_occurrence_date TEXT NOT NULL DEFAULT '',
-                    last_processed_date TEXT NOT NULL DEFAULT '',
-                    is_completed INTEGER NOT NULL DEFAULT 0,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    FOREIGN KEY(client_name) REFERENCES clients(name) ON UPDATE CASCADE ON DELETE CASCADE
-                );
-                INSERT INTO reminders_v5
-                SELECT id, NULLIF(client_name, ''), title, description, reference_date, due_time,
-                       recurrence_type, recurrence_interval, anticipation_value, anticipation_unit,
-                       is_active, next_occurrence_date, last_processed_date, is_completed,
-                       created_at, updated_at
-                FROM reminders;
-                DROP TABLE reminders;
-                ALTER TABLE reminders_v5 RENAME TO reminders;
-                CREATE INDEX idx_reminders_client ON reminders(client_name);
-                CREATE INDEX idx_reminders_next ON reminders(next_occurrence_date);
-                COMMIT;
-                """
-            )
-        except Exception:
-            db.rollback()
-            raise
-        finally:
-            db.close()
-    with db_connection() as db:
-        db.execute(
-            "INSERT OR IGNORE INTO schema_migrations (version, applied_at, details) VALUES (?, ?, ?)",
-            (DATABASE_SCHEMA_VERSION, now_stamp(), "Rappels généraux et périodicités étendues"),
+            (DATABASE_SCHEMA_VERSION, now_stamp(), "Envoi sélectionné des notes par email"),
         )
 
 
@@ -881,7 +814,7 @@ def init_db() -> None:
 
             CREATE TABLE IF NOT EXISTS reminders (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                client_name TEXT,
+                client_name TEXT NOT NULL,
                 title TEXT NOT NULL,
                 description TEXT NOT NULL DEFAULT '',
                 reference_date TEXT NOT NULL,
@@ -937,7 +870,6 @@ def init_db() -> None:
     apply_v2_schema_migrations()
     apply_v3_schema_migrations()
     apply_v4_schema_migrations()
-    apply_v5_schema_migrations()
     ensure_default_document_template()
     refresh_clients()
     seed_interventions_if_empty()
@@ -956,6 +888,8 @@ def profile_attachments_dir(profile: dict | None = None) -> Path:
 def validate_reminder(data: dict) -> tuple[dict, str | None]:
     client_name = clean_text(data.get("client_name"))
     title = clean_text(data.get("title"))
+    if not client_name:
+        return {}, "Client obligatoire pour le rappel."
     if not title:
         return {}, "Titre du rappel obligatoire."
     try:
@@ -987,7 +921,7 @@ def validate_reminder(data: dict) -> tuple[dict, str | None]:
     if anticipation_unit not in ANTICIPATION_UNITS:
         return {}, "Unité d'anticipation invalide."
     return {
-        "client_name": client_name or None,
+        "client_name": client_name,
         "title": title,
         "description": clean_text(data.get("description")),
         "reference_date": reference_date.isoformat(),
@@ -1056,7 +990,7 @@ def list_reminder_occurrences(
     refresh_reminder_occurrences()
     query = """
         SELECT occurrence.*, reminder.client_name, reminder.title, reminder.description,
-               reminder.reference_date, reminder.due_time, reminder.recurrence_type, reminder.recurrence_interval,
+               reminder.due_time, reminder.recurrence_type, reminder.recurrence_interval,
                reminder.anticipation_value, reminder.anticipation_unit, reminder.is_active
         FROM reminder_occurrences AS occurrence
         JOIN reminders AS reminder ON reminder.id = occurrence.reminder_id
@@ -1085,16 +1019,10 @@ def list_reminder_occurrences(
 
 def reminders_for_client(client_name: str) -> list[dict]:
     with db_connection() as db:
-        if client_name:
-            rows = db.execute(
-                "SELECT * FROM reminders WHERE client_name = ? ORDER BY is_active DESC, reference_date, title COLLATE NOCASE",
-                (client_name,),
-            ).fetchall()
-        else:
-            rows = db.execute(
-                "SELECT * FROM reminders WHERE client_name IS NULL ORDER BY is_active DESC, reference_date, title COLLATE NOCASE"
-            ).fetchall()
-        reminders = [dict(row) for row in rows]
+        reminders = [dict(row) for row in db.execute(
+            "SELECT * FROM reminders WHERE client_name = ? ORDER BY is_active DESC, reference_date, title COLLATE NOCASE",
+            (client_name,),
+        ).fetchall()]
     for reminder in reminders:
         reminder["is_active"] = bool(reminder["is_active"])
         reminder["is_completed"] = bool(reminder["is_completed"])
@@ -1108,9 +1036,7 @@ def create_reminder(data: dict) -> dict:
     if error:
         raise ValueError(error)
     with db_connection() as db:
-        if item["client_name"] and not db.execute(
-            "SELECT 1 FROM clients WHERE name = ?", (item["client_name"],)
-        ).fetchone():
+        if not db.execute("SELECT 1 FROM clients WHERE name = ?", (item["client_name"],)).fetchone():
             raise ValueError("Le client associé au rappel est introuvable.")
         stamp = now_stamp()
         cursor = db.execute(
@@ -1129,11 +1055,7 @@ def create_reminder(data: dict) -> dict:
         )
         reminder_id = int(cursor.lastrowid)
     refresh_reminder_occurrences()
-    return next(
-        reminder
-        for reminder in reminders_for_client(item["client_name"])
-        if reminder["id"] == reminder_id
-    )
+    return next(item for item in reminders_for_client(str(data["client_name"])) if item["id"] == reminder_id)
 
 
 def update_reminder(reminder_id: int, data: dict) -> dict:
@@ -1144,9 +1066,7 @@ def update_reminder(reminder_id: int, data: dict) -> dict:
         existing = db.execute("SELECT * FROM reminders WHERE id = ?", (reminder_id,)).fetchone()
         if not existing:
             raise KeyError("Rappel introuvable.")
-        if item["client_name"] and not db.execute(
-            "SELECT 1 FROM clients WHERE name = ?", (item["client_name"],)
-        ).fetchone():
+        if not db.execute("SELECT 1 FROM clients WHERE name = ?", (item["client_name"],)).fetchone():
             raise ValueError("Le client associé au rappel est introuvable.")
         db.execute(
             """
@@ -2889,14 +2809,6 @@ def update_intervention(intervention_id: int, data: dict) -> dict:
         raise KeyError("Intervention introuvable.")
     merged_data = dict(existing)
     merged_data.update(data)
-    # Une bascule rapide de la case Payé doit aussi garder le suivi financier cohérent.
-    if "paid" in data and "received_amount" not in data:
-        if data.get("paid"):
-            merged_data["received_amount"] = float(existing["duration_hours"]) * float(existing["hourly_rate"])
-            merged_data["payment_status"] = "recu"
-        else:
-            merged_data["received_amount"] = 0
-            merged_data["payment_status"] = "a_recevoir"
     item, error = validate_intervention(merged_data)
     if error:
         raise ValueError(error)
@@ -3983,7 +3895,6 @@ def send_month_emails(
     month: int,
     client_names: object,
     message_overrides: object = None,
-    mark_transmitted: bool = False,
 ) -> dict:
     if not isinstance(client_names, list):
         raise ValueError("La liste des clients à contacter est invalide.")
@@ -4036,27 +3947,11 @@ def send_month_emails(
                     note_path,
                 )
                 server.send_message(message)
-                transmitted_updated = 0
-                if mark_transmitted:
-                    with db_connection() as db:
-                        cursor = db.execute(
-                            """
-                            UPDATE interventions
-                            SET transmitted = 1, updated_at = ?
-                            WHERE client = ?
-                              AND substr(date, 1, 4) = ?
-                              AND substr(date, 6, 2) = ?
-                              AND transmitted = 0
-                            """,
-                            (now_stamp(), client_name, f"{year:04d}", f"{month:02d}"),
-                        )
-                        transmitted_updated = cursor.rowcount
                 sent.append(
                     {
                         "client": client_name,
                         "email": recipient["email"],
                         "note": str(note_path),
-                        "transmitted_updated": transmitted_updated,
                     }
                 )
             except Exception as exc:  # noqa: BLE001 - une erreur client ne bloque pas les suivants
@@ -4725,7 +4620,6 @@ class AppHandler(SimpleHTTPRequestHandler):
                         month,
                         body.get("clients"),
                         body.get("message_overrides"),
-                        bool(body.get("mark_transmitted")),
                     ),
                 )
                 return

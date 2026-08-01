@@ -7,10 +7,10 @@ indépendamment des données réelles de l'application.
 from __future__ import annotations
 
 import calendar
-from datetime import date, timedelta
+from datetime import date
 
 
-RECURRENCES = {"once", "daily", "weekly", "monthly", "yearly"}
+RECURRENCES = {"once", "monthly", "yearly"}
 ANTICIPATION_UNITS = {"days", "weeks", "months"}
 
 
@@ -37,10 +37,6 @@ def add_months(reference: date, months: int) -> date:
 def occurrence_for_index(reference: date, recurrence_type: str, interval: int, index: int) -> date:
     if recurrence_type == "once":
         return reference
-    if recurrence_type == "daily":
-        return reference + timedelta(days=interval * index)
-    if recurrence_type == "weekly":
-        return reference + timedelta(weeks=interval * index)
     if recurrence_type == "monthly":
         return add_months(reference, interval * index)
     if recurrence_type == "yearly":

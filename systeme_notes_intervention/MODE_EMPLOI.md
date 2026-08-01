@@ -36,11 +36,7 @@ En fin de mois, choisis l'annee et le mois puis clique sur `Generer les notes`.
 L'application te demande alors ou ranger les notes PDF.
 Les PDF sont créés directement dans le dossier choisi, sans sous-dossier supplémentaire.
 
-Pour envoyer les notes par email, ouvre `Réglages` > `Envoi des notes par email`, renseigne le serveur SMTP de ton adresse et personnalise l'objet ou le texte du message. Le mot de passe est enregistré uniquement dans le coffre sécurisé de l'ordinateur. Dans chaque fiche client, tu peux choisir si le client est sélectionné par défaut et si son message doit être relu avant l'envoi. Le bouton `Envoyer les notes` affiche toujours la liste des destinataires avant toute expédition. L'option proposée dans cette fenêtre marque comme `Transmis` uniquement les interventions dont le mail a réellement été envoyé.
-
-Dans la liste mensuelle des interventions, les cases `Transmis` et `Payé` peuvent être cochées directement, sans rouvrir la fiche.
-
-Dans `Planning`, clique sur `Nouveau rappel` pour créer un rappel général ou choisir un client. La première échéance peut être une date précise et la répétition peut être quotidienne, hebdomadaire, mensuelle ou annuelle. Le champ `Intervalle` permet par exemple de choisir tous les 3 mois. Le même éditeur est accessible depuis la fiche d'un client avec le bouton `Ajouter un rappel`.
+Pour envoyer les notes par email, ouvre `Réglages` > `Envoi des notes par email`, renseigne le serveur SMTP de ton adresse et personnalise l'objet ou le texte du message. Le mot de passe est enregistré uniquement dans le coffre sécurisé de l'ordinateur. Dans chaque fiche client, tu peux choisir si le client est sélectionné par défaut et si son message doit être relu avant l'envoi. Le bouton `Envoyer les notes` affiche toujours la liste des destinataires avant toute expédition.
 
 Le bouton `Bilan Excel` te demande aussi le dossier de sortie, puis cree `Bilan activite application YYYY.xlsx`.
 La creation et la restauration d'une sauvegarde ZIP sont regroupees dans l'onglet `Base de donnees`, qui affiche le compte concerne et la base actuellement utilisee.
