@@ -264,6 +264,163 @@ import app_server
             """
         )
 
+    def test_v6_migration_preserves_v313_data_and_protects_history(self) -> None:
+        self.run_scenario(
+            """
+            import sqlite3
+            from pathlib import Path
+
+            # Prépare d'abord toutes les tables réellement présentes en schéma 4,
+            # puis retire uniquement le champ qui n'existait pas en 3.1.3.
+            original_v6 = app_server.apply_v6_schema_migrations
+            app_server.apply_v6_schema_migrations = lambda: None
+            app_server.init_db()
+            app_server.apply_v6_schema_migrations = original_v6
+            database_path = app_server.active_db_path()
+            with sqlite3.connect(database_path) as db:
+                db.execute("PRAGMA foreign_keys = OFF")
+                db.executescript(
+                    '''
+                    ALTER TABLE interventions RENAME TO interventions_with_declared;
+                    CREATE TABLE interventions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        date TEXT NOT NULL,
+                        client TEXT NOT NULL,
+                        duration_hours REAL NOT NULL,
+                        hourly_rate REAL NOT NULL,
+                        task TEXT NOT NULL DEFAULT '',
+                        location TEXT NOT NULL DEFAULT '',
+                        transmitted INTEGER NOT NULL DEFAULT 0,
+                        paid INTEGER NOT NULL DEFAULT 0,
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL,
+                        planned_start TEXT NOT NULL DEFAULT '',
+                        planned_end TEXT NOT NULL DEFAULT '',
+                        actual_start TEXT NOT NULL DEFAULT '',
+                        actual_end TEXT NOT NULL DEFAULT '',
+                        break_minutes INTEGER NOT NULL DEFAULT 0,
+                        travel_minutes INTEGER NOT NULL DEFAULT 0,
+                        status TEXT NOT NULL DEFAULT 'realized',
+                        category_id INTEGER,
+                        planned_amount REAL NOT NULL DEFAULT 0,
+                        received_amount REAL NOT NULL DEFAULT 0,
+                        payment_status TEXT NOT NULL DEFAULT ''
+                    );
+                    DROP TABLE interventions_with_declared;
+                    CREATE INDEX idx_interventions_date ON interventions(date);
+                    CREATE INDEX idx_interventions_client ON interventions(client);
+                    '''
+                )
+                db.execute("DELETE FROM schema_migrations WHERE version > 4")
+                db.execute(
+                    "INSERT INTO clients (name, updated_at) VALUES (?, ?)",
+                    ("Client historique", "2026-01-01T10:00:00"),
+                )
+                db.execute(
+                    '''
+                    INSERT INTO interventions
+                        (date, client, duration_hours, hourly_rate, transmitted, paid,
+                         planned_amount, received_amount, payment_status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''',
+                    ("2026-01-10", "Client historique", 2, 22, 1, 1, 44, 44, "recu",
+                     "2026-01-10T10:00:00", "2026-01-10T10:00:00"),
+                )
+                db.commit()
+
+            app_server.apply_v6_schema_migrations()
+            with app_server.db_connection() as db:
+                columns = {row["name"] for row in db.execute("PRAGMA table_info(interventions)")}
+                assert "declared" in columns
+                assert db.execute("SELECT declared FROM interventions WHERE id = 1").fetchone()[0] == 1
+                assert db.execute("SELECT version FROM schema_migrations WHERE version = 6").fetchone()[0] == 6
+                assert db.execute("SELECT COUNT(*) FROM intervention_followup_ignores").fetchone()[0] == 0
+                assert db.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+            backups = list((Path(os.environ["LOCALAPPDATA"]) / "EasyCESU" / "backups").glob("*avant-migration-v6*.zip"))
+            assert backups
+
+            created = app_server.create_intervention(
+                {"date": "2026-08-01", "client": "Client historique", "duration_hours": 1, "hourly_rate": 22}
+            )
+            assert created["declared"] is False
+            app_server.apply_v6_schema_migrations()
+            with app_server.db_connection() as db:
+                assert db.execute("SELECT COUNT(*) FROM schema_migrations WHERE version = 6").fetchone()[0] == 1
+                assert db.execute("SELECT COUNT(*) FROM interventions").fetchone()[0] == 2
+            """
+        )
+
+    def test_administrative_followup_states_filters_ignores_and_payments(self) -> None:
+        self.run_scenario(
+            """
+            app_server.init_db()
+            app_server.create_client({"name": "Mme Alpha"})
+            app_server.create_client({"name": "Mme Bêta"})
+            alpha = app_server.create_intervention(
+                {
+                    "date": "2026-07-01", "client": "Mme Alpha", "duration_hours": 2,
+                    "hourly_rate": 25, "planned_amount": 60, "received_amount": 20,
+                }
+            )
+            beta = app_server.create_intervention(
+                {
+                    "date": "2026-07-02", "client": "Mme Bêta", "duration_hours": 1,
+                    "hourly_rate": 22, "transmitted": True, "declared": True, "paid": True,
+                    "received_amount": 22,
+                }
+            )
+            payment = app_server.create_pending_payment(
+                {"intervention_id": alpha["id"], "expected_amount": 60, "received_amount": 20}
+            )
+
+            followups = app_server.list_intervention_followups()
+            assert [item["id"] for item in followups] == [alpha["id"]]
+            assert followups[0]["missing_reminders"] == ["transmitted", "declared", "paid"]
+            assert app_server.list_intervention_followups("declared")[0]["id"] == alpha["id"]
+            assert app_server.list_intervention_followups(search="alpha")[0]["id"] == alpha["id"]
+            assert app_server.list_intervention_followups(search="introuvable") == []
+
+            app_server.ignore_intervention_followup(alpha["id"], "declared")
+            active = app_server.list_intervention_followups()[0]
+            assert active["missing_reminders"] == ["transmitted", "paid"]
+            assert active["ignored_reminders"] == ["declared"]
+            assert app_server.list_intervention_followups("declared") == []
+            shown = app_server.list_intervention_followups("declared", include_ignored=True)[0]
+            assert shown["ignored_reminders"] == ["declared"]
+            assert all(item["id"] != beta["id"] for item in app_server.list_intervention_followups(include_ignored=True))
+
+            app_server.reactivate_intervention_followup(alpha["id"], "declared")
+            assert "declared" in app_server.list_intervention_followups()[0]["missing_reminders"]
+            app_server.ignore_intervention_followup(alpha["id"], "declared")
+            declared = app_server.update_intervention_administrative_status(alpha["id"], "declared", True)
+            assert declared["declared"] is True
+            with app_server.db_connection() as db:
+                assert db.execute(
+                    "SELECT COUNT(*) FROM intervention_followup_ignores WHERE intervention_id = ? AND reminder_type = 'declared'",
+                    (alpha["id"],),
+                ).fetchone()[0] == 0
+            app_server.update_intervention_administrative_status(alpha["id"], "declared", False)
+            assert "declared" in app_server.list_intervention_followups()[0]["missing_reminders"]
+
+            paid = app_server.update_intervention_administrative_status(alpha["id"], "paid", True)
+            assert paid["paid"] is True
+            assert paid["received_amount"] == 20
+            assert paid["payment_status"] == "recu"
+            linked = next(item for item in app_server.list_pending_payments() if item["id"] == payment["id"])
+            assert linked["received_amount"] == 20 and linked["status"] == "recu"
+            unpaid = app_server.update_intervention_administrative_status(alpha["id"], "paid", False)
+            assert unpaid["received_amount"] == 20
+            assert unpaid["payment_status"] == "partiellement_recu"
+
+            app_server.ignore_intervention_followup(alpha["id"], "transmitted")
+            app_server.delete_intervention(alpha["id"])
+            with app_server.db_connection() as db:
+                assert db.execute(
+                    "SELECT COUNT(*) FROM intervention_followup_ignores WHERE intervention_id = ?", (alpha["id"],)
+                ).fetchone()[0] == 0
+            """
+        )
+
     def test_v3_document_templates_are_isolated_and_generate_a_pdf(self) -> None:
         self.run_scenario(
             """
@@ -401,10 +558,38 @@ import app_server
             assert "Texte corrigé" in by_recipient["relu@example.test"].get_body().get_content()
             assert list(by_recipient["direct@example.test"].iter_attachments())[0].get_filename().endswith(".pdf")
             with app_server.db_connection() as db:
+                assert db.execute("SELECT SUM(transmitted) FROM interventions").fetchone()[0] == 0
+
+            class PartialServer:
+                def send_message(self, message):
+                    if message["To"] == "relu@example.test":
+                        raise RuntimeError("Échec SMTP simulé")
+
+            @contextmanager
+            def partial_connection(settings, password):
+                yield PartialServer()
+
+            app_server.smtp_connection = partial_connection
+            marked = app_server.send_month_emails(
+                2026,
+                7,
+                ["Client Direct", "Client Relu"],
+                mark_transmitted=True,
+            )
+            assert len(marked["sent"]) == 1 and len(marked["errors"]) == 1
+            assert marked["sent"][0]["transmitted_updated"] == 1
+            with app_server.db_connection() as db:
                 columns = {row["name"] for row in db.execute("PRAGMA table_info(clients)")}
                 assert "email_notes_enabled" in columns
                 assert "email_review_before_send" in columns
                 assert db.execute("SELECT version FROM schema_migrations WHERE version = 4").fetchone()[0] == 4
+                statuses = {
+                    row["client"]: bool(row["transmitted"])
+                    for row in db.execute("SELECT client, transmitted FROM interventions")
+                }
+                assert statuses["Client Direct"] is True
+                assert statuses["Client Relu"] is False
+                assert statuses["Client Sans Mail"] is False
             """
         )
 

@@ -94,7 +94,9 @@ APP_NAME = "Easy CESU"
 APP_VERSION = "3.1.3"
 V2_SCHEMA_VERSION = 2
 V3_SCHEMA_VERSION = 3
-DATABASE_SCHEMA_VERSION = 4
+V4_SCHEMA_VERSION = 4
+V6_SCHEMA_VERSION = 6
+DATABASE_SCHEMA_VERSION = V6_SCHEMA_VERSION
 BROWSER_CLOSE_GRACE_SECONDS = 5.0
 BROWSER_STALE_SECONDS = 90.0
 BROWSER_SESSION_LOCK = threading.Lock()
@@ -257,6 +259,7 @@ NOTE_STATUSES = {"information", "a_faire", "en_attente", "termine", "annule"}
 NOTE_PRIORITIES = {"basse", "normale", "haute"}
 PAYMENT_STATUSES = {"a_recevoir", "partiellement_recu", "recu", "annule", "litige"}
 INTERVENTION_STATUSES = {"prevue", "confirmee", "realisee", "annulee", "reportee", "a_declarer", "payee", "paiement_en_attente"}
+ADMINISTRATIVE_STATUS_FIELDS = {"transmitted", "declared", "paid"}
 
 
 def ensure_runtime_files() -> None:
@@ -751,7 +754,7 @@ def apply_v4_schema_migrations() -> None:
             """
         )
         applied = {int(row["version"]) for row in db.execute("SELECT version FROM schema_migrations").fetchall()}
-        needs_v4 = DATABASE_SCHEMA_VERSION not in applied
+        needs_v4 = V4_SCHEMA_VERSION not in applied
         has_user_data = database_contains_user_data(db)
     if not needs_v4:
         return
@@ -768,7 +771,60 @@ def apply_v4_schema_migrations() -> None:
         )
         db.execute(
             "INSERT OR IGNORE INTO schema_migrations (version, applied_at, details) VALUES (?, ?, ?)",
-            (DATABASE_SCHEMA_VERSION, now_stamp(), "Envoi sélectionné des notes par email"),
+            (V4_SCHEMA_VERSION, now_stamp(), "Envoi sélectionné des notes par email"),
+        )
+
+
+def apply_v6_schema_migrations() -> None:
+    """Ajoute le suivi administratif sans transformer l'historique en retard."""
+
+    with db_connection() as db:
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                version INTEGER PRIMARY KEY,
+                applied_at TEXT NOT NULL,
+                details TEXT NOT NULL DEFAULT ''
+            )
+            """
+        )
+        applied = {int(row["version"]) for row in db.execute("SELECT version FROM schema_migrations").fetchall()}
+        needs_v6 = V6_SCHEMA_VERSION not in applied
+        has_user_data = database_contains_user_data(db)
+        had_declared_column = "declared" in table_columns(db, "interventions")
+
+    if not needs_v6:
+        return
+    if has_user_data:
+        backup_profile_to(BACKUPS_DIR, "avant-migration-v6")
+
+    with db_connection() as db:
+        add_missing_columns(db, "interventions", {"declared": "INTEGER NOT NULL DEFAULT 0"})
+        if not had_declared_column:
+            # L'état des anciennes déclarations est inconnu : elles ne doivent pas
+            # toutes apparaître comme des démarches en retard après la mise à jour.
+            db.execute("UPDATE interventions SET declared = 1")
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS intervention_followup_ignores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                intervention_id INTEGER NOT NULL,
+                reminder_type TEXT NOT NULL CHECK(reminder_type IN ('transmitted', 'declared', 'paid')),
+                created_at TEXT NOT NULL,
+                UNIQUE(intervention_id, reminder_type),
+                FOREIGN KEY(intervention_id) REFERENCES interventions(id) ON DELETE CASCADE
+            )
+            """
+        )
+        db.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_intervention_followup_ignores_intervention
+            ON intervention_followup_ignores(intervention_id)
+            """
+        )
+        db.execute(
+            "INSERT OR IGNORE INTO schema_migrations (version, applied_at, details) VALUES (?, ?, ?)",
+            (V6_SCHEMA_VERSION, now_stamp(), "Suivi Transmis, Déclaré et Payé"),
         )
 
 
@@ -798,6 +854,7 @@ def init_db() -> None:
                 task TEXT NOT NULL DEFAULT '',
                 location TEXT NOT NULL DEFAULT '',
                 transmitted INTEGER NOT NULL DEFAULT 0,
+                declared INTEGER NOT NULL DEFAULT 0,
                 paid INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
@@ -870,6 +927,7 @@ def init_db() -> None:
     apply_v2_schema_migrations()
     apply_v3_schema_migrations()
     apply_v4_schema_migrations()
+    apply_v6_schema_migrations()
     ensure_default_document_template()
     refresh_clients()
     seed_interventions_if_empty()
@@ -2469,6 +2527,7 @@ def row_to_dict(row: sqlite3.Row) -> dict:
     item["travel_minutes"] = int(item.get("travel_minutes") or 0)
     item["paid"] = bool(item["paid"])
     item["transmitted"] = bool(item["transmitted"])
+    item["declared"] = bool(item["declared"])
     return item
 
 
@@ -2727,6 +2786,7 @@ def validate_intervention(data: dict) -> tuple[dict, str | None]:
         "task": task,
         "location": location,
         "transmitted": 1 if data.get("transmitted") else 0,
+        "declared": 1 if data.get("declared") else 0,
         "paid": 1 if data.get("paid") else 0,
         "planned_start": clean_text(data.get("planned_start")),
         "planned_end": clean_text(data.get("planned_end")),
@@ -2767,10 +2827,10 @@ def create_intervention(data: dict) -> dict:
         cursor = db.execute(
             """
             INSERT INTO interventions
-                (date, client, duration_hours, hourly_rate, task, location, transmitted, paid,
+                (date, client, duration_hours, hourly_rate, task, location, transmitted, declared, paid,
                 planned_start, planned_end, actual_start, actual_end, break_minutes, travel_minutes, status,
                 category_id, planned_amount, received_amount, payment_status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 item["date"],
@@ -2780,6 +2840,7 @@ def create_intervention(data: dict) -> dict:
                 item["task"],
                 item["location"],
                 item["transmitted"],
+                item["declared"],
                 item["paid"],
                 item["planned_start"],
                 item["planned_end"],
@@ -2819,7 +2880,7 @@ def update_intervention(intervention_id: int, data: dict) -> dict:
             """
             UPDATE interventions
             SET date = ?, client = ?, duration_hours = ?, hourly_rate = ?, task = ?, location = ?,
-                transmitted = ?, paid = ?, planned_start = ?, planned_end = ?, actual_start = ?, actual_end = ?,
+                transmitted = ?, declared = ?, paid = ?, planned_start = ?, planned_end = ?, actual_start = ?, actual_end = ?,
                 break_minutes = ?, travel_minutes = ?, status = ?, category_id = ?, planned_amount = ?,
                 received_amount = ?, payment_status = ?, updated_at = ?
             WHERE id = ?
@@ -2832,6 +2893,7 @@ def update_intervention(intervention_id: int, data: dict) -> dict:
                 item["task"],
                 item["location"],
                 item["transmitted"],
+                item["declared"],
                 item["paid"],
                 item["planned_start"],
                 item["planned_end"],
@@ -2848,6 +2910,12 @@ def update_intervention(intervention_id: int, data: dict) -> dict:
                 intervention_id,
             ),
         )
+        for reminder_type in ADMINISTRATIVE_STATUS_FIELDS:
+            if item[reminder_type]:
+                db.execute(
+                    "DELETE FROM intervention_followup_ignores WHERE intervention_id = ? AND reminder_type = ?",
+                    (intervention_id, reminder_type),
+                )
         row = db.execute("SELECT * FROM interventions WHERE id = ?", (intervention_id,)).fetchone()
     return row_to_dict(row)
 
@@ -2857,6 +2925,163 @@ def delete_intervention(intervention_id: int) -> None:
         cursor = db.execute("DELETE FROM interventions WHERE id = ?", (intervention_id,))
         if cursor.rowcount == 0:
             raise KeyError("Intervention introuvable.")
+
+
+def administrative_status_label(reminder_type: str) -> str:
+    return {
+        "transmitted": "À transmettre",
+        "declared": "À déclarer",
+        "paid": "À payer",
+    }.get(reminder_type, reminder_type)
+
+
+def update_intervention_administrative_status(intervention_id: int, reminder_type: str, checked: bool) -> dict:
+    """Met à jour un seul état sans réécrire le reste de l'intervention."""
+
+    reminder_type = clean_text(reminder_type)
+    if reminder_type not in ADMINISTRATIVE_STATUS_FIELDS:
+        raise ValueError("État administratif invalide.")
+    checked_value = 1 if checked else 0
+    with db_connection() as db:
+        existing = db.execute("SELECT * FROM interventions WHERE id = ?", (intervention_id,)).fetchone()
+        if not existing:
+            raise KeyError("Intervention introuvable.")
+        if reminder_type == "transmitted":
+            db.execute(
+                "UPDATE interventions SET transmitted = ?, updated_at = ? WHERE id = ?",
+                (checked_value, now_stamp(), intervention_id),
+            )
+        elif reminder_type == "declared":
+            db.execute(
+                "UPDATE interventions SET declared = ?, updated_at = ? WHERE id = ?",
+                (checked_value, now_stamp(), intervention_id),
+            )
+        else:
+            received_amount = max(0.0, float(existing["received_amount"] or 0))
+            expected_amount = float(existing["planned_amount"] or 0)
+            if expected_amount <= 0:
+                expected_amount = float(existing["duration_hours"]) * float(existing["hourly_rate"])
+            if checked and received_amount <= 0:
+                received_amount = expected_amount
+            payment_status = "recu" if checked else ("partiellement_recu" if received_amount > 0 else "a_recevoir")
+            db.execute(
+                """
+                UPDATE interventions
+                SET paid = ?, received_amount = ?, payment_status = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (checked_value, round(received_amount, 2), payment_status, now_stamp(), intervention_id),
+            )
+            # Un paiement explicitement lié suit le même état, sans écraser un
+            # montant reçu qui aurait été saisi manuellement.
+            if checked:
+                db.execute(
+                    """
+                    UPDATE pending_payments
+                    SET status = 'recu',
+                        received_amount = CASE WHEN received_amount > 0 THEN received_amount ELSE expected_amount END,
+                        updated_at = ?
+                    WHERE intervention_id = ?
+                    """,
+                    (now_stamp(), intervention_id),
+                )
+            else:
+                db.execute(
+                    """
+                    UPDATE pending_payments
+                    SET status = CASE WHEN received_amount > 0 THEN 'partiellement_recu' ELSE 'a_recevoir' END,
+                        updated_at = ?
+                    WHERE intervention_id = ?
+                    """,
+                    (now_stamp(), intervention_id),
+                )
+        if checked:
+            db.execute(
+                "DELETE FROM intervention_followup_ignores WHERE intervention_id = ? AND reminder_type = ?",
+                (intervention_id, reminder_type),
+            )
+        row = db.execute("SELECT * FROM interventions WHERE id = ?", (intervention_id,)).fetchone()
+    return row_to_dict(row)
+
+
+def list_intervention_followups(
+    reminder_type: str = "",
+    search: str = "",
+    include_ignored: bool = False,
+) -> list[dict]:
+    reminder_type = clean_text(reminder_type)
+    if reminder_type and reminder_type not in ADMINISTRATIVE_STATUS_FIELDS:
+        raise ValueError("Filtre de suivi invalide.")
+    search = clean_text(search)
+    query = "SELECT * FROM interventions"
+    params: list[object] = []
+    if search:
+        query += " WHERE client LIKE ? COLLATE NOCASE"
+        params.append(f"%{search}%")
+    query += " ORDER BY date ASC, client COLLATE NOCASE, id ASC"
+    with db_connection() as db:
+        rows = db.execute(query, params).fetchall()
+        ignored_rows = db.execute(
+            "SELECT intervention_id, reminder_type, created_at FROM intervention_followup_ignores"
+        ).fetchall()
+    ignored = {
+        (int(row["intervention_id"]), str(row["reminder_type"])): str(row["created_at"])
+        for row in ignored_rows
+    }
+    followups: list[dict] = []
+    for row in rows:
+        item = row_to_dict(row)
+        all_missing = [status for status in ("transmitted", "declared", "paid") if not item[status]]
+        active_missing = [status for status in all_missing if (item["id"], status) not in ignored]
+        ignored_missing = [status for status in all_missing if (item["id"], status) in ignored]
+        visible_statuses = active_missing + (ignored_missing if include_ignored else [])
+        if reminder_type and reminder_type not in visible_statuses:
+            continue
+        if not visible_statuses:
+            continue
+        item["missing_reminders"] = active_missing
+        item["missing_reminder_labels"] = [administrative_status_label(status) for status in active_missing]
+        item["ignored_reminders"] = ignored_missing
+        item["ignored_reminder_labels"] = [administrative_status_label(status) for status in ignored_missing]
+        item["ignored_at"] = {status: ignored[(item["id"], status)] for status in ignored_missing}
+        followups.append(item)
+    return followups
+
+
+def ignore_intervention_followup(intervention_id: int, reminder_type: str) -> dict:
+    reminder_type = clean_text(reminder_type)
+    if reminder_type not in ADMINISTRATIVE_STATUS_FIELDS:
+        raise ValueError("Type de rappel invalide.")
+    with db_connection() as db:
+        intervention = db.execute("SELECT * FROM interventions WHERE id = ?", (intervention_id,)).fetchone()
+        if not intervention:
+            raise KeyError("Intervention introuvable.")
+        if bool(intervention[reminder_type]):
+            raise ValueError("Cette action est déjà terminée.")
+        stamp = now_stamp()
+        db.execute(
+            """
+            INSERT INTO intervention_followup_ignores (intervention_id, reminder_type, created_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(intervention_id, reminder_type) DO UPDATE SET created_at = excluded.created_at
+            """,
+            (intervention_id, reminder_type, stamp),
+        )
+    return {"intervention_id": intervention_id, "reminder_type": reminder_type, "created_at": stamp}
+
+
+def reactivate_intervention_followup(intervention_id: int, reminder_type: str) -> dict:
+    reminder_type = clean_text(reminder_type)
+    if reminder_type not in ADMINISTRATIVE_STATUS_FIELDS:
+        raise ValueError("Type de rappel invalide.")
+    with db_connection() as db:
+        if not db.execute("SELECT 1 FROM interventions WHERE id = ?", (intervention_id,)).fetchone():
+            raise KeyError("Intervention introuvable.")
+        cursor = db.execute(
+            "DELETE FROM intervention_followup_ignores WHERE intervention_id = ? AND reminder_type = ?",
+            (intervention_id, reminder_type),
+        )
+    return {"intervention_id": intervention_id, "reminder_type": reminder_type, "reactivated": cursor.rowcount > 0}
 
 
 def category_to_dict(row: sqlite3.Row) -> dict:
@@ -3890,11 +4115,36 @@ def month_email_preview(year: int, month: int) -> dict:
     }
 
 
+def mark_month_interventions_transmitted(client_name: str, year: int, month: int) -> int:
+    with db_connection() as db:
+        rows = db.execute(
+            """
+            SELECT id FROM interventions
+            WHERE client = ? AND substr(date, 1, 4) = ? AND substr(date, 6, 2) = ? AND transmitted = 0
+            """,
+            (client_name, f"{year:04d}", f"{month:02d}"),
+        ).fetchall()
+        intervention_ids = [int(row["id"]) for row in rows]
+        if not intervention_ids:
+            return 0
+        placeholders = ", ".join("?" for _ in intervention_ids)
+        db.execute(
+            f"UPDATE interventions SET transmitted = 1, updated_at = ? WHERE id IN ({placeholders})",
+            (now_stamp(), *intervention_ids),
+        )
+        db.execute(
+            f"DELETE FROM intervention_followup_ignores WHERE reminder_type = 'transmitted' AND intervention_id IN ({placeholders})",
+            intervention_ids,
+        )
+    return len(intervention_ids)
+
+
 def send_month_emails(
     year: int,
     month: int,
     client_names: object,
     message_overrides: object = None,
+    mark_transmitted: bool = False,
 ) -> dict:
     if not isinstance(client_names, list):
         raise ValueError("La liste des clients à contacter est invalide.")
@@ -3947,11 +4197,15 @@ def send_month_emails(
                     note_path,
                 )
                 server.send_message(message)
+                transmitted_updated = (
+                    mark_month_interventions_transmitted(client_name, year, month) if mark_transmitted else 0
+                )
                 sent.append(
                     {
                         "client": client_name,
                         "email": recipient["email"],
                         "note": str(note_path),
+                        "transmitted_updated": transmitted_updated,
                     }
                 )
             except Exception as exc:  # noqa: BLE001 - une erreur client ne bloque pas les suivants
@@ -4322,6 +4576,18 @@ class AppHandler(SimpleHTTPRequestHandler):
         if parsed.path == "/api/pending-payments":
             json_response(self, {"payments": list_pending_payments(query.get("status", [""])[0])})
             return
+        if parsed.path == "/api/intervention-followups":
+            json_response(
+                self,
+                {
+                    "followups": list_intervention_followups(
+                        query.get("type", [""])[0],
+                        query.get("search", [""])[0],
+                        query.get("include_ignored", ["0"])[0] in {"1", "true", "yes"},
+                    )
+                },
+            )
+            return
         if parsed.path == "/api/reminders":
             client_name = query.get("client", [""])[0]
             json_response(self, {"reminders": reminders_for_client(client_name)} if client_name else reminders_overview())
@@ -4467,6 +4733,18 @@ class AppHandler(SimpleHTTPRequestHandler):
                 return
             if parsed.path == "/api/pending-payments":
                 json_response(self, {"payment": create_pending_payment(body)}, HTTPStatus.CREATED)
+                return
+            if parsed.path == "/api/intervention-followups/ignore":
+                json_response(
+                    self,
+                    {
+                        "ignore": ignore_intervention_followup(
+                            int(body.get("intervention_id")),
+                            str(body.get("reminder_type") or ""),
+                        )
+                    },
+                    HTTPStatus.CREATED,
+                )
                 return
             if parsed.path == "/api/profiles":
                 json_response(self, create_profile(body), HTTPStatus.CREATED)
@@ -4620,6 +4898,7 @@ class AppHandler(SimpleHTTPRequestHandler):
                         month,
                         body.get("clients"),
                         body.get("message_overrides"),
+                        bool(body.get("mark_transmitted")),
                     ),
                 )
                 return
@@ -4694,6 +4973,22 @@ class AppHandler(SimpleHTTPRequestHandler):
                 body = read_json_body(self)
                 json_response(self, update_profile(profile_id, body))
                 return
+            if parsed.path.startswith("/api/interventions/") and parsed.path.endswith("/administrative-status"):
+                intervention_id = int(parsed.path.split("/")[3])
+                body = read_json_body(self)
+                if not isinstance(body.get("checked"), bool):
+                    raise ValueError("La valeur de l'état administratif doit être vraie ou fausse.")
+                json_response(
+                    self,
+                    {
+                        "intervention": update_intervention_administrative_status(
+                            intervention_id,
+                            str(body.get("reminder_type") or ""),
+                            body["checked"],
+                        )
+                    },
+                )
+                return
             if parsed.path.startswith("/api/interventions/"):
                 intervention_id = int(parsed.path.rsplit("/", 1)[1])
                 body = read_json_body(self)
@@ -4737,6 +5032,12 @@ class AppHandler(SimpleHTTPRequestHandler):
                 delete_reminder(reminder_id)
                 json_response(self, {"ok": True})
                 return
+            if parsed.path.startswith("/api/intervention-followups/") and "/ignores/" in parsed.path:
+                parts = parsed.path.strip("/").split("/")
+                if len(parts) != 5 or parts[1] != "intervention-followups" or parts[3] != "ignores":
+                    raise ValueError("Route de réactivation invalide.")
+                json_response(self, reactivate_intervention_followup(int(parts[2]), parts[4]))
+                return
             if parsed.path.startswith("/api/interventions/"):
                 intervention_id = int(parsed.path.rsplit("/", 1)[1])
                 delete_intervention(intervention_id)
@@ -4748,6 +5049,8 @@ class AppHandler(SimpleHTTPRequestHandler):
                 json_response(self, {"ok": True})
                 return
             json_response(self, {"error": "Route inconnue."}, HTTPStatus.NOT_FOUND)
+        except ValueError as exc:
+            json_response(self, {"error": str(exc)}, HTTPStatus.BAD_REQUEST)
         except KeyError as exc:
             json_response(self, {"error": str(exc)}, HTTPStatus.NOT_FOUND)
 

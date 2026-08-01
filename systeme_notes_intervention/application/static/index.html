@@ -149,6 +149,7 @@
 
             <div class="check-row">
               <label class="check-label"><input id="transmittedInput" type="checkbox" /> Transmis</label>
+              <label class="check-label" title="Déclaré auprès du CESU"><input id="declaredInput" type="checkbox" /> Déclaré</label>
               <label class="check-label"><input id="paidInput" type="checkbox" /> Payé</label>
             </div>
 
@@ -193,6 +194,9 @@
                   <th>Durée</th>
                   <th>Net</th>
                   <th>Travaux</th>
+                  <th class="status-col">Transmis</th>
+                  <th class="status-col" title="Déclaré auprès du CESU">Déclaré</th>
+                  <th class="status-col">Payé</th>
                   <th class="actions-col"></th>
                 </tr>
               </thead>
@@ -739,7 +743,44 @@
         </section>
 
         <section id="followupPanel" class="followup-panel view-panel" data-view-panel="followup" hidden>
-          <div class="section-heading table-heading"><div><h2>Notes et paiements</h2><p class="section-note">Les choses à suivre et les règlements attendus, sans surcharger le planning.</p></div></div>
+          <div class="section-heading table-heading"><div><h2>Notes, paiements et suivi</h2><p class="section-note">Les démarches à terminer restent regroupées sans surcharger le planning.</p></div></div>
+          <section class="followup-section administrative-followup-section" aria-labelledby="administrativeFollowupTitle">
+            <div class="section-heading table-heading followup-toolbar-heading">
+              <div>
+                <h3 id="administrativeFollowupTitle">À suivre</h3>
+                <p class="section-note">Une seule ligne par intervention, même lorsque plusieurs actions manquent.</p>
+              </div>
+              <div class="followup-filters">
+                <select id="followupTypeFilter" aria-label="Filtrer les démarches">
+                  <option value="">Toutes les interventions</option>
+                  <option value="transmitted">À transmettre</option>
+                  <option value="declared">À déclarer</option>
+                  <option value="paid">À payer</option>
+                </select>
+                <input id="followupSearchInput" type="search" placeholder="Rechercher un client" aria-label="Rechercher un client à suivre" />
+                <label class="check-label followup-ignored-toggle">
+                  <input id="followupShowIgnoredInput" type="checkbox" /> Afficher les rappels ignorés
+                </label>
+              </div>
+            </div>
+            <div class="table-wrap followup-table-wrap">
+              <table class="followup-table">
+                <thead>
+                  <tr>
+                    <th>Client</th>
+                    <th>Date</th>
+                    <th>Durée</th>
+                    <th>Net</th>
+                    <th class="status-col">Transmis</th>
+                    <th class="status-col" title="Déclaré auprès du CESU">Déclaré</th>
+                    <th class="status-col">Payé</th>
+                    <th>Actions restantes</th>
+                  </tr>
+                </thead>
+                <tbody id="interventionFollowupsBody"></tbody>
+              </table>
+            </div>
+          </section>
           <div class="followup-grid">
             <section class="followup-section">
               <h3>Note ou chose à faire</h3>
@@ -946,6 +987,10 @@
           <tbody id="emailRecipientsBody"></tbody>
         </table>
       </div>
+      <label class="check-label email-send-option">
+        <input id="emailMarkTransmittedInput" type="checkbox" />
+        Marquer comme transmises les interventions dont le mail est envoyé
+      </label>
       <p class="section-note">Les PDF manquants seront créés dans le dossier des notes avant l'envoi.</p>
       <div class="support-dialog-actions">
         <button id="emailNotesCancelBtn" class="secondary" type="button">Annuler</button>

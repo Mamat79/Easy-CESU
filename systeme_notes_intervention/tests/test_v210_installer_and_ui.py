@@ -225,6 +225,7 @@ class EmailNotesContractTests(unittest.TestCase):
             "emailBodyTemplateInput",
             "emailNotesDialog",
             "emailReviewDialog",
+            "emailMarkTransmittedInput",
         ):
             self.assertIn(f'id="{element_id}"', html)
         for placeholder in ("{client}", "{mois}", "{annee}", "{heures}", "{montant}", "{nom}"):
@@ -234,6 +235,38 @@ class EmailNotesContractTests(unittest.TestCase):
         self.assertIn('"/api/send-month-emails"', javascript)
         self.assertIn("email_review_before_send", server)
         self.assertIn("message_overrides", server)
+        self.assertIn("mark_transmitted: state.emailMarkTransmitted", javascript)
+        self.assertIn('id="emailMarkTransmittedInput" type="checkbox" />', html)
+
+
+class AdministrativeFollowupContractTests(unittest.TestCase):
+    def test_three_direct_states_and_followup_controls_are_visible(self) -> None:
+        html = (PROJECT_ROOT / "application" / "static" / "index.html").read_text(encoding="utf-8")
+        javascript = (PROJECT_ROOT / "application" / "static" / "app.js").read_text(encoding="utf-8")
+        server = (PROJECT_ROOT / "application" / "app_server.py").read_text(encoding="utf-8")
+
+        self.assertIn('data-view="followup">Notes et paiements', html)
+        for element_id in (
+            "declaredInput",
+            "followupTypeFilter",
+            "followupSearchInput",
+            "followupShowIgnoredInput",
+            "interventionFollowupsBody",
+        ):
+            self.assertIn(f'id="{element_id}"', html)
+        transmitted = html.index('class="status-col">Transmis</th>')
+        declared = html.index('class="status-col" title="Déclaré auprès du CESU">Déclaré</th>')
+        paid = html.index('class="status-col">Payé</th>')
+        self.assertLess(transmitted, declared)
+        self.assertLess(declared, paid)
+        self.assertIn('data-administrative-status="${reminderType}"', javascript)
+        self.assertIn("administrativeStatusRequests.has(requestKey)", javascript)
+        self.assertIn("state.administrativeStatusRequests.add(requestKey)", javascript)
+        self.assertIn("state.administrativeStatusRequests.delete(requestKey)", javascript)
+        self.assertIn("/administrative-status", javascript)
+        self.assertIn("intervention_followup_ignores", server)
+        self.assertIn("UNIQUE(intervention_id, reminder_type)", server)
+        self.assertIn("ON DELETE CASCADE", server)
 
 
 class CommunitySupportContractTests(unittest.TestCase):

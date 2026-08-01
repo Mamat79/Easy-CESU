@@ -113,6 +113,8 @@ const state = {
   categories: [],
   notes: [],
   payments: [],
+  interventionFollowups: [],
+  administrativeStatusRequests: new Set(),
   documentTemplates: [],
   selectedTemplateId: null,
   templateDraft: null,
@@ -122,6 +124,7 @@ const state = {
   emailReviewQueue: [],
   emailMessageOverrides: {},
   emailSelectedClients: [],
+  emailMarkTransmitted: false,
 };
 
 const els = {
@@ -158,6 +161,7 @@ const els = {
   plannedAmountInput: document.querySelector("#plannedAmountInput"),
   receivedAmountInput: document.querySelector("#receivedAmountInput"),
   transmittedInput: document.querySelector("#transmittedInput"),
+  declaredInput: document.querySelector("#declaredInput"),
   paidInput: document.querySelector("#paidInput"),
   resetBtn: document.querySelector("#resetBtn"),
   saveBtn: document.querySelector("#saveBtn"),
@@ -293,6 +297,7 @@ const els = {
   emailNotesCloseIconBtn: document.querySelector("#emailNotesCloseIconBtn"),
   emailNotesCancelBtn: document.querySelector("#emailNotesCancelBtn"),
   emailNotesSendBtn: document.querySelector("#emailNotesSendBtn"),
+  emailMarkTransmittedInput: document.querySelector("#emailMarkTransmittedInput"),
   emailRecipientsBody: document.querySelector("#emailRecipientsBody"),
   emailReviewDialog: document.querySelector("#emailReviewDialog"),
   emailReviewClient: document.querySelector("#emailReviewClient"),
@@ -318,6 +323,10 @@ const els = {
   reminderSaveBtn: document.querySelector("#reminderSaveBtn"),
   reminderClientHint: document.querySelector("#reminderClientHint"),
   clientReminders: document.querySelector("#clientReminders"),
+  followupTypeFilter: document.querySelector("#followupTypeFilter"),
+  followupSearchInput: document.querySelector("#followupSearchInput"),
+  followupShowIgnoredInput: document.querySelector("#followupShowIgnoredInput"),
+  interventionFollowupsBody: document.querySelector("#interventionFollowupsBody"),
   toast: document.querySelector("#toast"),
   setupAssistantChoice: document.querySelector("#setupAssistantChoice"),
   setupAssistantEmptyBtn: document.querySelector("#setupAssistantEmptyBtn"),
@@ -1162,6 +1171,7 @@ function formPayload() {
     location: els.locationInput.value,
     task: els.taskInput.value,
     transmitted: els.transmittedInput.checked,
+    declared: els.declaredInput.checked,
     paid: els.paidInput.checked,
     category_id: null,
     status: els.statusInput.value,
@@ -1202,6 +1212,7 @@ function loadIntoForm(row) {
   els.locationInput.value = row.location || "";
   els.taskInput.value = row.task || "";
   els.transmittedInput.checked = row.transmitted;
+  els.declaredInput.checked = row.declared;
   els.paidInput.checked = row.paid;
   els.statusInput.value = row.status === "realized" ? "realisee" : (row.status || "realisee");
   els.plannedStartInput.value = row.planned_start || "";
@@ -1530,7 +1541,7 @@ function renderInterventions() {
     return !term || haystack.includes(term);
   });
   if (!rows.length) {
-    els.interventionsBody.innerHTML = `<tr><td class="empty-row" colspan="6">Aucune intervention</td></tr>`;
+    els.interventionsBody.innerHTML = `<tr><td class="empty-row" colspan="9">Aucune intervention</td></tr>`;
     return;
   }
   els.interventionsBody.innerHTML = rows
@@ -1542,6 +1553,9 @@ function renderInterventions() {
         <td>${durationLabel(row.duration_hours)}</td>
         <td>${euro(row.amount_net)}</td>
         <td>${escapeHtml(row.task || row.location || "")}</td>
+        ${administrativeStatusCell(row, "transmitted", "Transmis")}
+        ${administrativeStatusCell(row, "declared", "Déclaré auprès du CESU")}
+        ${administrativeStatusCell(row, "paid", "Payé")}
         <td>
           <div class="row-actions">
             <button class="icon-btn" title="Modifier" data-edit="${row.id}">✎</button>
@@ -1551,6 +1565,47 @@ function renderInterventions() {
       </tr>`,
     )
     .join("");
+}
+
+function administrativeStatusCell(row, reminderType, label) {
+  const requestKey = `${row.id}:${reminderType}`;
+  return `<td class="status-cell">
+    <input class="status-checkbox" type="checkbox" data-administrative-status="${reminderType}"
+      data-intervention-id="${row.id}" ${row[reminderType] ? "checked" : ""}
+      ${state.administrativeStatusRequests.has(requestKey) ? "disabled" : ""}
+      aria-label="${escapeHtml(label)} pour l'intervention de ${escapeHtml(row.client)}" />
+  </td>`;
+}
+
+async function toggleAdministrativeStatus(input) {
+  const interventionId = Number(input.dataset.interventionId);
+  const reminderType = input.dataset.administrativeStatus;
+  if (!interventionId || !["transmitted", "declared", "paid"].includes(reminderType)) return;
+  const requestKey = `${interventionId}:${reminderType}`;
+  if (state.administrativeStatusRequests.has(requestKey)) return;
+  const checked = input.checked;
+  state.administrativeStatusRequests.add(requestKey);
+  document.querySelectorAll(`[data-intervention-id="${interventionId}"][data-administrative-status="${reminderType}"]`)
+    .forEach((checkbox) => { checkbox.disabled = true; });
+  try {
+    const payload = await api(`/api/interventions/${interventionId}/administrative-status`, {
+      method: "PUT",
+      body: JSON.stringify({ reminder_type: reminderType, checked }),
+    });
+    const index = state.interventions.findIndex((item) => Number(item.id) === interventionId);
+    if (index >= 0) state.interventions[index] = payload.intervention;
+    renderInterventions();
+    await loadFollowup();
+    const label = { transmitted: "Transmis", declared: "Déclaré", paid: "Payé" }[reminderType];
+    showToast(`${label} ${checked ? "validé" : "à traiter"}.`);
+  } catch (error) {
+    input.checked = !checked;
+    showToast(`Enregistrement impossible : ${error.message}`);
+  } finally {
+    state.administrativeStatusRequests.delete(requestKey);
+    document.querySelectorAll(`[data-intervention-id="${interventionId}"][data-administrative-status="${reminderType}"]`)
+      .forEach((checkbox) => { checkbox.disabled = false; });
+  }
 }
 
 async function saveIntervention(event) {
@@ -1924,6 +1979,7 @@ function renderEmailRecipients(payload) {
 async function openEmailNotesDialog() {
   els.emailNotesBtn.disabled = true;
   try {
+    els.emailMarkTransmittedInput.checked = false;
     const payload = await api("/api/email-preview", {
       method: "POST",
       body: JSON.stringify({ year: selectedYear(), month: selectedMonth() }),
@@ -1989,6 +2045,7 @@ function beginSelectedEmailSend() {
   const selected = selectedEmailRows();
   if (!selected.length) return;
   state.emailSelectedClients = selected.map((item) => item.client);
+  state.emailMarkTransmitted = els.emailMarkTransmittedInput.checked;
   state.emailMessageOverrides = {};
   state.emailReviewQueue = selected.filter((item) => item.review_before_send);
   closeEmailNotesDialog();
@@ -2010,16 +2067,29 @@ async function sendSelectedMonthEmails() {
         month: selectedMonth(),
         clients: state.emailSelectedClients,
         message_overrides: state.emailMessageOverrides,
+        mark_transmitted: state.emailMarkTransmitted,
       }),
     });
     const details = payload.errors.length
       ? `\nErreurs : ${payload.errors.map((item) => `${item.client} (${item.error})`).join(", ")}`
       : "";
-    showToast(`${payload.sent.length} mail(s) envoyé(s) pour ${payload.month_label}.${details}`);
+    const transmittedUpdated = payload.sent.reduce(
+      (total, item) => total + Number(item.transmitted_updated || 0),
+      0,
+    );
+    const transmittedDetails = transmittedUpdated
+      ? `\n${transmittedUpdated} intervention(s) marquée(s) comme transmise(s).`
+      : "";
+    showToast(`${payload.sent.length} mail(s) envoyé(s) pour ${payload.month_label}.${transmittedDetails}${details}`);
+    if (transmittedUpdated) {
+      await loadMonth();
+      await loadFollowup();
+    }
   } finally {
     state.emailReviewQueue = [];
     state.emailSelectedClients = [];
     state.emailMessageOverrides = {};
+    state.emailMarkTransmitted = false;
     els.emailNotesBtn.disabled = false;
   }
 }
@@ -2199,6 +2269,37 @@ function activityLabel(value) {
 }
 
 function renderFollowup() {
+  if (!state.interventionFollowups.length) {
+    els.interventionFollowupsBody.innerHTML = `<tr><td class="empty-row" colspan="8">Aucune intervention à suivre.</td></tr>`;
+  } else {
+    els.interventionFollowupsBody.innerHTML = state.interventionFollowups.map((item) => {
+      const activeActions = (item.missing_reminders || []).map((reminderType) => {
+        const label = { transmitted: "À transmettre", declared: "À déclarer", paid: "À payer" }[reminderType];
+        return `<span class="followup-reminder-action">
+          <span class="followup-badge">${label}</span>
+          <button class="icon-btn" type="button" data-ignore-followup="${item.id}" data-reminder-type="${reminderType}"
+            title="Ne plus rappeler cette action pour cette intervention" aria-label="Ignorer ${label.toLowerCase()} pour ${escapeHtml(item.client)}">×</button>
+        </span>`;
+      }).join("");
+      const ignoredActions = (item.ignored_reminders || []).map((reminderType) => {
+        const label = { transmitted: "Transmission", declared: "Déclaration", paid: "Paiement" }[reminderType];
+        return `<span class="followup-reminder-action ignored">
+          <span class="followup-badge ignored">${label} ignoré</span>
+          <button class="secondary small-action" type="button" data-reactivate-followup="${item.id}" data-reminder-type="${reminderType}">Réactiver</button>
+        </span>`;
+      }).join("");
+      return `<tr>
+        <td><strong>${escapeHtml(item.client)}</strong></td>
+        <td>${dateFr(item.date)}</td>
+        <td>${durationLabel(item.duration_hours)}</td>
+        <td>${euro(item.amount_net)}</td>
+        ${administrativeStatusCell(item, "transmitted", "Transmis")}
+        ${administrativeStatusCell(item, "declared", "Déclaré auprès du CESU")}
+        ${administrativeStatusCell(item, "paid", "Payé")}
+        <td><div class="followup-reminder-actions">${activeActions}${ignoredActions}</div></td>
+      </tr>`;
+    }).join("");
+  }
   els.notesList.innerHTML = state.notes.length
     ? state.notes.map((item) => `<article class="followup-item"><div><strong>${escapeHtml(item.client_name)}</strong><span>${escapeHtml(item.body)}</span><small>${escapeHtml(item.status.replaceAll("_", " "))}${item.carry_forward ? " · à reporter" : ""}</small></div><button class="icon-btn delete-btn" title="Supprimer" data-delete-note="${item.id}">×</button></article>`).join("")
     : `<p class="empty-note">Aucune note à suivre.</p>`;
@@ -2208,12 +2309,35 @@ function renderFollowup() {
 }
 
 async function loadFollowup() {
-  const [notes, payments] = await Promise.all([
-    api("/api/notes?status=a_faire"), api("/api/pending-payments"),
+  const followupParams = new URLSearchParams({
+    type: els.followupTypeFilter.value,
+    search: els.followupSearchInput.value.trim(),
+    include_ignored: els.followupShowIgnoredInput.checked ? "1" : "0",
+  });
+  const [notes, payments, followups] = await Promise.all([
+    api("/api/notes?status=a_faire"),
+    api("/api/pending-payments"),
+    api(`/api/intervention-followups?${followupParams.toString()}`),
   ]);
   state.notes = notes.notes;
   state.payments = payments.payments.filter((item) => !["recu", "annule"].includes(item.status));
+  state.interventionFollowups = followups.followups || [];
   renderFollowup();
+}
+
+async function ignoreInterventionFollowup(interventionId, reminderType) {
+  await api("/api/intervention-followups/ignore", {
+    method: "POST",
+    body: JSON.stringify({ intervention_id: interventionId, reminder_type: reminderType }),
+  });
+  await loadFollowup();
+  showToast("Ce rappel est ignoré uniquement pour cette intervention.");
+}
+
+async function reactivateInterventionFollowup(interventionId, reminderType) {
+  await api(`/api/intervention-followups/${interventionId}/ignores/${reminderType}`, { method: "DELETE" });
+  await loadFollowup();
+  showToast("Rappel réactivé.");
 }
 
 async function saveNote(event) {
@@ -2418,6 +2542,33 @@ function bindEvents() {
     const id = event.target.dataset.receivePayment;
     if (id) api(`/api/pending-payments/${id}`, { method: "PUT", body: JSON.stringify({ status: "recu" }) }).then(loadFollowup).catch((error) => showToast(error.message));
   });
+  els.followupTypeFilter.addEventListener("change", () => loadFollowup().catch((error) => showToast(error.message)));
+  els.followupShowIgnoredInput.addEventListener("change", () => loadFollowup().catch((error) => showToast(error.message)));
+  els.followupSearchInput.addEventListener("input", () => {
+    window.clearTimeout(loadFollowup.searchTimer);
+    loadFollowup.searchTimer = window.setTimeout(
+      () => loadFollowup().catch((error) => showToast(error.message)),
+      250,
+    );
+  });
+  els.interventionFollowupsBody.addEventListener("click", (event) => {
+    const statusInput = event.target.closest("[data-administrative-status]");
+    if (statusInput) {
+      toggleAdministrativeStatus(statusInput);
+      return;
+    }
+    const ignoreButton = event.target.closest("[data-ignore-followup]");
+    if (ignoreButton) {
+      ignoreInterventionFollowup(Number(ignoreButton.dataset.ignoreFollowup), ignoreButton.dataset.reminderType)
+        .catch((error) => showToast(error.message));
+      return;
+    }
+    const reactivateButton = event.target.closest("[data-reactivate-followup]");
+    if (reactivateButton) {
+      reactivateInterventionFollowup(Number(reactivateButton.dataset.reactivateFollowup), reactivateButton.dataset.reminderType)
+        .catch((error) => showToast(error.message));
+    }
+  });
   els.reminderResetBtn.addEventListener("click", resetReminderForm);
   els.planningTodayBtn.addEventListener("click", () => setActiveView("planning"));
   els.overviewApplyBtn.addEventListener("click", () => {
@@ -2432,6 +2583,11 @@ function bindEvents() {
     }
   });
   els.interventionsBody.addEventListener("click", async (event) => {
+    const statusInput = event.target.closest("[data-administrative-status]");
+    if (statusInput) {
+      await toggleAdministrativeStatus(statusInput);
+      return;
+    }
     const editId = event.target.dataset.edit;
     const deleteId = event.target.dataset.delete;
     if (editId) {

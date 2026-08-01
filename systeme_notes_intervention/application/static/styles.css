@@ -95,6 +95,70 @@ textarea {
   font-size: 17px;
 }
 
+.administrative-followup-section {
+  margin-bottom: 16px;
+}
+
+.followup-toolbar-heading {
+  align-items: end;
+  gap: 16px;
+}
+
+.followup-filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.followup-filters select,
+.followup-filters input[type="search"] {
+  width: min(220px, 100%);
+}
+
+.followup-ignored-toggle {
+  white-space: nowrap;
+}
+
+.followup-table {
+  min-width: 960px;
+}
+
+.followup-table-wrap {
+  max-height: 430px;
+}
+
+.followup-reminder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.followup-reminder-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.followup-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 1px solid #b75c39;
+  background: #fff4ef;
+  color: #7d3218;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.followup-badge.ignored {
+  border-color: var(--line);
+  background: var(--blue-row);
+  color: var(--muted);
+}
+
 .compact-form {
   display: grid;
   gap: 9px;
@@ -1634,6 +1698,34 @@ tbody tr:nth-child(even) {
   text-align: right;
 }
 
+.interventions-table {
+  min-width: 900px;
+}
+
+.status-col,
+.status-cell {
+  width: 76px;
+  text-align: center;
+}
+
+.status-checkbox {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--teal);
+  cursor: pointer;
+}
+
+.status-checkbox:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.email-send-option {
+  margin-top: 16px;
+  font-weight: 700;
+}
+
 .clients-table td:nth-child(1) {
   font-weight: 700;
 }
@@ -1935,6 +2027,15 @@ tbody tr:nth-child(even) {
 
   .table-wrap {
     max-height: none;
+  }
+
+  .followup-toolbar-heading,
+  .followup-filters {
+    align-items: stretch;
+  }
+
+  .followup-filters {
+    justify-content: flex-start;
   }
 
   .output-picker {
