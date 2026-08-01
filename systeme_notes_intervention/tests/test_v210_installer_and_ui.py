@@ -16,9 +16,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 class InstallerV3Tests(unittest.TestCase):
     def test_versions_are_synchronized(self) -> None:
         version = (PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip()
-        self.assertEqual(version, "3.1.3")
+        self.assertEqual(version, "3.1.4")
         self.assertEqual(installateur_windows.APP_VERSION, version)
-        self.assertEqual(installateur_windows.shortcut_label(), "Easy CESU V3.1.3")
+        self.assertEqual(installateur_windows.shortcut_label(), "Easy CESU V3.1.4")
 
     def test_every_installer_choice_has_an_icon_and_preview(self) -> None:
         for icon_key in installateur_windows.SHORTCUT_ICON_LABELS:

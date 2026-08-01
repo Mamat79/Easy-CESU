@@ -29,6 +29,7 @@ http://127.0.0.1:8765
 ```
 
 Dans l'application, tu peux saisir une intervention avec date, client, durée, tarif net horaire et description. Les grands boutons moins et plus modifient la durée par 30 minutes et les tarifs ou montants par 0,50 euro. La saisie directe reste possible.
+Dans la liste des interventions, les cases `Transmis`, `Déclaré` et `Payé` sont indépendantes. `Transmis` indique que la note a été remise ou envoyée au client. `Déclaré` indique que l'intervention a été déclarée auprès du CESU. `Payé` indique que le règlement a été reçu. Chaque case est enregistrée dès le clic.
 Le compte actif se change directement en haut de la page principale.
 L'onglet `Base de donnees` sert a importer une base recue ou a exporter une copie complete. L'onglet `Reglages` sert a creer, modifier ou supprimer un compte, ainsi qu'a definir l'identite affichee sur les notes, le tarif net horaire par defaut, le dossier des notes et le dossier des exports. Les chemins moins courants sont ranges dans `Options avancees`.
 L'onglet `Clients` sert a gerer le repertoire et les rappels de chaque client. Le champ `Tarif individuel` est optionnel : laisse-le vide pour utiliser le tarif par defaut, ou remplis-le pour que ce tarif soit prioritaire pour ce client. L'onglet `Planning` rassemble les rappels en retard, du jour et a venir.
@@ -36,7 +37,17 @@ En fin de mois, choisis l'annee et le mois puis clique sur `Generer les notes`.
 L'application te demande alors ou ranger les notes PDF.
 Les PDF sont créés directement dans le dossier choisi, sans sous-dossier supplémentaire.
 
-Pour envoyer les notes par email, ouvre `Réglages` > `Envoi des notes par email`, renseigne le serveur SMTP de ton adresse et personnalise l'objet ou le texte du message. Le mot de passe est enregistré uniquement dans le coffre sécurisé de l'ordinateur. Dans chaque fiche client, tu peux choisir si le client est sélectionné par défaut et si son message doit être relu avant l'envoi. Le bouton `Envoyer les notes` affiche toujours la liste des destinataires avant toute expédition.
+Pour envoyer les notes par email, ouvre `Réglages` > `Envoi des notes par email`, renseigne le serveur SMTP de ton adresse et personnalise l'objet ou le texte du message. Le mot de passe est enregistré uniquement dans le coffre sécurisé de l'ordinateur. Dans chaque fiche client, tu peux choisir si le client est sélectionné par défaut et si son message doit être relu avant l'envoi. Le bouton `Envoyer les notes` affiche toujours la liste des destinataires avant toute expédition. L'option `Marquer comme transmises` est décochée par défaut ; lorsqu'elle est activée, seules les interventions correspondant aux emails réellement envoyés sont cochées.
+
+## Suivre les actions administratives
+
+Ouvre l'onglet `Notes et paiements`, puis consulte le tableau `À suivre`. Une intervention y apparaît lorsqu'elle reste à transmettre, à déclarer ou à payer. Elle n'apparaît qu'une seule fois, même si plusieurs actions sont manquantes.
+
+Tu peux rechercher un client ou filtrer la liste sur `À transmettre`, `À déclarer` ou `À payer`. Pour une exception précise, utilise `Ignorer ce rappel` : seule l'action choisie pour cette intervention est masquée. Les autres actions et les futures interventions du client restent suivies.
+
+Coche `Afficher les rappels ignorés` pour les retrouver, puis utilise `Réactiver le rappel` si nécessaire. Lorsqu'une action est finalement validée, son ignorance est automatiquement supprimée. Si la case est décochée plus tard, le rappel réapparaît normalement.
+
+Lors de la mise à jour vers la 3.1.4, les anciennes interventions sont considérées comme déjà traitées pour la déclaration afin de ne pas remplir artificiellement le tableau avec tout l'historique. Les nouvelles interventions commencent avec `Déclaré` non coché.
 
 Le bouton `Bilan Excel` te demande aussi le dossier de sortie, puis cree `Bilan activite application YYYY.xlsx`.
 La creation et la restauration d'une sauvegarde ZIP sont regroupees dans l'onglet `Base de donnees`, qui affiche le compte concerne et la base actuellement utilisee.
@@ -69,7 +80,7 @@ Construire installateur Easy CESU.cmd
 Le resultat est cree ici, avec son numero de version et `x64` dans le nom :
 
 ```text
-systeme_notes_intervention\sorties\EasyCESU-Setup-x64-3.1.3.exe
+systeme_notes_intervention\sorties\EasyCESU-Setup-x64-3.1.4.exe
 ```
 
 Cet installateur contient Easy CESU, Python, ses bibliothèques et le programme officiel Microsoft WebView2 utilisé seulement si ce composant manque. Il installe par défaut dans `C:\Program Files\Easy CESU`, permet de choisir un autre dossier, propose une icône selon le métier, crée les raccourcis Bureau/Menu Démarrer au choix et peut ouvrir la notice à la fin. Si tu gardes `Program Files`, Windows demandera une autorisation.
@@ -80,8 +91,8 @@ La configuration et la base sont conservées dans `%LOCALAPPDATA%\EasyCESU` et n
 
 Télécharge le DMG adapté au Mac :
 
-- `EasyCESU-macOS-Apple-Silicon-3.1.3.dmg` pour les Mac M1 et suivants ;
-- `EasyCESU-macOS-Intel-3.1.3.dmg` pour les Mac Intel.
+- `EasyCESU-macOS-Apple-Silicon-3.1.4.dmg` pour les Mac M1 et suivants ;
+- `EasyCESU-macOS-Intel-3.1.4.dmg` pour les Mac Intel.
 
 Ouvre le DMG, puis glisse `Easy CESU` dans le dossier `Applications`. Au
 premier lancement, si macOS bloque l'ouverture, fais un clic droit sur
@@ -95,7 +106,7 @@ dossiers à utiliser sur cet ordinateur.
 L'installateur n'embarque pas ta base de donnees. Pour transmettre l'etat actuel a quelqu'un :
 
 1. Sur ton PC, va dans `Base de donnees` > `Creer la sauvegarde`, puis choisis un dossier.
-2. Donne a la personne `EasyCESU-Setup-x64-3.1.3.exe` et le fichier `.zip` cree.
+2. Donne a la personne `EasyCESU-Setup-x64-3.1.4.exe` et le fichier `.zip` cree.
 3. Sur son PC, elle lance l'installateur, choisit le repertoire d'installation puis ouvre Easy CESU.
 4. Au premier lancement, elle choisit `Restaurer une sauvegarde` et selectionne le fichier `.zip` recu.
 5. L'assistant demande ensuite un seul dossier principal et cree automatiquement les dossiers de la base, des notes et des bilans Excel.

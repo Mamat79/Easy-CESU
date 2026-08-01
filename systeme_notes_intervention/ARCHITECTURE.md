@@ -21,7 +21,9 @@ séparées en données, pièces jointes, sauvegardes, configuration, journaux et
 temporaires. Chaque compte référence sa propre base SQLite et possède ses
 propres modèles de documents.
 
-Le schéma V3 ajoute uniquement la table `document_templates`. Avant cette migration, Easy CESU crée une sauvegarde de la base. Les tables historiques de clients et d'interventions ne sont ni recréées ni vidées.
+Le schéma V3 ajoute uniquement la table `document_templates`. Le schéma 6 de la version 3.1.4 ajoute l'état `declared` aux interventions et la table `intervention_followup_ignores`. Avant une migration portant sur une base contenant des données, Easy CESU crée une sauvegarde. Les tables historiques de clients et d'interventions ne sont ni recréées ni vidées.
+
+Les changements rapides des états administratifs utilisent une route dédiée plutôt que la mise à jour complète d'une intervention. La logique métier est centralisée dans `update_intervention_administrative_status` : elle valide l'état demandé, préserve les montants reçus saisis manuellement, synchronise les paiements liés et retire les ignorances devenues inutiles. Le tableau `À suivre` est alimenté par `list_intervention_followups`, qui regroupe les actions manquantes sur une seule ligne par intervention.
 
 ## Direction retenue
 

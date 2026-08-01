@@ -611,7 +611,7 @@ import app_server
             assert response.status == 200
             info = __import__("json").loads(response.read().decode("utf-8"))
             connection.close()
-            assert info["app_version"] == "3.1.3"
+            assert info["app_version"] == "3.1.4"
             runtime.stop()
             time.sleep(0.2)
             assert app_server.port_is_listening(port) is False

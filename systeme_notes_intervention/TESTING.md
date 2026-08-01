@@ -6,7 +6,7 @@ La suite isolée n'utilise jamais la base personnelle installée :
 .\.build_venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-La V3.1.3 comporte les tests automatisés couvrant notamment :
+La V3.1.4 comporte les tests automatisés couvrant notamment :
 
 - première installation et profil générique ;
 - création, renommage et séparation des clients ;
@@ -42,6 +42,14 @@ La V3.1.3 comporte les tests automatisés couvrant notamment :
 - modèles d'objet et de texte avec champs dynamiques ;
 - envoi SMTP simulé avec pièces jointes PDF, sans message réel ;
 - export des notes directement dans le dossier sélectionné.
+- migration du schéma 3.1.3 vers le suivi administratif, avec sauvegarde et seconde exécution sans effet de bord ;
+- conservation des anciennes interventions comme déjà traitées pour la déclaration ;
+- persistance indépendante des états `Transmis`, `Déclaré` et `Payé` ;
+- cohérence du montant reçu et du paiement en attente lors d'un changement de l'état `Payé` ;
+- tableau `À suivre`, filtres, recherche et regroupement sur une seule ligne par intervention ;
+- ignorance et réactivation d'un rappel précis sans effet sur les autres interventions ;
+- nettoyage de l'ignorance lorsqu'un état est validé, puis réapparition normale s'il est décoché ;
+- marquage `Transmis` limité aux emails réellement envoyés lorsque l'option est activée.
 
 Contrôles complémentaires réalisés pour chaque livraison :
 

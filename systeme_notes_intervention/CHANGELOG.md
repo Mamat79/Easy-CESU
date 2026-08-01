@@ -1,5 +1,16 @@
 # Journal des changements
 
+## 3.1.4 - 2026-08-01
+
+- ajout de l'état `Déclaré` pour chaque intervention, indépendant de `Transmis` et `Payé` ;
+- accès direct aux trois états depuis la liste des interventions, avec enregistrement immédiat et retour visuel en cas d'erreur ;
+- ajout du tableau `À suivre`, avec recherche par client et filtres par action manquante ;
+- possibilité d'ignorer un rappel précis pour une intervention, de l'afficher à nouveau et de le réactiver ;
+- suppression automatique d'une ignorance devenue inutile lorsqu'un état est validé ;
+- conservation du montant reçu saisi manuellement lors d'un changement de l'état `Payé` ;
+- option d'envoi par email permettant de marquer comme transmises uniquement les interventions dont le message a réellement été envoyé ;
+- migration additive avec sauvegarde préalable : les anciennes interventions sont considérées comme déjà traitées pour la déclaration, les nouvelles démarrent non déclarées.
+
 ## 3.1.3 - 2026-07-30
 
 - suppression du champ `Lieu` dans la saisie d'une intervention ;
