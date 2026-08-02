@@ -7,6 +7,13 @@ planifier des rappels et transférer un compte par sauvegarde ZIP vérifiée.
 
 La V3 s'ouvre dans sa propre fenêtre, sans onglet Chrome. Elle reste utilisable pour tous les métiers CESU : l'activité et l'icône des raccourcis sont configurables. Les durées se règlent par pas de 30 minutes et les tarifs ou montants par pas de 0,50 euro grâce à de grands boutons moins et plus.
 
+Depuis la version 3.1.4, chaque intervention possède trois états administratifs
+indépendants : `Transmis`, `Déclaré` et `Payé`. Ils sont modifiables directement
+dans la liste des interventions. Le tableau `À suivre`, dans l'onglet
+`Notes et paiements`, regroupe sur une seule ligne les actions encore manquantes.
+Un rappel peut être ignoré ou réactivé pour une intervention et une action
+précises, sans modifier le suivi des autres interventions du client.
+
 L'onglet `Modèles` permet de créer plusieurs mises en page de notes d'intervention. Les textes, couleurs, marges, tailles et ordre des blocs se modifient avec un aperçu A4 immédiat. Chaque compte conserve ses propres modèles.
 
 Easy CESU est un outil indépendant de suivi d'activité. Il n'est ni affilié ni connecté automatiquement au service officiel CESU.
@@ -17,6 +24,8 @@ Easy CESU est un outil indépendant de suivi d'activité. Il n'est ni affilié n
 - Choisir le compte actif en haut de l'écran.
 - Saisir les interventions ou consulter les clients.
 - Utiliser `Planning` pour les rappels en retard, du jour et à venir.
+- Utiliser `Notes et paiements > À suivre` pour contrôler les transmissions,
+  déclarations CESU et paiements restant à traiter.
 - Utiliser `Modèles` pour personnaliser les prochaines notes PDF.
 - Utiliser `Clients` pour ajouter les rappels liés à une personne.
 - Utiliser `Base de données` pour créer ou restaurer une sauvegarde ZIP complète.
