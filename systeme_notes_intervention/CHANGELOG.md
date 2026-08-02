@@ -1,5 +1,17 @@
 # Journal des changements
 
+## 3.1.5 - 2026-08-03
+
+- ajout d'un assistant de fin de contrat en trois étapes depuis la liste des clients ;
+- génération d'un PDF préparatoire avec identité, dates du contrat, interventions, heures, tarifs historiques, montants et totaux mensuels ;
+- rappel dans le PDF des démarches et documents officiels CESU et France Travail, avec liens datés vers les sources ;
+- absence volontaire de calcul automatique des indemnités légales, qui dépendent du contrat et de la situation réelle ;
+- archivage réversible des clients sans suppression de l'historique, des rappels ni des documents ;
+- exclusion des clients archivés lors de la création d'une intervention et filtre dédié pour les retrouver ;
+- désactivation facultative des rappels actifs au moment de la fin de contrat ;
+- migration additive du schéma 7 avec sauvegarde préalable et reprise automatique de la base 3.1.4 ;
+- contrôle automatisé d'une installation neuve neutre, sans profil ni données personnelles préchargées.
+
 ## 3.1.4 - 2026-08-01
 
 - ajout de l'état `Déclaré` pour chaque intervention, indépendant de `Transmis` et `Payé` ;
@@ -109,7 +121,7 @@
 ## 1.1.7 - 2026-07-19
 
 - Correction de l'encodage UTF-8 des chemins choisis dans les dialogues Windows.
-- Les dossiers contenant des accents, notamment `Jardinière paysagiste`, sont désormais enregistrés correctement.
+- Les dossiers contenant des accents dans leur nom sont désormais enregistrés correctement.
 
 ## 1.1.6 - 2026-07-19
 

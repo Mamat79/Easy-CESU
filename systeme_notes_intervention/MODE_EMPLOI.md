@@ -9,7 +9,7 @@ Easy CESU est un outil indépendant de suivi d'activité. Il n'est ni affilié n
 Sous Windows, depuis le Bureau ou le menu Démarrer, ouvre :
 
 ```text
-Easy CESU V3
+Easy CESU V3.1.5
 ```
 
 Sous macOS, ouvre `Easy CESU` depuis le dossier `Applications`.
@@ -49,6 +49,31 @@ Coche `Afficher les rappels ignorés` pour les retrouver, puis utilise `Réactiv
 
 Lors de la mise à jour vers la 3.1.4, les anciennes interventions sont considérées comme déjà traitées pour la déclaration afin de ne pas remplir artificiellement le tableau avec tout l'historique. Les nouvelles interventions commencent avec `Déclaré` non coché.
 
+## Préparer une fin de contrat
+
+1. Ouvre `Clients`, puis clique sur `Fin de contrat` en face du particulier employeur concerné.
+2. Renseigne le type de contrat, le motif et les dates connues. Si la situation du préavis n'est pas certaine, laisse `À vérifier`.
+3. Contrôle l'aperçu des interventions, des heures, des tarifs historiques et des montants.
+4. Choisis si le client doit être archivé et si ses rappels actifs doivent être désactivés.
+5. Clique sur `Créer le PDF`, puis choisis directement le dossier de destination.
+
+Le PDF est un dossier préparatoire. Il rappelle les démarches à effectuer dans
+la rubrique `Gérer une fin de contrat` du compte employeur CESU et les documents
+à remettre : certificat de travail, reçu pour solde de tout compte et attestation
+employeur France Travail. Easy CESU ne calcule pas les indemnités de rupture,
+de préavis ou de congés payés : ces montants doivent être vérifiés avec le
+service officiel selon le contrat et le motif réel.
+
+Un client archivé disparaît de la liste proposée pour une nouvelle intervention,
+mais son historique et ses documents restent disponibles. Dans `Clients`, choisis
+le filtre `Clients archivés`, puis `Désarchiver` si la relation de travail reprend.
+
+Informations officielles vérifiées le 3 août 2026 :
+
+- [Urssaf CESU - Gérer une fin de contrat](https://www.cesu.urssaf.fr/info/accueil/gerer-la-relation-de-travail/la-fin-du-contrat-de-travail-et/comment-gerer-une-fin-de-contrat.html)
+- [Urssaf CESU - Documents à remettre](https://www.cesu.urssaf.fr/info/accueil/gerer-la-relation-de-travail/la-fin-du-contrat-de-travail-et/quels-sont-les-documents-a-remet/col-principale/quels-sont-les-documents-a-remet.html)
+- [France Travail - Attestation du particulier employeur](https://www.francetravail.fr/employeur/vous-etes-un-particulier-employe/vous-cessez-demployer-a-domicile/comment-saisir-en-ligne-lattesta.html)
+
 Le bouton `Bilan Excel` te demande aussi le dossier de sortie, puis cree `Bilan activite application YYYY.xlsx`.
 La creation et la restauration d'une sauvegarde ZIP sont regroupees dans l'onglet `Base de donnees`, qui affiche le compte concerne et la base actuellement utilisee.
 Au premier lancement, apres l'import d'une base ou apres la creation d'un compte, l'assistant demande un seul dossier principal. Easy CESU y cree automatiquement des sous-dossiers separes pour la base, les notes et les exports de ce compte. Dans `Reglages`, le bouton `Choisir un dossier principal` permet de relancer cet assistant. Les emplacements restent modifiables individuellement dans les reglages avances.
@@ -80,7 +105,7 @@ Construire installateur Easy CESU.cmd
 Le resultat est cree ici, avec son numero de version et `x64` dans le nom :
 
 ```text
-systeme_notes_intervention\sorties\EasyCESU-Setup-x64-3.1.4.exe
+systeme_notes_intervention\sorties\EasyCESU-Setup-x64-3.1.5.exe
 ```
 
 Cet installateur contient Easy CESU, Python, ses bibliothèques et le programme officiel Microsoft WebView2 utilisé seulement si ce composant manque. Il installe par défaut dans `C:\Program Files\Easy CESU`, permet de choisir un autre dossier, propose une icône selon le métier, crée les raccourcis Bureau/Menu Démarrer au choix et peut ouvrir la notice à la fin. Si tu gardes `Program Files`, Windows demandera une autorisation.
@@ -91,8 +116,8 @@ La configuration et la base sont conservées dans `%LOCALAPPDATA%\EasyCESU` et n
 
 Télécharge le DMG adapté au Mac :
 
-- `EasyCESU-macOS-Apple-Silicon-3.1.4.dmg` pour les Mac M1 et suivants ;
-- `EasyCESU-macOS-Intel-3.1.4.dmg` pour les Mac Intel.
+- `EasyCESU-macOS-Apple-Silicon-3.1.5.dmg` pour les Mac M1 et suivants ;
+- `EasyCESU-macOS-Intel-3.1.5.dmg` pour les Mac Intel.
 
 Ouvre le DMG, puis glisse `Easy CESU` dans le dossier `Applications`. Au
 premier lancement, si macOS bloque l'ouverture, fais un clic droit sur
@@ -106,7 +131,7 @@ dossiers à utiliser sur cet ordinateur.
 L'installateur n'embarque pas ta base de donnees. Pour transmettre l'etat actuel a quelqu'un :
 
 1. Sur ton PC, va dans `Base de donnees` > `Creer la sauvegarde`, puis choisis un dossier.
-2. Donne a la personne `EasyCESU-Setup-x64-3.1.4.exe` et le fichier `.zip` cree.
+2. Donne a la personne `EasyCESU-Setup-x64-3.1.5.exe` et le fichier `.zip` cree.
 3. Sur son PC, elle lance l'installateur, choisit le repertoire d'installation puis ouvre Easy CESU.
 4. Au premier lancement, elle choisit `Restaurer une sauvegarde` et selectionne le fichier `.zip` recu.
 5. L'assistant demande ensuite un seul dossier principal et cree automatiquement les dossiers de la base, des notes et des bilans Excel.

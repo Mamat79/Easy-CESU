@@ -62,6 +62,12 @@ import app_server
             settings = app_server.app_settings()
             assert settings["initial_setup_required"] is True
             assert settings["profile"]["label"] == "Mon compte"
+            import json
+            public_data = json.dumps(settings, ensure_ascii=False).casefold()
+            assert "clotilde" not in public_data
+            assert "cloclo" not in public_data
+            assert settings["profile"]["primary_activity"] == "autre"
+            assert app_server.clients_list() == []
 
             configured = app_server.configure_workspace_root(Path(os.environ["EASY_CESU_TEST_WORKSPACE"]))
             assert Path(configured["data_dir"]).is_dir()
@@ -353,6 +359,112 @@ import app_server
             """
         )
 
+    def test_v7_migration_is_additive_backed_up_and_idempotent(self) -> None:
+        self.run_scenario(
+            """
+            from pathlib import Path
+
+            app_server.init_db()
+            app_server.create_client({"name": "Client historique"})
+            original = app_server.create_intervention(
+                {"date": "2026-01-10", "client": "Client historique", "duration_hours": 2, "hourly_rate": 22}
+            )
+            with app_server.db_connection() as db:
+                db.execute("DROP TABLE contract_terminations")
+                db.execute("DELETE FROM schema_migrations WHERE version = 7")
+
+            app_server.apply_v7_schema_migrations()
+            with app_server.db_connection() as db:
+                assert db.execute("SELECT COUNT(*) FROM interventions").fetchone()[0] == 1
+                assert db.execute("SELECT client FROM interventions WHERE id = ?", (original["id"],)).fetchone()[0] == "Client historique"
+                assert db.execute("SELECT version FROM schema_migrations WHERE version = 7").fetchone()[0] == 7
+                assert db.execute("SELECT COUNT(*) FROM contract_terminations").fetchone()[0] == 0
+                assert db.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+            backups = list((Path(os.environ["LOCALAPPDATA"]) / "EasyCESU" / "backups").glob("*avant-migration-v7*.zip"))
+            assert backups
+
+            app_server.apply_v7_schema_migrations()
+            with app_server.db_connection() as db:
+                assert db.execute("SELECT COUNT(*) FROM schema_migrations WHERE version = 7").fetchone()[0] == 1
+                assert db.execute("SELECT COUNT(*) FROM interventions").fetchone()[0] == 1
+            """
+        )
+
+    def test_contract_end_pdf_archive_and_unarchive_preserve_history(self) -> None:
+        self.run_scenario(
+            """
+            from pathlib import Path
+
+            app_server.init_db()
+            profile = app_server.active_profile()
+            profile["name"] = "Camille Martin"
+            profile["address"] = "12 rue des Lilas"
+            app_server.save_config()
+            app_server.create_client(
+                {"name": "Mme Élodie Exemple", "address": "8 avenue de France", "email": "elodie@example.fr"}
+            )
+            first = app_server.create_intervention(
+                {"date": "2025-09-15", "client": "Mme Élodie Exemple", "duration_hours": 1.5, "hourly_rate": 22, "task": "Prestation & suivi <extérieur>"}
+            )
+            second = app_server.create_intervention(
+                {"date": "2026-07-20", "client": "Mme Élodie Exemple", "duration_hours": 2, "hourly_rate": 24, "task": "Dernière intervention"}
+            )
+            reminder = app_server.create_reminder(
+                {"client_name": "Mme Élodie Exemple", "title": "Rappel futur", "reference_date": "2026-09-01"}
+            )
+            preview = app_server.contract_end_preview("Mme Élodie Exemple", "2025-09-01", "2026-07-31")
+            assert preview["summary"] == {
+                "count": 2, "hours": 3.5, "amount_net": 81.0,
+                "first_date": "2025-09-15", "last_date": "2026-07-20",
+            }
+
+            destination = Path(os.environ["EASY_CESU_TEST_WORKSPACE"])
+            result = app_server.generate_contract_end_dossier(
+                {
+                    "client_name": "Mme Élodie Exemple",
+                    "contract_type": "CDI",
+                    "reason": "autre",
+                    "contract_start_date": "2025-09-01",
+                    "contract_end_date": "2026-07-31",
+                    "last_worked_date": "2026-07-20",
+                    "notice_status": "a_verifier",
+                    "notes": "Vérifier les documents & conserver l'historique.",
+                    "archive_client": True,
+                    "deactivate_reminders": True,
+                },
+                destination,
+            )
+            pdf_path = Path(result["path"])
+            assert pdf_path.parent == destination
+            assert pdf_path.is_file() and pdf_path.read_bytes().startswith(b"%PDF")
+            assert pdf_path.stat().st_size > 5000
+            assert result["client_archived"] is True
+            assert [item["name"] for item in app_server.clients_list(False)] == []
+            assert app_server.clients_list()[0]["is_archived"] is True
+            assert len(app_server.list_interventions(client="Mme Élodie Exemple")) == 2
+            assert len(app_server.list_contract_terminations("Mme Élodie Exemple")) == 1
+            with app_server.db_connection() as db:
+                assert db.execute("SELECT is_active FROM reminders WHERE id = ?", (reminder["id"],)).fetchone()[0] == 0
+
+            try:
+                app_server.create_intervention(
+                    {"date": "2026-08-10", "client": "Mme Élodie Exemple", "duration_hours": 1, "hourly_rate": 24}
+                )
+            except ValueError as error:
+                assert "archivé" in str(error)
+            else:
+                raise AssertionError("Un client archivé ne doit pas recevoir une nouvelle intervention.")
+
+            app_server.set_client_archived("Mme Élodie Exemple", False)
+            assert app_server.clients_list(False)[0]["name"] == "Mme Élodie Exemple"
+            created = app_server.create_intervention(
+                {"date": "2026-08-10", "client": "Mme Élodie Exemple", "duration_hours": 1, "hourly_rate": 24}
+            )
+            assert created["client"] == "Mme Élodie Exemple"
+            assert {item["id"] for item in app_server.list_interventions(client="Mme Élodie Exemple")} >= {first["id"], second["id"], created["id"]}
+            """
+        )
+
     def test_administrative_followup_states_filters_ignores_and_payments(self) -> None:
         self.run_scenario(
             """
@@ -614,7 +726,7 @@ import app_server
             assert response.status == 200
             info = __import__("json").loads(response.read().decode("utf-8"))
             connection.close()
-            assert info["app_version"] == "3.1.4"
+            assert info["app_version"] == "3.1.5"
             runtime.stop()
             time.sleep(0.2)
             assert app_server.port_is_listening(port) is False

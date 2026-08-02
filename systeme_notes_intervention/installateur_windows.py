@@ -18,11 +18,13 @@ from tkinter import filedialog, messagebox, ttk
 
 APP_NAME = "Easy CESU"
 EXE_NAME = "Easy CESU.exe"
-APP_VERSION = "3.1.4"
+APP_VERSION = "3.1.5"
 APP_ID = "EasyCESU.Windows.x64"
 NOTICE_NAME = "Easy_CESU_V3_Notice_Installation_et_Utilisation.pdf"
 WEBVIEW2_BOOTSTRAPPER_NAME = "MicrosoftEdgeWebview2Setup.exe"
 WEBVIEW2_CLIENT_ID = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+# Ancien nom détecté uniquement pour nettoyer les raccourcis des toutes premières versions.
+# Il n'est jamais utilisé comme profil ou donnée par défaut.
 LEGACY_APP_NAMES = ["Factures Cloclo"]
 SHORTCUT_ICON_LABELS = {
     "generique": "Services à la personne - générique",

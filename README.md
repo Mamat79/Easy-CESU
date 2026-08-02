@@ -8,7 +8,7 @@ Easy CESU est une application locale pour Windows et macOS permettant de gérer
 des clients, des interventions, des rappels, des paiements et des documents
 liés aux prestations à domicile.
 
-**Version actuelle : 3.1.4**
+**Version actuelle : 3.1.5**
 
 La version 3 s'adapte aux principaux métiers CESU : jardinage, bricolage,
 ménage, aide à domicile, garde d'enfants, soutien scolaire, accompagnement,
@@ -18,9 +18,9 @@ assistance administrative, informatique et autres services.
 
 | Système | Téléchargement |
 | --- | --- |
-| Windows 11 x64 | [EasyCESU-Setup-x64-3.1.4.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v3.1.4/EasyCESU-Setup-x64-3.1.4.exe) |
-| macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-3.1.4.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v3.1.4/EasyCESU-macOS-Apple-Silicon-3.1.4.dmg) |
-| macOS Intel | [EasyCESU-macOS-Intel-3.1.4.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v3.1.4/EasyCESU-macOS-Intel-3.1.4.dmg) |
+| Windows 11 x64 | [EasyCESU-Setup-x64-3.1.5.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v3.1.5/EasyCESU-Setup-x64-3.1.5.exe) |
+| macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-3.1.5.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v3.1.5/EasyCESU-macOS-Apple-Silicon-3.1.5.dmg) |
+| macOS Intel | [EasyCESU-macOS-Intel-3.1.5.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v3.1.5/EasyCESU-macOS-Intel-3.1.5.dmg) |
 
 ## Fonctions principales
 
@@ -57,6 +57,18 @@ assistance administrative, informatique et autres services.
 - Consulter les chiffres et les évolutions par jour, semaine, mois ou année.
 - Comparer les périodes et exporter un bilan Excel détaillé.
 
+### Fin de contrat et archivage
+
+- Préparer pour un client un PDF récapitulant les dates, heures, tarifs et
+  montants enregistrés pendant la relation de travail.
+- Retrouver dans ce dossier la liste des démarches et documents officiels à
+  préparer sur le compte employeur CESU, avec les liens vers les sources Urssaf
+  CESU et France Travail.
+- Archiver le client sans supprimer son historique, puis le désarchiver si la
+  relation de travail reprend.
+- Masquer automatiquement les clients archivés lors de la saisie d'une nouvelle
+  intervention, tout en les conservant dans les historiques et les bilans.
+
 ### Sauvegarde et portabilité
 
 - Choisir l'emplacement de la base, des sauvegardes, des notes PDF et des exports.
@@ -68,7 +80,7 @@ Easy CESU est un outil indépendant. Il n'est ni affilié ni connecté automatiq
 
 ## Installation Windows
 
-1. Télécharger `EasyCESU-Setup-x64-3.1.4.exe` depuis la page des versions.
+1. Télécharger `EasyCESU-Setup-x64-3.1.5.exe` depuis la page des versions.
 2. Fermer Easy CESU si une version est déjà ouverte.
 3. Lancer l'installateur et choisir le dossier, l'icône et les raccourcis.
 4. Au premier démarrage, créer une base ou restaurer une sauvegarde.
@@ -79,12 +91,12 @@ Une désinstallation ordinaire conserve les données personnelles. L'installateu
 
 Deux installateurs sont fournis :
 
-- `EasyCESU-macOS-Apple-Silicon-3.1.4.dmg` pour les Mac M1, M2, M3, M4 et suivants ;
-- `EasyCESU-macOS-Intel-3.1.4.dmg` pour les anciens Mac Intel.
+- `EasyCESU-macOS-Apple-Silicon-3.1.5.dmg` pour les Mac M1, M2, M3, M4 et suivants ;
+- `EasyCESU-macOS-Intel-3.1.5.dmg` pour les anciens Mac Intel.
 
 Ouvrir le fichier DMG puis glisser `Easy CESU` dans `Applications`. La première
 fois, faire un clic droit sur l'application puis choisir `Ouvrir` si macOS
-signale qu'elle provient d'un développeur non identifié. La version 3.1.4 n'est
+signale qu'elle provient d'un développeur non identifié. La version 3.1.5 n'est
 pas notarialisée par Apple.
 
 Les données sont enregistrées dans
@@ -100,6 +112,11 @@ Lors du premier passage en 3.1.4, une sauvegarde de sécurité est créée avant
 migration de la base. Les anciennes interventions sont considérées comme déjà
 traitées pour le suivi de déclaration ; les nouvelles interventions commencent
 avec `Déclaré` non coché.
+
+Lors du premier passage en 3.1.5, une nouvelle sauvegarde est créée avant
+l'ajout des dossiers de fin de contrat. La base et les chemins déjà configurés
+sont repris automatiquement : aucune restauration ni nouvelle configuration
+n'est demandée pour une simple mise à jour.
 
 Emplacements par défaut des données :
 
@@ -121,7 +138,7 @@ version spéciale.
 
 ## Documentation
 
-- [Notice PDF d'installation et d'utilisation 3.1.4](https://github.com/Mamat79/Easy-CESU/releases/download/v3.1.4/Easy_CESU_V3_Notice_Installation_et_Utilisation.pdf)
+- [Notice PDF d'installation et d'utilisation 3.1.5](https://github.com/Mamat79/Easy-CESU/releases/download/v3.1.5/Easy_CESU_V3_Notice_Installation_et_Utilisation.pdf)
 - [Mode d'emploi](systeme_notes_intervention/MODE_EMPLOI.md)
 - [Architecture](systeme_notes_intervention/ARCHITECTURE.md)
 - [Modèle de données](systeme_notes_intervention/DATA_MODEL.md)

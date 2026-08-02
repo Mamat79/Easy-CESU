@@ -10,7 +10,7 @@ from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 
 ROOT = Path(__file__).resolve().parent
@@ -70,13 +70,17 @@ def section(number: str, title: str, lines: list[str], styles: dict[str, Paragra
 
 def footer(canvas, document) -> None:
     canvas.saveState()
-    canvas.setStrokeColor(LINE)
-    canvas.line(18 * mm, 14 * mm, A4[0] - 18 * mm, 14 * mm)
     canvas.setFillColor(MUTED)
     canvas.setFont("Helvetica", 8)
-    canvas.drawString(18 * mm, 9 * mm, f"Easy CESU V{APP_VERSION} - Notice d'installation et d'utilisation")
-    canvas.drawRightString(A4[0] - 18 * mm, 9 * mm, f"Page {document.page}")
+    canvas.drawRightString(A4[0] - 18 * mm, 9 * mm, str(document.page))
     canvas.restoreState()
+
+
+class NoticeDocTemplate(SimpleDocTemplate):
+    """Dessine le pied de page après le contenu pour éviter qu'un saut le masque."""
+
+    def afterPage(self) -> None:  # noqa: N802 - API ReportLab
+        footer(self.canv, self)
 
 
 def build_notice(output: Path) -> None:
@@ -149,7 +153,7 @@ def build_notice(output: Path) -> None:
         ),
     }
 
-    doc = SimpleDocTemplate(
+    doc = NoticeDocTemplate(
         str(output),
         pagesize=A4,
         rightMargin=18 * mm,
@@ -163,7 +167,7 @@ def build_notice(output: Path) -> None:
 
     story = [
         Paragraph("Easy CESU", styles["title"]),
-        Paragraph("Installer l'application, personnaliser et envoyer les notes, retrouver une sauvegarde", styles["subtitle"]),
+        Paragraph(f"Version {APP_VERSION} - Installer l'application, gérer l'activité et retrouver une sauvegarde", styles["subtitle"]),
         Spacer(1, 5 * mm),
     ]
 
@@ -225,12 +229,14 @@ def build_notice(output: Path) -> None:
                 "Configurer le profil et les dossiers",
                 [
                     "Au premier lancement, suivre les cinq étapes : restauration éventuelle, nom, activité, dossier principal et sauvegarde.",
+                    "Une installation neuve démarre avec <b>Mon compte</b>, l'activité <b>Autre</b> et une base vide. Aucun nom ou client personnel n'est préchargé.",
                     "Choisir une activité (jardinage, ménage, bricolage, aide à domicile, informatique ou autre) adapte les exemples sans bloquer les autres prestations.",
                     "Easy CESU y crée automatiquement des sous-dossiers séparés pour la base, les notes et les exports.",
                     "Ce choix reste modifiable dans <b>Réglages</b> avec <b>Choisir un dossier principal</b>.",
                 ],
                 styles,
             ),
+            PageBreak(),
             section(
                 "4",
                 "Saisir et suivre l'activité",
@@ -247,6 +253,20 @@ def build_notice(output: Path) -> None:
             ),
             section(
                 "5",
+                "Préparer une fin de contrat",
+                [
+                    "Dans <b>Clients</b>, cliquer sur <b>Fin de contrat</b> en face du particulier employeur concerné.",
+                    "Renseigner le type de contrat, le motif et les dates connues, puis contrôler l'aperçu des interventions, heures, tarifs historiques et montants.",
+                    "Choisir si le client doit être archivé et si ses rappels actifs doivent être désactivés, puis cliquer sur <b>Créer le PDF</b> et choisir le dossier de destination.",
+                    "Le PDF rappelle les démarches à effectuer dans <b>Gérer une fin de contrat</b> sur le compte employeur CESU et les documents à remettre : certificat de travail, reçu pour solde de tout compte et attestation employeur France Travail.",
+                    "Easy CESU ne calcule pas les indemnités de rupture, de préavis ou de congés payés. Le particulier employeur doit vérifier les montants avec le service officiel selon le contrat et le motif réel.",
+                    "Un client archivé reste consultable. Choisir le filtre <b>Clients archivés</b>, puis <b>Désarchiver</b> si la relation de travail reprend.",
+                    "Informations officielles vérifiées le 3 août 2026 : <link href='https://www.cesu.urssaf.fr/info/accueil/gerer-la-relation-de-travail/la-fin-du-contrat-de-travail-et/comment-gerer-une-fin-de-contrat.html' color='#17484F'>Urssaf CESU</link> et <link href='https://www.francetravail.fr/employeur/vous-etes-un-particulier-employe/vous-cessez-demployer-a-domicile/comment-saisir-en-ligne-lattesta.html' color='#17484F'>France Travail</link>.",
+                ],
+                styles,
+            ),
+            section(
+                "6",
                 "Créer un modèle de note",
                 [
                     "Ouvrir <b>Modèles</b>, puis choisir le modèle à modifier ou cliquer sur <b>Nouveau</b>.",
@@ -256,8 +276,9 @@ def build_notice(output: Path) -> None:
                 ],
                 styles,
             ),
+            PageBreak(),
             section(
-                "6",
+                "7",
                 "Envoyer les notes par email",
                 [
                     "Dans <b>Réglages &gt; Envoi des notes par email</b>, renseigner le serveur SMTP, l'adresse d'expédition et le mot de passe demandé par le fournisseur de messagerie.",
@@ -270,7 +291,7 @@ def build_notice(output: Path) -> None:
                 styles,
             ),
             section(
-                "7",
+                "8",
                 "Sauvegarder ou transférer les données",
                 [
                     "Sélectionner le bon compte en haut de la page.",
@@ -284,20 +305,22 @@ def build_notice(output: Path) -> None:
 
     story.extend(
         [
+            PageBreak(),
             section(
-                "8",
+                "9",
                 "Mettre à jour sans perdre les données",
                 [
                     "Fermer Easy CESU, puis lancer le nouvel installateur.",
                     "Quand une version existante est détectée, choisir <b>Oui : remplacer / mettre à jour</b> et conserver le dossier proposé.",
                     "Le programme est remplacé, mais la configuration et la base restent dans le dossier de données de l'utilisateur.",
                     "Au passage en 3.1.4, les anciennes interventions sont considérées comme déjà traitées pour la déclaration. Les nouvelles interventions commencent non déclarées.",
+                    "Au passage en 3.1.5, une sauvegarde supplémentaire est créée avant l'ajout des dossiers de fin de contrat. Les comptes, clients, chemins et interventions existants sont repris automatiquement.",
                     "Aucune restauration n'est nécessaire pour une simple mise à jour.",
                 ],
                 styles,
             ),
             section(
-                "9",
+                "10",
                 "Choisir l'icône selon le métier",
                 [
                     "Sous Windows, choisir l'icône souhaitée dans l'installateur avant de créer les raccourcis.",
@@ -307,7 +330,7 @@ def build_notice(output: Path) -> None:
                 styles,
             ),
             section(
-                "10",
+                "11",
                 "Bonnes pratiques de sauvegarde",
                 [
                     "Créer régulièrement une sauvegarde ZIP dans un dossier différent de celui de la base.",
@@ -318,7 +341,7 @@ def build_notice(output: Path) -> None:
             ),
             Spacer(1, 7 * mm),
             section(
-                "11",
+                "12",
                 "Aide et communauté",
                 [
                     "Ouvrir <b>Réglages &gt; Aide et communauté</b> pour consulter le code, la documentation ou signaler un problème sur le dépôt public Easy CESU.",
@@ -358,7 +381,7 @@ def build_notice(output: Path) -> None:
     )
     story.append(KeepTogether([reminder]))
 
-    doc.build(story, onFirstPage=footer, onLaterPages=footer)
+    doc.build(story)
 
 
 def main() -> None:

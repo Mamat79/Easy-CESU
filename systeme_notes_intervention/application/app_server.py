@@ -80,6 +80,11 @@ except ImportError:  # pragma: no cover - used by packaged executable
         smtp_defaults,
     )
 
+try:
+    from contract_end_service import NOTICE_LABELS, REASON_LABELS, build_contract_end_pdf
+except ImportError:  # pragma: no cover - used by packaged executable
+    from application.contract_end_service import NOTICE_LABELS, REASON_LABELS, build_contract_end_pdf
+
 if getattr(sys, "frozen", False):
     ROOT_DIR = Path(sys.executable).resolve().parent
     RESOURCE_DIR = Path(getattr(sys, "_MEIPASS", ROOT_DIR))
@@ -91,12 +96,13 @@ else:
 
 STATIC_DIR = APP_DIR / "static"
 APP_NAME = "Easy CESU"
-APP_VERSION = "3.1.4"
+APP_VERSION = "3.1.5"
 V2_SCHEMA_VERSION = 2
 V3_SCHEMA_VERSION = 3
 V4_SCHEMA_VERSION = 4
 V6_SCHEMA_VERSION = 6
-DATABASE_SCHEMA_VERSION = V6_SCHEMA_VERSION
+V7_SCHEMA_VERSION = 7
+DATABASE_SCHEMA_VERSION = V7_SCHEMA_VERSION
 BROWSER_CLOSE_GRACE_SECONDS = 5.0
 BROWSER_STALE_SECONDS = 90.0
 BROWSER_SESSION_LOCK = threading.Lock()
@@ -835,6 +841,71 @@ def apply_v6_schema_migrations() -> None:
         )
 
 
+def apply_v7_schema_migrations() -> None:
+    """Ajoute les dossiers de fin de contrat sans modifier l'historique métier."""
+
+    with db_connection() as db:
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                version INTEGER PRIMARY KEY,
+                applied_at TEXT NOT NULL,
+                details TEXT NOT NULL DEFAULT ''
+            )
+            """
+        )
+        applied = {int(row["version"]) for row in db.execute("SELECT version FROM schema_migrations").fetchall()}
+        has_user_data = database_contains_user_data(db)
+        has_contract_table = bool(
+            db.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'contract_terminations'"
+            ).fetchone()
+        )
+        has_archive_column = "is_archived" in table_columns(db, "clients")
+        needs_v7 = V7_SCHEMA_VERSION not in applied or not has_contract_table or not has_archive_column
+
+    if not needs_v7:
+        return
+    if has_user_data:
+        backup_profile_to(BACKUPS_DIR, "avant-migration-v7")
+
+    with db_connection() as db:
+        add_missing_columns(db, "clients", {"is_archived": "INTEGER NOT NULL DEFAULT 0"})
+        db.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS contract_terminations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                client_name TEXT NOT NULL,
+                contract_type TEXT NOT NULL DEFAULT 'CDI' CHECK(contract_type IN ('CDI', 'CDD')),
+                reason TEXT NOT NULL DEFAULT 'autre'
+                    CHECK(reason IN ('licenciement', 'demission', 'rupture_conventionnelle', 'fin_cdd', 'retraite', 'deces_employeur', 'autre')),
+                contract_start_date TEXT NOT NULL,
+                notification_date TEXT NOT NULL DEFAULT '',
+                notice_status TEXT NOT NULL DEFAULT 'a_verifier'
+                    CHECK(notice_status IN ('effectue', 'partiel', 'non_effectue_employeur', 'non_effectue_salarie', 'non_applicable', 'a_verifier')),
+                notice_start_date TEXT NOT NULL DEFAULT '',
+                notice_end_date TEXT NOT NULL DEFAULT '',
+                last_worked_date TEXT NOT NULL DEFAULT '',
+                contract_end_date TEXT NOT NULL,
+                notes TEXT NOT NULL DEFAULT '',
+                pdf_path TEXT NOT NULL DEFAULT '',
+                summary_json TEXT NOT NULL DEFAULT '{}',
+                generated_at TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY(client_name) REFERENCES clients(name) ON UPDATE CASCADE ON DELETE RESTRICT
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_contract_terminations_client_date
+            ON contract_terminations(client_name, contract_end_date DESC);
+            """
+        )
+        db.execute(
+            "INSERT OR IGNORE INTO schema_migrations (version, applied_at, details) VALUES (?, ?, ?)",
+            (V7_SCHEMA_VERSION, now_stamp(), "Dossiers de fin de contrat et archivage des clients"),
+        )
+
+
 def init_db() -> None:
     with db_connection() as db:
         db.executescript(
@@ -935,6 +1006,7 @@ def init_db() -> None:
     apply_v3_schema_migrations()
     apply_v4_schema_migrations()
     apply_v6_schema_migrations()
+    apply_v7_schema_migrations()
     ensure_default_document_template()
     refresh_clients()
     seed_interventions_if_empty()
@@ -2555,18 +2627,266 @@ def list_interventions(year: int | None = None, month: int | None = None, client
         return [row_to_dict(row) for row in db.execute(query, params).fetchall()]
 
 
-def clients_list() -> list[dict]:
+def clients_list(include_archived: bool = True) -> list[dict]:
     with db_connection() as db:
-        rows = db.execute("SELECT * FROM clients ORDER BY name COLLATE NOCASE").fetchall()
+        query = "SELECT * FROM clients"
+        if not include_archived:
+            query += " WHERE is_archived = 0"
+        query += " ORDER BY name COLLATE NOCASE"
+        rows = db.execute(query).fetchall()
     clients = []
     for row in rows:
         item = dict(row)
         item["hourly_rate_custom"] = bool(item.get("hourly_rate_custom"))
         item["email_notes_enabled"] = bool(item.get("email_notes_enabled"))
         item["email_review_before_send"] = bool(item.get("email_review_before_send"))
+        item["is_archived"] = bool(item.get("is_archived"))
         item["hourly_rate"] = round(float(item.get("hourly_rate") or 0), 4) if item["hourly_rate_custom"] else 0
         clients.append(item)
     return clients
+
+
+def set_client_archived(name: str, archived: bool, deactivate_reminders: bool = False) -> dict:
+    """Archive un client sans supprimer son historique ni ses documents."""
+
+    stamp = now_stamp()
+    with db_connection() as db:
+        row = db.execute("SELECT * FROM clients WHERE name = ?", (name,)).fetchone()
+        if not row:
+            raise KeyError("Client introuvable.")
+        db.execute(
+            "UPDATE clients SET is_archived = ?, updated_at = ? WHERE name = ?",
+            (1 if archived else 0, stamp, name),
+        )
+        if archived and deactivate_reminders:
+            db.execute(
+                "UPDATE reminders SET is_active = 0, updated_at = ? WHERE client_name = ? AND is_active = 1",
+                (stamp, name),
+            )
+        updated = db.execute("SELECT * FROM clients WHERE name = ?", (name,)).fetchone()
+    result = dict(updated)
+    result["is_archived"] = bool(result.get("is_archived"))
+    return result
+
+
+def archived_client(name: str) -> bool:
+    with db_connection() as db:
+        row = db.execute("SELECT is_archived FROM clients WHERE name = ?", (name,)).fetchone()
+    return bool(row and row["is_archived"])
+
+
+def contract_date(value: object, label: str, required: bool = False) -> str:
+    raw = clean_text(value)
+    if not raw:
+        if required:
+            raise ValueError(f"{label} obligatoire.")
+        return ""
+    try:
+        return datetime.fromisoformat(raw).date().isoformat()
+    except ValueError as exc:
+        raise ValueError(f"{label} invalide.") from exc
+
+
+def validate_contract_termination(data: dict) -> dict:
+    client_name = clean_text(data.get("client_name"))
+    if not client_name:
+        raise ValueError("Client obligatoire.")
+    contract_type = clean_text(data.get("contract_type")).upper() or "CDI"
+    if contract_type not in {"CDI", "CDD"}:
+        raise ValueError("Type de contrat invalide.")
+    reason = clean_text(data.get("reason")) or "autre"
+    if reason not in REASON_LABELS:
+        raise ValueError("Motif de fin de contrat invalide.")
+    notice_status = clean_text(data.get("notice_status")) or "a_verifier"
+    if notice_status not in NOTICE_LABELS:
+        raise ValueError("Situation du préavis invalide.")
+    result = {
+        "client_name": client_name,
+        "contract_type": contract_type,
+        "reason": reason,
+        "contract_start_date": contract_date(data.get("contract_start_date"), "Date d'embauche", True),
+        "notification_date": contract_date(data.get("notification_date"), "Date de notification"),
+        "notice_status": notice_status,
+        "notice_start_date": contract_date(data.get("notice_start_date"), "Début du préavis"),
+        "notice_end_date": contract_date(data.get("notice_end_date"), "Fin du préavis"),
+        "last_worked_date": contract_date(data.get("last_worked_date"), "Dernier jour travaillé"),
+        "contract_end_date": contract_date(data.get("contract_end_date"), "Date de fin du contrat", True),
+        "notes": clean_text(data.get("notes")),
+        "archive_client": bool(data.get("archive_client")),
+        "deactivate_reminders": bool(data.get("deactivate_reminders")),
+    }
+    if result["contract_end_date"] < result["contract_start_date"]:
+        raise ValueError("La date de fin du contrat doit suivre la date d'embauche.")
+    if bool(result["notice_start_date"]) != bool(result["notice_end_date"]):
+        raise ValueError("Renseigne le début et la fin du préavis, ou laisse les deux dates vides.")
+    if result["notice_start_date"] and result["notice_end_date"] < result["notice_start_date"]:
+        raise ValueError("La fin du préavis doit suivre son début.")
+    with db_connection() as db:
+        if not db.execute("SELECT 1 FROM clients WHERE name = ?", (client_name,)).fetchone():
+            raise KeyError("Client introuvable.")
+    return result
+
+
+def contract_interventions(client_name: str, start_date: str = "", end_date: str = "") -> list[dict]:
+    query = "SELECT * FROM interventions WHERE client = ?"
+    params: list[object] = [client_name]
+    if start_date:
+        query += " AND date >= ?"
+        params.append(start_date)
+    if end_date:
+        query += " AND date <= ?"
+        params.append(end_date)
+    query += " ORDER BY date ASC, id ASC"
+    with db_connection() as db:
+        return [row_to_dict(row) for row in db.execute(query, params).fetchall()]
+
+
+def contract_end_preview(client_name: str, start_date: str = "", end_date: str = "") -> dict:
+    client_name = clean_text(client_name)
+    with db_connection() as db:
+        client_row = db.execute("SELECT * FROM clients WHERE name = ?", (client_name,)).fetchone()
+    if not client_row:
+        raise KeyError("Client introuvable.")
+    rows = contract_interventions(client_name, start_date, end_date)
+    total_hours = round(sum(float(item["duration_hours"]) for item in rows), 4)
+    total_amount = money(sum(float(item["amount_net"]) for item in rows))
+    return {
+        "client": {**dict(client_row), "is_archived": bool(client_row["is_archived"])},
+        "interventions": rows,
+        "summary": {
+            "count": len(rows),
+            "hours": total_hours,
+            "amount_net": total_amount,
+            "first_date": rows[0]["date"] if rows else "",
+            "last_date": rows[-1]["date"] if rows else "",
+        },
+    }
+
+
+def active_employee_identity() -> dict:
+    profile = active_profile()
+    full_name = clean_text(profile.get("name"))
+    if not full_name:
+        full_name = " ".join(
+            part for part in (clean_text(profile.get("first_name")), clean_text(profile.get("last_name"))) if part
+        )
+    if not full_name:
+        full_name = clean_text(profile.get("commercial_name")) or clean_text(profile.get("label"))
+    locality = " ".join(
+        part for part in (clean_text(profile.get("postal_code")), clean_text(profile.get("city"))) if part
+    )
+    address_parts = [clean_text(profile.get("address")), locality]
+    return {
+        "name": full_name,
+        "address": "\n".join(part for part in address_parts if part),
+        "email": clean_text(profile.get("email")),
+        "phone": clean_text(profile.get("phone")),
+    }
+
+
+def available_contract_pdf_path(destination_dir: str | Path, client_name: str, end_date: str) -> Path:
+    folder = Path(destination_dir).expanduser()
+    folder.mkdir(parents=True, exist_ok=True)
+    base = f"Easy_CESU_Fin_de_contrat_{safe_filename(client_name)}_{end_date}"
+    candidate = folder / f"{base}.pdf"
+    index = 2
+    while candidate.exists():
+        candidate = folder / f"{base}_{index}.pdf"
+        index += 1
+    return candidate
+
+
+def generate_contract_end_dossier(data: dict, destination_dir: str | Path) -> dict:
+    dossier = validate_contract_termination(data)
+    preview = contract_end_preview(
+        dossier["client_name"],
+        dossier["contract_start_date"],
+        dossier["contract_end_date"],
+    )
+    client = preview["client"]
+    output_path = available_contract_pdf_path(
+        destination_dir,
+        dossier["client_name"],
+        dossier["contract_end_date"],
+    )
+    employer = {
+        "name": client.get("name", ""),
+        "address": client.get("address", ""),
+        "email": client.get("email", ""),
+        "cesu": client.get("cesu", ""),
+    }
+    build_contract_end_pdf(output_path, dossier, preview["interventions"], active_employee_identity(), employer)
+    stamp = now_stamp()
+    summary_json = json.dumps(preview["summary"], ensure_ascii=False, sort_keys=True)
+    try:
+        with db_connection() as db:
+            cursor = db.execute(
+                """
+                INSERT INTO contract_terminations
+                    (client_name, contract_type, reason, contract_start_date, notification_date,
+                    notice_status, notice_start_date, notice_end_date, last_worked_date,
+                    contract_end_date, notes, pdf_path, summary_json, generated_at, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    dossier["client_name"],
+                    dossier["contract_type"],
+                    dossier["reason"],
+                    dossier["contract_start_date"],
+                    dossier["notification_date"],
+                    dossier["notice_status"],
+                    dossier["notice_start_date"],
+                    dossier["notice_end_date"],
+                    dossier["last_worked_date"],
+                    dossier["contract_end_date"],
+                    dossier["notes"],
+                    str(output_path),
+                    summary_json,
+                    stamp,
+                    stamp,
+                    stamp,
+                ),
+            )
+            if dossier["archive_client"]:
+                db.execute(
+                    "UPDATE clients SET is_archived = 1, updated_at = ? WHERE name = ?",
+                    (stamp, dossier["client_name"]),
+                )
+                if dossier["deactivate_reminders"]:
+                    db.execute(
+                        "UPDATE reminders SET is_active = 0, updated_at = ? WHERE client_name = ? AND is_active = 1",
+                        (stamp, dossier["client_name"]),
+                    )
+            record = db.execute("SELECT * FROM contract_terminations WHERE id = ?", (cursor.lastrowid,)).fetchone()
+    except Exception:
+        output_path.unlink(missing_ok=True)
+        raise
+    return {
+        "path": str(output_path),
+        "contract_termination": dict(record),
+        "summary": preview["summary"],
+        "client_archived": dossier["archive_client"],
+    }
+
+
+def list_contract_terminations(client_name: str = "") -> list[dict]:
+    query = "SELECT * FROM contract_terminations"
+    params: list[object] = []
+    if client_name:
+        query += " WHERE client_name = ?"
+        params.append(client_name)
+    query += " ORDER BY contract_end_date DESC, id DESC"
+    with db_connection() as db:
+        rows = db.execute(query, params).fetchall()
+    result = []
+    for row in rows:
+        item = dict(row)
+        try:
+            item["summary"] = json.loads(item.pop("summary_json") or "{}")
+        except json.JSONDecodeError:
+            item["summary"] = {}
+        result.append(item)
+    return result
 
 
 def validate_client(data: dict) -> tuple[dict, str | None]:
@@ -2677,6 +2997,8 @@ def update_client(original_name: str, data: dict) -> dict:
         existing = db.execute("SELECT * FROM clients WHERE name = ?", (original_name,)).fetchone()
         if not existing:
             raise KeyError("Client introuvable.")
+        if "is_archived" not in data:
+            item["is_archived"] = int(existing["is_archived"] or 0)
         if item["name"] != original_name:
             duplicate = db.execute("SELECT 1 FROM clients WHERE name = ?", (item["name"],)).fetchone()
             if duplicate:
@@ -2718,10 +3040,13 @@ def update_client(original_name: str, data: dict) -> dict:
 
 
 def delete_client(name: str) -> None:
-    with db_connection() as db:
-        cursor = db.execute("DELETE FROM clients WHERE name = ?", (name,))
-        if cursor.rowcount == 0:
-            raise KeyError("Client introuvable.")
+    try:
+        with db_connection() as db:
+            cursor = db.execute("DELETE FROM clients WHERE name = ?", (name,))
+            if cursor.rowcount == 0:
+                raise KeyError("Client introuvable.")
+    except sqlite3.IntegrityError as exc:
+        raise ValueError("Ce client possède un dossier de fin de contrat. Archive-le au lieu de le supprimer.") from exc
 
 
 def client_custom_hourly_rate(client: str) -> float:
@@ -2828,6 +3153,8 @@ def create_intervention(data: dict) -> dict:
     item, error = validate_intervention(data)
     if error:
         raise ValueError(error)
+    if archived_client(item["client"]):
+        raise ValueError("Ce client est archivé. Désarchive-le avant de créer une nouvelle intervention.")
     add_or_update_client_from_intervention(item)
     stamp = now_stamp()
     with db_connection() as db:
@@ -2880,6 +3207,8 @@ def update_intervention(intervention_id: int, data: dict) -> dict:
     item, error = validate_intervention(merged_data)
     if error:
         raise ValueError(error)
+    if item["client"] != existing["client"] and archived_client(item["client"]):
+        raise ValueError("Ce client est archivé. Désarchive-le avant de lui attribuer une intervention.")
     add_or_update_client_from_intervention(item)
     stamp = now_stamp()
     with db_connection() as db:
@@ -4563,7 +4892,32 @@ class AppHandler(SimpleHTTPRequestHandler):
             )
             return
         if parsed.path == "/api/clients":
-            json_response(self, {"clients": clients_list()})
+            include_archived = query.get("include_archived", ["1"])[0].lower() in {"1", "true", "yes"}
+            json_response(self, {"clients": clients_list(include_archived)})
+            return
+        if parsed.path == "/api/contract-terminations/preview":
+            try:
+                client_name = query.get("client", [""])[0]
+                start_date = contract_date(query.get("start", [""])[0], "Date d'embauche")
+                end_date = contract_date(query.get("end", [""])[0], "Date de fin du contrat")
+                json_response(
+                    self,
+                    {
+                        **contract_end_preview(client_name, start_date, end_date),
+                        "reason_labels": REASON_LABELS,
+                        "notice_labels": NOTICE_LABELS,
+                    },
+                )
+            except ValueError as exc:
+                json_response(self, {"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+            except KeyError as exc:
+                json_response(self, {"error": str(exc)}, HTTPStatus.NOT_FOUND)
+            return
+        if parsed.path == "/api/contract-terminations":
+            json_response(
+                self,
+                {"contract_terminations": list_contract_terminations(query.get("client", [""])[0])},
+            )
             return
         if parsed.path == "/api/service-categories":
             include_archived = query.get("include_archived", [""])[0].lower() in {"1", "true", "yes"}
@@ -4669,6 +5023,23 @@ class AppHandler(SimpleHTTPRequestHandler):
                 return
             if parsed.path == "/api/clients":
                 json_response(self, {"client": create_client(body)}, HTTPStatus.CREATED)
+                return
+            if parsed.path == "/api/contract-terminations/generate":
+                destination = clean_text(body.get("destination_dir"))
+                if not destination:
+                    selected, cancelled = choose_folder(
+                        "Choisir le dossier du dossier de fin de contrat",
+                        export_output_dir(),
+                    )
+                    if cancelled or selected is None:
+                        json_response(self, {"cancelled": True})
+                        return
+                    destination = str(selected)
+                json_response(
+                    self,
+                    {"cancelled": False, **generate_contract_end_dossier(body, destination)},
+                    HTTPStatus.CREATED,
+                )
                 return
             if parsed.path == "/api/service-categories":
                 json_response(self, {"category": create_service_category(body)}, HTTPStatus.CREATED)
@@ -4941,6 +5312,25 @@ class AppHandler(SimpleHTTPRequestHandler):
     def do_PUT(self) -> None:  # noqa: N802
         try:
             parsed = urlparse(self.path)
+            if parsed.path.startswith("/api/clients/") and parsed.path.endswith("/archive"):
+                parts = parsed.path.strip("/").split("/")
+                if len(parts) != 4:
+                    raise ValueError("Route d'archivage invalide.")
+                client_name = unquote(parts[2])
+                body = read_json_body(self)
+                if not isinstance(body.get("archived"), bool):
+                    raise ValueError("L'état d'archivage doit être vrai ou faux.")
+                json_response(
+                    self,
+                    {
+                        "client": set_client_archived(
+                            client_name,
+                            body["archived"],
+                            bool(body.get("deactivate_reminders")),
+                        )
+                    },
+                )
+                return
             if parsed.path.startswith("/api/clients/"):
                 original_name = unquote(parsed.path.rsplit("/", 1)[1])
                 body = read_json_body(self)

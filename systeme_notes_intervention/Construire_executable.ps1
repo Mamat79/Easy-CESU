@@ -80,6 +80,7 @@ Write-Host "Construction de l'executable..."
     --specpath $AppBuild `
     --paths $Root `
     --hidden-import generer_notes_et_donnees `
+    --hidden-import contract_end_service `
     --add-data "$Root\application\static;application\static" `
     --collect-data reportlab `
     $EntryPoint

@@ -459,7 +459,7 @@
             <div>
               <h2>Réglages</h2>
               <p class="section-note">Paramètres utilisés pour les nouvelles interventions et les générations.</p>
-              <p class="section-note">Easy CESU - Version <strong id="appVersion">3.1.4</strong></p>
+              <p class="section-note">Easy CESU - Version <strong id="appVersion">3.1.5</strong></p>
             </div>
           </div>
 
@@ -821,6 +821,11 @@
             </div>
             <div class="filter-line">
               <input id="clientSearchInput" type="search" placeholder="Rechercher un client" />
+              <select id="clientArchiveFilter" aria-label="Filtrer les clients">
+                <option value="active">Clients actifs</option>
+                <option value="archived">Clients archivés</option>
+                <option value="all">Tous les clients</option>
+              </select>
               <button id="refreshClientsBtn" class="secondary" type="button">Importer</button>
             </div>
           </div>
@@ -959,10 +964,111 @@
         </div>
       </section>
       <footer class="app-disclaimer">
-        <span>Easy CESU V<span id="footerVersion">3.1.4</span> est un outil indépendant de suivi d'activité. Il n'est ni affilié ni connecté automatiquement au service officiel CESU.</span>
+        <span>Easy CESU V<span id="footerVersion">3.1.5</span> est un outil indépendant de suivi d'activité. Il n'est ni affilié ni connecté automatiquement au service officiel CESU.</span>
         <button id="footerGithubBtn" class="footer-link" type="button">Projet GitHub</button>
       </footer>
     </div>
+
+    <dialog id="contractEndDialog" class="contract-end-dialog" aria-labelledby="contractEndDialogTitle">
+      <div class="support-dialog-heading">
+        <div>
+          <h2 id="contractEndDialogTitle">Préparer une fin de contrat</h2>
+          <p id="contractEndClientLabel"></p>
+        </div>
+        <button id="contractEndCloseIconBtn" class="icon-btn support-dialog-close" type="button" aria-label="Fermer">×</button>
+      </div>
+      <p id="contractEndProgress" class="contract-end-progress">Étape 1 sur 3</p>
+
+      <section class="contract-end-step" data-contract-end-step="1">
+        <p class="section-note">Renseigne les informations connues. Easy CESU prépare un récapitulatif mais ne calcule pas les indemnités légales.</p>
+        <div class="contract-end-form">
+          <label>Type de contrat
+            <select id="contractTypeInput"><option value="CDI">CDI</option><option value="CDD">CDD</option></select>
+          </label>
+          <label>Motif
+            <select id="contractReasonInput">
+              <option value="licenciement">Licenciement par l'employeur</option>
+              <option value="demission">Démission du salarié</option>
+              <option value="rupture_conventionnelle">Rupture conventionnelle</option>
+              <option value="fin_cdd">Fin de CDD</option>
+              <option value="retraite">Départ ou mise à la retraite</option>
+              <option value="deces_employeur">Décès de l'employeur</option>
+              <option value="autre">Autre situation</option>
+            </select>
+          </label>
+          <label>Date d'embauche
+            <input id="contractStartDateInput" type="date" required />
+          </label>
+          <label>Date de notification
+            <input id="contractNotificationDateInput" type="date" />
+          </label>
+          <label>Situation du préavis
+            <select id="contractNoticeStatusInput">
+              <option value="a_verifier">À vérifier</option>
+              <option value="effectue">Préavis effectué</option>
+              <option value="partiel">Préavis partiellement effectué</option>
+              <option value="non_effectue_employeur">Non effectué à la demande de l'employeur</option>
+              <option value="non_effectue_salarie">Non effectué à la demande du salarié</option>
+              <option value="non_applicable">Pas de préavis</option>
+            </select>
+          </label>
+          <label>Début du préavis
+            <input id="contractNoticeStartInput" type="date" />
+          </label>
+          <label>Fin du préavis
+            <input id="contractNoticeEndInput" type="date" />
+          </label>
+          <label>Dernier jour travaillé
+            <input id="contractLastWorkedInput" type="date" />
+          </label>
+          <label>Date de fin du contrat
+            <input id="contractEndDateInput" type="date" required />
+          </label>
+          <label class="contract-end-notes">Observations facultatives
+            <textarea id="contractNotesInput" rows="3"></textarea>
+          </label>
+        </div>
+      </section>
+
+      <section class="contract-end-step" data-contract-end-step="2" hidden>
+        <div class="contract-summary-strip">
+          <div><span>Interventions</span><strong id="contractSummaryCount">0</strong></div>
+          <div><span>Heures</span><strong id="contractSummaryHours">0:00</strong></div>
+          <div><span>Montant net</span><strong id="contractSummaryAmount">0,00 €</strong></div>
+          <div><span>Période</span><strong id="contractSummaryPeriod">-</strong></div>
+        </div>
+        <div class="contract-preview-table-wrap">
+          <table class="contract-preview-table">
+            <thead><tr><th>Date</th><th>Intervention</th><th>Durée</th><th>Tarif net/h</th><th>Montant net</th></tr></thead>
+            <tbody id="contractPreviewBody"></tbody>
+          </table>
+        </div>
+        <p class="section-note">Le PDF reprend les tarifs enregistrés à la date de chaque intervention. Compare ensuite ce récapitulatif aux déclarations et bulletins disponibles sur le compte CESU.</p>
+      </section>
+
+      <section class="contract-end-step" data-contract-end-step="3" hidden>
+        <div class="contract-official-note">
+          <strong>Le particulier employeur devra finaliser la démarche sur le site officiel CESU.</strong>
+          <p>Le dossier rappellera les documents à remettre : certificat de travail, reçu pour solde de tout compte et attestation employeur France Travail.</p>
+        </div>
+        <label class="check-label contract-archive-option">
+          <input id="contractArchiveClientInput" type="checkbox" checked />
+          Archiver ce client après la création du PDF
+        </label>
+        <label class="check-label contract-archive-option">
+          <input id="contractDeactivateRemindersInput" type="checkbox" />
+          Désactiver aussi ses rappels encore actifs
+        </label>
+        <p class="section-note">L'archivage ne supprime rien : le client, ses interventions et ses documents restent consultables et le client peut être désarchivé.</p>
+      </section>
+
+      <div class="support-dialog-actions contract-end-actions">
+        <button id="contractEndCancelBtn" class="secondary" type="button">Annuler</button>
+        <button id="contractEndPreviousBtn" class="ghost" type="button" hidden>Précédent</button>
+        <button id="contractEndNextBtn" class="primary" type="button">Suivant</button>
+        <button id="contractEndGenerateBtn" class="primary" type="button" hidden>Créer le PDF</button>
+      </div>
+    </dialog>
 
     <dialog id="emailNotesDialog" class="email-notes-dialog" aria-labelledby="emailNotesDialogTitle">
       <div class="support-dialog-heading">
@@ -1087,6 +1193,6 @@
     </dialog>
 
     <div id="toast" class="toast" aria-live="polite"></div>
-    <script src="/app.js?v=20260801-v314"></script>
+    <script src="/app.js?v=20260803-v315"></script>
   </body>
 </html>

@@ -8,5 +8,8 @@
 - Une base SQLite placée sur un partage réseau ne doit pas être ouverte simultanément par deux ordinateurs.
 - Les montants sont encore stockés sous forme de nombres décimaux SQLite et non en centimes entiers.
 - Easy CESU ne synchronise aucune donnée en ligne et n'assure pas la résolution de conflits entre plusieurs copies.
+- Le dossier de fin de contrat est une aide de préparation. Il ne remplace pas
+  les documents officiels CESU ou France Travail et ne calcule pas les
+  indemnités, qui dépendent du contrat, du motif, de l'ancienneté et de la paie.
 - Le verrouillage de l'application par code reste à réaliser.
 - Les pièces jointes et modèles de documents personnalisés sont prévus dans le schéma, mais leur gestion complète n'est pas encore disponible dans l'interface.

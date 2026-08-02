@@ -6,7 +6,7 @@ La suite isolée n'utilise jamais la base personnelle installée :
 .\.build_venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-La V3.1.4 comporte les tests automatisés couvrant notamment :
+La V3.1.5 comporte les tests automatisés couvrant notamment :
 
 - première installation et profil générique ;
 - création, renommage et séparation des clients ;
@@ -51,11 +51,20 @@ La V3.1.4 comporte les tests automatisés couvrant notamment :
 - nettoyage de l'ignorance lorsqu'un état est validé, puis réapparition normale s'il est décoché ;
 - marquage `Transmis` limité aux emails réellement envoyés lorsque l'option est activée.
 - packaging explicite de `generer_notes_et_donnees`, puis lancement du véritable exécutable pour prévenir l'erreur de module manquant.
+- profil initial neutre, base vide et absence de nom personnel dans les données publiques d'une installation neuve ;
+- migration additive du schéma 7, sauvegarde préalable, conservation des données et seconde exécution sans effet de bord ;
+- génération du dossier PDF de fin de contrat avec accents et caractères spéciaux ;
+- exactitude des totaux issus des tarifs historiques des interventions ;
+- archivage sans suppression, exclusion des nouveaux choix d'intervention et désarchivage ;
+- désactivation facultative des rappels lors de l'archivage ;
+- présence de l'assistant en trois étapes et du filtre des clients archivés ;
+- packaging explicite de `contract_end_service` sous Windows et macOS.
 
 Contrôles complémentaires réalisés pour chaque livraison :
 
 - compilation Python et contrôle syntaxique JavaScript ;
-- test Playwright de l'éditeur à `1440 x 900` et `1024 x 768`, sans débordement ;
+- test Playwright des écrans principaux et de l'assistant de fin de contrat à
+  `1600 x 1000` et `1024 x 768`, sans débordement ;
 - lancement de l'exécutable PyInstaller dans sa vraie fenêtre Windows ;
 - contrôle de l'assistant initial et de l'éditeur de modèles par accessibilité Windows ;
 - fermeture de la fenêtre puis vérification de l'arrêt du processus et du port local ;

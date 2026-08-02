@@ -161,12 +161,43 @@ def main() -> int:
             raise AssertionError("Le rappel de soutien ne doit pas apparaître avant 30 jours.")
         page.screenshot(path=str(OUTPUT_DIR / "community-desktop.png"), full_page=True)
 
+        page.locator('[data-view="clients"]').click()
+        page.locator("#clientsBody").wait_for(state="visible")
+        if "M. Ancien" in page.locator("#clientsBody").inner_text():
+            raise AssertionError("Un client archivé apparaît dans la liste active.")
+        page.locator("#clientArchiveFilter").select_option("archived")
+        page.wait_for_timeout(200)
+        if page.locator("#clientsBody tr").count() != 1 or "M. Ancien" not in page.locator("#clientsBody").inner_text():
+            raise AssertionError("Le filtre des clients archivés ne retrouve pas le client de contrôle.")
+        page.locator("#clientArchiveFilter").select_option("active")
+        page.locator("#clientsBody tr", has_text="M. Dupont").locator("[data-contract-end]").click()
+        page.locator("#contractEndDialog").wait_for(state="visible")
+        if page.locator("#contractEndProgress").text_content().strip() != "Étape 1 sur 3":
+            raise AssertionError("L'assistant de fin de contrat ne démarre pas à la première étape.")
+        page.locator("#contractEndNextBtn").click()
+        page.wait_for_function("document.querySelector('#contractEndProgress').textContent === 'Étape 2 sur 3'")
+        if page.locator("#contractSummaryCount").inner_text() != "1":
+            raise AssertionError("L'aperçu de fin de contrat ne reprend pas l'intervention du client.")
+        page.screenshot(path=str(OUTPUT_DIR / "contract-end-preview-desktop.png"))
+        page.locator("#contractEndNextBtn").click()
+        page.wait_for_function("document.querySelector('#contractEndProgress').textContent === 'Étape 3 sur 3'")
+        page.locator("#contractArchiveClientInput").uncheck()
+        page.screenshot(path=str(OUTPUT_DIR / "contract-end-options-desktop.png"))
+        page.locator("#contractEndCancelBtn").click()
+
         page.set_viewport_size({"width": 1024, "height": 768})
         page.screenshot(path=str(OUTPUT_DIR / "community-compact.png"), full_page=True)
         page.locator('[data-view="followup"]').click()
         page.screenshot(path=str(OUTPUT_DIR / "followup-compact.png"), full_page=True)
         if page.locator("body").evaluate("(element) => element.scrollWidth > element.clientWidth + 2"):
             raise AssertionError("L'interface crée un débordement horizontal à 1024 px.")
+        page.locator('[data-view="clients"]').click()
+        page.locator("#clientsBody tr", has_text="M. Dupont").locator("[data-contract-end]").click()
+        page.locator("#contractEndDialog").wait_for(state="visible")
+        page.screenshot(path=str(OUTPUT_DIR / "contract-end-compact.png"))
+        if page.locator("body").evaluate("(element) => element.scrollWidth > element.clientWidth + 2"):
+            raise AssertionError("L'assistant crée un débordement horizontal à 1024 px.")
+        page.locator("#contractEndCancelBtn").click()
         browser.close()
 
     if console_errors:

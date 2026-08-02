@@ -58,7 +58,7 @@ Après installation et relance :
 - clients : `148` ;
 - interventions : `1 237` ;
 - modèle de note : `1` ;
-- compte actif : `clotilde-jardins`.
+- compte actif : `compte-jardinage`.
 
 La nouvelle préférence de rappel est ajoutée dans la configuration locale sans
 modifier les clients ni les interventions.

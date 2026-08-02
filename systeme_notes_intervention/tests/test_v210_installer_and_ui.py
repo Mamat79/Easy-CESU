@@ -16,17 +16,19 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 class InstallerV3Tests(unittest.TestCase):
     def test_versions_are_synchronized(self) -> None:
         version = (PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip()
-        self.assertEqual(version, "3.1.4")
+        self.assertEqual(version, "3.1.5")
         self.assertEqual(installateur_windows.APP_VERSION, version)
-        self.assertEqual(installateur_windows.shortcut_label(), "Easy CESU V3.1.4")
+        self.assertEqual(installateur_windows.shortcut_label(), "Easy CESU V3.1.5")
 
     def test_packaging_includes_the_note_generator(self) -> None:
         build_script = (PROJECT_ROOT / "Construire_executable.ps1").read_text(encoding="utf-8")
         self.assertIn("--paths $Root", build_script)
         self.assertIn("--hidden-import generer_notes_et_donnees", build_script)
+        self.assertIn("--hidden-import contract_end_service", build_script)
         macos_build_script = (PROJECT_ROOT / "Construire_macOS.sh").read_text(encoding="utf-8")
         self.assertIn('--paths "$ROOT"', macos_build_script)
         self.assertIn("--hidden-import generer_notes_et_donnees", macos_build_script)
+        self.assertIn("--hidden-import contract_end_service", macos_build_script)
 
     def test_every_installer_choice_has_an_icon_and_preview(self) -> None:
         for icon_key in installateur_windows.SHORTCUT_ICON_LABELS:
@@ -129,7 +131,7 @@ class InstallerV3Tests(unittest.TestCase):
             (destination / "_internal" / "runtime.bin").write_bytes(b"ancien moteur")
             (destination / "application" / "data").mkdir(parents=True)
             (destination / "application" / "data" / "clients.sqlite").write_bytes(b"donnees")
-            (destination / "config.json").write_text('{"profil":"Clotilde"}', encoding="utf-8")
+            (destination / "config.json").write_text('{"profil":"Profil existant"}', encoding="utf-8")
             old_notice = destination / "Easy_CESU_V2_Notice_Installation_et_Utilisation.pdf"
             old_notice.write_bytes(b"ancienne notice")
 
@@ -150,7 +152,7 @@ class InstallerV3Tests(unittest.TestCase):
             )
             self.assertEqual(
                 (destination / "config.json").read_text(encoding="utf-8"),
-                '{"profil":"Clotilde"}',
+                '{"profil":"Profil existant"}',
             )
             self.assertFalse(old_notice.exists())
             retired = list(destination.glob("_internal.precedente-*"))
@@ -311,6 +313,33 @@ class CommunitySupportContractTests(unittest.TestCase):
         self.assertIn("/assets/paypal-support-qr.png", html)
         qr_asset = PROJECT_ROOT / "application" / "static" / "assets" / "paypal-support-qr.png"
         self.assertTrue(qr_asset.is_file())
+
+
+class ContractEndContractTests(unittest.TestCase):
+    def test_archive_filter_and_three_step_assistant_are_visible(self) -> None:
+        html = (PROJECT_ROOT / "application" / "static" / "index.html").read_text(encoding="utf-8")
+        javascript = (PROJECT_ROOT / "application" / "static" / "app.js").read_text(encoding="utf-8")
+        server = (PROJECT_ROOT / "application" / "app_server.py").read_text(encoding="utf-8")
+
+        for element_id in (
+            "clientArchiveFilter",
+            "contractEndDialog",
+            "contractStartDateInput",
+            "contractEndDateInput",
+            "contractPreviewBody",
+            "contractArchiveClientInput",
+            "contractDeactivateRemindersInput",
+            "contractEndGenerateBtn",
+        ):
+            self.assertIn(f'id="{element_id}"', html)
+        self.assertEqual(html.count("data-contract-end-step="), 3)
+        self.assertIn("const activeClients = state.clients.filter((client) => !client.is_archived)", javascript)
+        self.assertIn("function openContractEndDialog", javascript)
+        self.assertIn("function generateContractEnd", javascript)
+        self.assertIn("client.is_archived", javascript)
+        self.assertIn("contract_terminations", server)
+        self.assertIn("avant-migration-v7", server)
+        self.assertIn("ON UPDATE CASCADE ON DELETE RESTRICT", server)
 
 
 if __name__ == "__main__":

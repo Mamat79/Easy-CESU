@@ -84,4 +84,4 @@ moteur utilisé par la V3 et n'a aucun effet fonctionnel.
 - Les applications macOS utilisent une signature ad hoc et ne sont pas
   notariées par Apple. Le premier lancement peut demander `Clic droit > Ouvrir`.
 - Le candidat Windows a été validé sur le PC de développement avec la base
-  existante. La mise à jour du PC de Clothilde reste une opération séparée.
+  existante. La mise à jour d'un second PC reste une opération séparée.

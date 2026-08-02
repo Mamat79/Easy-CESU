@@ -125,6 +125,9 @@ const state = {
   emailMessageOverrides: {},
   emailSelectedClients: [],
   emailMarkTransmitted: false,
+  contractEndClientName: "",
+  contractEndStep: 1,
+  contractEndPreview: null,
 };
 
 const els = {
@@ -307,7 +310,34 @@ const els = {
   emailReviewCancelBtn: document.querySelector("#emailReviewCancelBtn"),
   emailReviewNextBtn: document.querySelector("#emailReviewNextBtn"),
   clientSearchInput: document.querySelector("#clientSearchInput"),
+  clientArchiveFilter: document.querySelector("#clientArchiveFilter"),
   clientsBody: document.querySelector("#clientsBody"),
+  contractEndDialog: document.querySelector("#contractEndDialog"),
+  contractEndClientLabel: document.querySelector("#contractEndClientLabel"),
+  contractEndCloseIconBtn: document.querySelector("#contractEndCloseIconBtn"),
+  contractEndProgress: document.querySelector("#contractEndProgress"),
+  contractEndSteps: document.querySelectorAll("[data-contract-end-step]"),
+  contractTypeInput: document.querySelector("#contractTypeInput"),
+  contractReasonInput: document.querySelector("#contractReasonInput"),
+  contractStartDateInput: document.querySelector("#contractStartDateInput"),
+  contractNotificationDateInput: document.querySelector("#contractNotificationDateInput"),
+  contractNoticeStatusInput: document.querySelector("#contractNoticeStatusInput"),
+  contractNoticeStartInput: document.querySelector("#contractNoticeStartInput"),
+  contractNoticeEndInput: document.querySelector("#contractNoticeEndInput"),
+  contractLastWorkedInput: document.querySelector("#contractLastWorkedInput"),
+  contractEndDateInput: document.querySelector("#contractEndDateInput"),
+  contractNotesInput: document.querySelector("#contractNotesInput"),
+  contractSummaryCount: document.querySelector("#contractSummaryCount"),
+  contractSummaryHours: document.querySelector("#contractSummaryHours"),
+  contractSummaryAmount: document.querySelector("#contractSummaryAmount"),
+  contractSummaryPeriod: document.querySelector("#contractSummaryPeriod"),
+  contractPreviewBody: document.querySelector("#contractPreviewBody"),
+  contractArchiveClientInput: document.querySelector("#contractArchiveClientInput"),
+  contractDeactivateRemindersInput: document.querySelector("#contractDeactivateRemindersInput"),
+  contractEndCancelBtn: document.querySelector("#contractEndCancelBtn"),
+  contractEndPreviousBtn: document.querySelector("#contractEndPreviousBtn"),
+  contractEndNextBtn: document.querySelector("#contractEndNextBtn"),
+  contractEndGenerateBtn: document.querySelector("#contractEndGenerateBtn"),
   reminderForm: document.querySelector("#reminderForm"),
   reminderId: document.querySelector("#reminderId"),
   reminderTitleInput: document.querySelector("#reminderTitleInput"),
@@ -765,7 +795,8 @@ function fillMonthSelect() {
 }
 
 function renderClients() {
-  els.clientsList.innerHTML = state.clients
+  const activeClients = state.clients.filter((client) => !client.is_archived);
+  els.clientsList.innerHTML = activeClients
     .map((client) => `<option value="${escapeHtml(client.name)}"></option>`)
     .join("");
   renderClientsTable();
@@ -784,9 +815,13 @@ function escapeHtml(value) {
 
 function renderClientsTable() {
   const term = els.clientSearchInput.value.trim().toLowerCase();
+  const archiveFilter = els.clientArchiveFilter.value;
   const rows = state.clients.filter((client) => {
     const haystack = `${client.name} ${client.email} ${client.cesu} ${client.hourly_rate} ${client.phone} ${client.address}`.toLowerCase();
-    return !term || haystack.includes(term);
+    const archiveMatches = archiveFilter === "all"
+      || (archiveFilter === "archived" && client.is_archived)
+      || (archiveFilter === "active" && !client.is_archived);
+    return archiveMatches && (!term || haystack.includes(term));
   });
   if (!rows.length) {
     els.clientsBody.innerHTML = `<tr><td class="empty-row" colspan="7">Aucun client</td></tr>`;
@@ -799,7 +834,7 @@ function renderClientsTable() {
         : "";
       return `
       <tr>
-        <td>${escapeHtml(client.name)}</td>
+        <td>${escapeHtml(client.name)}${client.is_archived ? '<span class="client-archive-badge">Archivé</span>' : ""}</td>
         <td>${email}</td>
         <td>${escapeHtml(client.cesu || "")}</td>
         <td>${rateLabel(client.hourly_rate)}</td>
@@ -807,6 +842,10 @@ function renderClientsTable() {
         <td>${escapeHtml(client.address || "")}</td>
         <td>
           <div class="row-actions">
+            ${client.is_archived
+              ? `<button class="secondary client-row-command" type="button" data-unarchive-client="${escapeHtml(client.name)}">Désarchiver</button>`
+              : `<button class="secondary client-row-command" type="button" data-contract-end="${escapeHtml(client.name)}">Fin de contrat</button>
+                 <button class="secondary client-row-command" type="button" data-archive-client="${escapeHtml(client.name)}">Archiver</button>`}
             <button class="icon-btn" title="Modifier" data-edit-client="${escapeHtml(client.name)}">✎</button>
             <button class="icon-btn delete-btn" title="Supprimer" data-delete-client="${escapeHtml(client.name)}">×</button>
           </div>
@@ -1189,6 +1228,7 @@ function formPayload() {
 function clientPayload() {
   const rawRate = els.clientRateInput.value.trim();
   const hasCustomRate = rawRate !== "" && Number(rawRate) > 0;
+  const original = state.clients.find((client) => client.name === els.clientOriginalName.value);
   return {
     name: els.clientNameInput.value,
     email: els.clientEmailInput.value,
@@ -1199,6 +1239,7 @@ function clientPayload() {
     hourly_rate_custom: hasCustomRate,
     phone: els.clientPhoneInput.value,
     address: els.clientAddressInput.value,
+    is_archived: Boolean(original?.is_archived),
   };
 }
 
@@ -2149,6 +2190,154 @@ async function saveClient(event) {
   }
 }
 
+function formatIsoDate(value) {
+  if (!value) return "-";
+  const [year, month, day] = String(value).split("-");
+  return year && month && day ? `${day}/${month}/${year}` : String(value);
+}
+
+function renderContractEndStep() {
+  els.contractEndSteps.forEach((section) => {
+    section.hidden = Number(section.dataset.contractEndStep) !== state.contractEndStep;
+  });
+  els.contractEndProgress.textContent = `Étape ${state.contractEndStep} sur 3`;
+  els.contractEndPreviousBtn.hidden = state.contractEndStep === 1;
+  els.contractEndNextBtn.hidden = state.contractEndStep === 3;
+  els.contractEndGenerateBtn.hidden = state.contractEndStep !== 3;
+}
+
+function renderContractEndPreview(payload) {
+  state.contractEndPreview = payload;
+  const summary = payload.summary || {};
+  els.contractSummaryCount.textContent = String(summary.count || 0);
+  els.contractSummaryHours.textContent = durationLabel(summary.hours || 0);
+  els.contractSummaryAmount.textContent = euro(summary.amount_net || 0);
+  els.contractSummaryPeriod.textContent = summary.first_date
+    ? `${formatIsoDate(summary.first_date)} au ${formatIsoDate(summary.last_date)}`
+    : "Aucune intervention";
+  const rows = payload.interventions || [];
+  els.contractPreviewBody.innerHTML = rows.length
+    ? rows.map((item) => `
+        <tr>
+          <td>${formatIsoDate(item.date)}</td>
+          <td>${escapeHtml(item.task || "Intervention")}</td>
+          <td>${durationLabel(item.duration_hours)}</td>
+          <td>${euro(item.hourly_rate)}</td>
+          <td>${euro(item.amount_net)}</td>
+        </tr>`).join("")
+    : '<tr><td class="empty-row" colspan="5">Aucune intervention enregistrée sur cette période</td></tr>';
+}
+
+function contractEndPayload() {
+  return {
+    client_name: state.contractEndClientName,
+    contract_type: els.contractTypeInput.value,
+    reason: els.contractReasonInput.value,
+    contract_start_date: els.contractStartDateInput.value,
+    notification_date: els.contractNotificationDateInput.value,
+    notice_status: els.contractNoticeStatusInput.value,
+    notice_start_date: els.contractNoticeStartInput.value,
+    notice_end_date: els.contractNoticeEndInput.value,
+    last_worked_date: els.contractLastWorkedInput.value,
+    contract_end_date: els.contractEndDateInput.value,
+    notes: els.contractNotesInput.value,
+    archive_client: els.contractArchiveClientInput.checked,
+    deactivate_reminders: els.contractDeactivateRemindersInput.checked,
+  };
+}
+
+async function refreshContractEndPreview() {
+  const payload = contractEndPayload();
+  if (!payload.contract_start_date || !payload.contract_end_date) {
+    throw new Error("Renseigne la date d'embauche et la date de fin du contrat.");
+  }
+  const query = new URLSearchParams({
+    client: payload.client_name,
+    start: payload.contract_start_date,
+    end: payload.contract_end_date,
+  });
+  const preview = await api(`/api/contract-terminations/preview?${query.toString()}`);
+  renderContractEndPreview(preview);
+}
+
+async function openContractEndDialog(clientName) {
+  const client = state.clients.find((item) => item.name === clientName);
+  if (!client || client.is_archived) return;
+  const initial = await api(`/api/contract-terminations/preview?client=${encodeURIComponent(clientName)}`);
+  const today = new Date().toISOString().slice(0, 10);
+  state.contractEndClientName = clientName;
+  state.contractEndStep = 1;
+  els.contractEndClientLabel.textContent = clientName;
+  els.contractTypeInput.value = "CDI";
+  els.contractReasonInput.value = "autre";
+  els.contractStartDateInput.value = initial.summary.first_date || today;
+  els.contractNotificationDateInput.value = "";
+  els.contractNoticeStatusInput.value = "a_verifier";
+  els.contractNoticeStartInput.value = "";
+  els.contractNoticeEndInput.value = "";
+  els.contractLastWorkedInput.value = initial.summary.last_date || today;
+  els.contractEndDateInput.value = today;
+  els.contractNotesInput.value = "";
+  els.contractArchiveClientInput.checked = true;
+  els.contractDeactivateRemindersInput.checked = false;
+  els.contractDeactivateRemindersInput.disabled = false;
+  renderContractEndPreview(initial);
+  renderContractEndStep();
+  els.contractEndDialog.showModal();
+}
+
+function closeContractEndDialog() {
+  if (els.contractEndDialog.open) els.contractEndDialog.close();
+  state.contractEndClientName = "";
+  state.contractEndPreview = null;
+}
+
+async function advanceContractEnd() {
+  if (state.contractEndStep === 1) {
+    els.contractEndNextBtn.disabled = true;
+    try {
+      await refreshContractEndPreview();
+      state.contractEndStep = 2;
+    } finally {
+      els.contractEndNextBtn.disabled = false;
+    }
+  } else if (state.contractEndStep === 2) {
+    state.contractEndStep = 3;
+  }
+  renderContractEndStep();
+}
+
+async function generateContractEnd() {
+  els.contractEndGenerateBtn.disabled = true;
+  try {
+    showToast("Choisis le dossier où créer le dossier de fin de contrat...");
+    const result = await api("/api/contract-terminations/generate", {
+      method: "POST",
+      body: JSON.stringify(contractEndPayload()),
+    });
+    if (result.cancelled) {
+      showToast("Création annulée.");
+      return;
+    }
+    closeContractEndDialog();
+    await Promise.all([loadClients(), loadPlanning()]);
+    showToast(`Dossier de fin de contrat créé\n${result.path}`);
+  } finally {
+    els.contractEndGenerateBtn.disabled = false;
+  }
+}
+
+async function changeClientArchiveState(clientName, archived) {
+  if (archived && !window.confirm(`Archiver ${clientName} ? Son historique sera conservé.`)) return;
+  await api(`/api/clients/${encodeURIComponent(clientName)}/archive`, {
+    method: "PUT",
+    body: JSON.stringify({ archived, deactivate_reminders: false }),
+  });
+  if (archived && state.selectedClientName === clientName) resetClientForm();
+  await loadClients();
+  showToast(archived ? "Client archivé." : "Client désarchivé.");
+}
+
 async function saveReminder(event) {
   event.preventDefault();
   if (!state.selectedClientName) {
@@ -2392,6 +2581,7 @@ function bindEvents() {
   });
   els.searchInput.addEventListener("input", renderInterventions);
   els.clientSearchInput.addEventListener("input", renderClientsTable);
+  els.clientArchiveFilter.addEventListener("change", renderClientsTable);
   els.generateBtn.addEventListener("click", generateNotes);
   els.emailNotesBtn.addEventListener("click", openEmailNotesDialog);
   els.exportBtn.addEventListener("click", exportYear);
@@ -2598,16 +2788,46 @@ function bindEvents() {
       await deleteIntervention(deleteId);
     }
   });
-  els.clientsBody.addEventListener("click", (event) => {
-    const clientName = event.target.dataset.editClient;
-    const deleteClientName = event.target.dataset.deleteClient;
+  els.clientsBody.addEventListener("click", async (event) => {
+    const action = event.target.closest("button");
+    if (!action) return;
+    const clientName = action.dataset.editClient;
+    const deleteClientName = action.dataset.deleteClient;
+    const contractEndClientName = action.dataset.contractEnd;
+    const archiveClientName = action.dataset.archiveClient;
+    const unarchiveClientName = action.dataset.unarchiveClient;
     if (clientName) {
       const client = state.clients.find((item) => item.name === clientName);
       if (client) loadIntoClientForm(client);
     }
     if (deleteClientName) {
-      deleteClient(deleteClientName).catch((error) => showToast(error.message));
+      await deleteClient(deleteClientName).catch((error) => showToast(error.message));
     }
+    if (contractEndClientName) {
+      await openContractEndDialog(contractEndClientName).catch((error) => showToast(error.message));
+    }
+    if (archiveClientName) {
+      await changeClientArchiveState(archiveClientName, true).catch((error) => showToast(error.message));
+    }
+    if (unarchiveClientName) {
+      await changeClientArchiveState(unarchiveClientName, false).catch((error) => showToast(error.message));
+    }
+  });
+  els.contractEndCloseIconBtn.addEventListener("click", closeContractEndDialog);
+  els.contractEndCancelBtn.addEventListener("click", closeContractEndDialog);
+  els.contractEndPreviousBtn.addEventListener("click", () => {
+    state.contractEndStep = Math.max(1, state.contractEndStep - 1);
+    renderContractEndStep();
+  });
+  els.contractEndNextBtn.addEventListener("click", () => {
+    advanceContractEnd().catch((error) => showToast(error.message));
+  });
+  els.contractEndGenerateBtn.addEventListener("click", () => {
+    generateContractEnd().catch((error) => showToast(error.message));
+  });
+  els.contractArchiveClientInput.addEventListener("change", () => {
+    els.contractDeactivateRemindersInput.disabled = !els.contractArchiveClientInput.checked;
+    if (!els.contractArchiveClientInput.checked) els.contractDeactivateRemindersInput.checked = false;
   });
   document.addEventListener("click", (event) => {
     const stepperButton = event.target.closest("[data-step-target]");

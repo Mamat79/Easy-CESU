@@ -42,6 +42,7 @@ mkdir -p "$OUTPUT_DIR"
   --osx-bundle-identifier "fr.easycesu.desktop" \
   --paths "$ROOT" \
   --hidden-import generer_notes_et_donnees \
+  --hidden-import contract_end_service \
   --add-data "$ROOT/application/static:application/static" \
   --collect-data reportlab \
   "$ROOT/application/desktop_app.py"

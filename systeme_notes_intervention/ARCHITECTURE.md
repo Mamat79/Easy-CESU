@@ -11,6 +11,8 @@
 - `application/static` contient l'interface HTML, CSS et JavaScript affichée dans la fenêtre native.
 - `generer_notes_et_donnees.py` génère les notes PDF et calcule les synthèses mensuelles.
 - `application/excel_export.py` produit le bilan Excel.
+- `application/contract_end_service.py` compose le dossier PDF préparatoire de
+  fin de contrat à partir d'un instantané des interventions.
 - `installateur_windows.py` installe et met à jour l'application Windows.
 - `Construire_macOS.sh` produit l'application `.app` et l'installateur `.dmg`
   sur un runner macOS natif.
@@ -22,6 +24,12 @@ temporaires. Chaque compte référence sa propre base SQLite et possède ses
 propres modèles de documents.
 
 Le schéma V3 ajoute uniquement la table `document_templates`. Le schéma 6 de la version 3.1.4 ajoute l'état `declared` aux interventions et la table `intervention_followup_ignores`. Avant une migration portant sur une base contenant des données, Easy CESU crée une sauvegarde. Les tables historiques de clients et d'interventions ne sont ni recréées ni vidées.
+
+Le schéma 7 de la version 3.1.5 ajoute la table `contract_terminations` et
+s'appuie sur le champ existant `clients.is_archived`. La génération du PDF
+précède l'enregistrement du dossier ; si l'enregistrement échoue, le fichier
+incomplet est retiré. L'archivage et la désactivation facultative des rappels
+sont effectués dans la même transaction que l'enregistrement du dossier.
 
 Les changements rapides des états administratifs utilisent une route dédiée plutôt que la mise à jour complète d'une intervention. La logique métier est centralisée dans `update_intervention_administrative_status` : elle valide l'état demandé, préserve les montants reçus saisis manuellement, synchronise les paiements liés et retire les ignorances devenues inutiles. Le tableau `À suivre` est alimenté par `list_intervention_followups`, qui regroupe les actions manquantes sur une seule ligne par intervention.
 

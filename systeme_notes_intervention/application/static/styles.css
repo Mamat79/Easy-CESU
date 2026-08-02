@@ -1524,7 +1524,8 @@ button:disabled {
 
 .support-dialog::backdrop,
 .email-notes-dialog::backdrop,
-.email-review-dialog::backdrop {
+.email-review-dialog::backdrop,
+.contract-end-dialog::backdrop {
   background: rgba(16, 32, 35, 0.58);
 }
 
@@ -1541,6 +1542,104 @@ button:disabled {
 
 .email-review-dialog {
   width: min(760px, calc(100vw - 32px));
+}
+
+.contract-end-dialog {
+  width: min(1080px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 24px;
+  overflow: auto;
+  border: 0;
+  border-radius: 8px;
+  color: var(--ink);
+  box-shadow: 0 24px 64px rgba(16, 32, 35, 0.32);
+}
+
+.contract-end-progress {
+  margin: 16px 0 10px;
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.contract-end-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.contract-end-form label {
+  display: grid;
+  gap: 7px;
+  align-content: start;
+  font-weight: 700;
+}
+
+.contract-end-notes {
+  grid-column: span 2;
+}
+
+.contract-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+}
+
+.contract-summary-strip > div {
+  min-width: 0;
+  padding: 13px;
+  border-right: 1px solid var(--line);
+}
+
+.contract-summary-strip > div:last-child {
+  border-right: 0;
+}
+
+.contract-summary-strip span,
+.contract-summary-strip strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.contract-summary-strip span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.contract-summary-strip strong {
+  margin-top: 5px;
+  font-size: 17px;
+}
+
+.contract-preview-table-wrap {
+  max-height: min(420px, calc(100vh - 330px));
+  overflow: auto;
+  border: 1px solid var(--line);
+}
+
+.contract-preview-table {
+  min-width: 760px;
+}
+
+.contract-official-note {
+  padding: 16px;
+  border-left: 4px solid var(--amber);
+  background: #fff8e9;
+}
+
+.contract-official-note p {
+  margin: 7px 0 0;
+  line-height: 1.5;
+}
+
+.contract-archive-option {
+  margin-top: 18px;
+  font-weight: 700;
 }
 
 .email-recipient-table-wrap {
@@ -1653,6 +1752,10 @@ button:disabled {
   width: min(240px, 36vw);
 }
 
+.filter-line select {
+  width: min(190px, 30vw);
+}
+
 .table-wrap {
   overflow: auto;
   max-height: calc(100vh - 250px);
@@ -1669,7 +1772,7 @@ table {
 }
 
 .clients-table {
-  min-width: 980px;
+  min-width: 1160px;
 }
 
 th,
@@ -1749,6 +1852,32 @@ tbody tr:nth-child(even) {
   font-weight: 700;
 }
 
+.client-archive-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  border: 1px solid #b9c7c3;
+  border-radius: 3px;
+  background: #edf2f0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.clients-table .actions-col,
+.clients-table td:last-child {
+  width: 300px;
+}
+
+.clients-table .row-actions {
+  flex-wrap: nowrap;
+}
+
+.client-row-command {
+  min-height: 32px;
+  padding: 5px 8px;
+}
+
 .client-editor {
   padding: 16px;
   border-bottom: 1px solid var(--line);
@@ -1785,6 +1914,7 @@ tbody tr:nth-child(even) {
 
 .row-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 6px;
 }
@@ -2159,7 +2289,8 @@ tbody tr:nth-child(even) {
 @media (max-width: 640px) {
   .support-dialog,
   .email-notes-dialog,
-  .email-review-dialog {
+  .email-review-dialog,
+  .contract-end-dialog {
     padding: 18px;
   }
 
@@ -2174,6 +2305,24 @@ tbody tr:nth-child(even) {
 
   .support-dialog-actions button {
     width: 100%;
+  }
+
+  .contract-end-form,
+  .contract-summary-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .contract-end-notes {
+    grid-column: auto;
+  }
+
+  .contract-summary-strip > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .contract-summary-strip > div:last-child {
+    border-bottom: 0;
   }
 
   .email-recipient-table-wrap {
@@ -2299,6 +2448,7 @@ tbody tr:nth-child(even) {
   }
 
   .filter-line input,
+  .filter-line select,
   .filter-line button {
     width: 100%;
   }

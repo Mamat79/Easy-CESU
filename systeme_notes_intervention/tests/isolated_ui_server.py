@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA_ROOT = ROOT / "tmp" / "email-ui-data-v314"
+DATA_ROOT = ROOT / "tmp" / "email-ui-data-v315"
 os.environ["EASY_CESU_DATA_ROOT"] = str(DATA_ROOT)
 os.environ["NOTES_APP_PORT"] = os.environ.get("NOTES_APP_PORT", "8875")
 sys.frozen = True
@@ -22,6 +22,7 @@ import app_server  # noqa: E402
 def seed() -> None:
     app_server.init_db()
     with app_server.db_connection() as database:
+        database.execute("DELETE FROM contract_terminations")
         database.execute("DELETE FROM interventions")
         database.execute("DELETE FROM clients")
     intervention_ids: dict[str, int] = {}
@@ -48,6 +49,20 @@ def seed() -> None:
             }
         )
         intervention_ids[name] = int(intervention["id"])
+
+    app_server.create_client({"name": "M. Ancien", "email": "ancien@example.test"})
+    archived_intervention = app_server.create_intervention(
+        {
+            "date": "2024-05-10",
+            "client": "M. Ancien",
+            "duration_hours": 2,
+            "hourly_rate": 20,
+            "task": "Intervention historique",
+        }
+    )
+    for reminder_type in ("transmitted", "declared", "paid"):
+        app_server.update_intervention_administrative_status(archived_intervention["id"], reminder_type, True)
+    app_server.set_client_archived("M. Ancien", True)
 
     # Trois situations distinctes permettent de contrôler le tableau sans
     # utiliser la base personnelle : tout à faire, déclaration seule, terminé.

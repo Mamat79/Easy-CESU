@@ -14,6 +14,13 @@ dans la liste des interventions. Le tableau `À suivre`, dans l'onglet
 Un rappel peut être ignoré ou réactivé pour une intervention et une action
 précises, sans modifier le suivi des autres interventions du client.
 
+La version 3.1.5 ajoute un assistant de fin de contrat depuis la liste des
+clients. Il crée un PDF préparatoire à partir des interventions et de leurs
+tarifs historiques, rappelle les démarches officielles à effectuer par le
+particulier employeur, puis peut archiver le client sans supprimer ses données.
+Les clients archivés restent consultables mais ne sont plus proposés lors d'une
+nouvelle intervention.
+
 L'onglet `Modèles` permet de créer plusieurs mises en page de notes d'intervention. Les textes, couleurs, marges, tailles et ordre des blocs se modifient avec un aperçu A4 immédiat. Chaque compte conserve ses propres modèles.
 
 Easy CESU est un outil indépendant de suivi d'activité. Il n'est ni affilié ni connecté automatiquement au service officiel CESU.
@@ -43,6 +50,10 @@ Les données permanentes sont séparées du programme :
 Les sous-dossiers `data`, `attachments`, `backups`, `config`, `logs`, `temp`
 et les données techniques de la fenêtre restent conservés lors d'une mise à
 jour.
+
+Une installation neuve démarre avec un profil neutre `Mon compte`, l'activité
+`Autre` et une base vide. Aucun nom, client ou chemin personnel n'est fourni
+avec l'application.
 
 L'installateur contient Python et les bibliothèques de l'application. Windows
 utilise Microsoft WebView2 et macOS utilise le moteur Cocoa/WebKit du système.
