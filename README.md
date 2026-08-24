@@ -16,6 +16,7 @@ sans imposer de compte en ligne.
 | Windows 11 x64 | [EasyCESU-Setup-x64-2026.1.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.1/EasyCESU-Setup-x64-2026.1.exe) |
 | macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.1.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.1/EasyCESU-macOS-Apple-Silicon-2026.1.dmg) |
 | macOS Intel | [EasyCESU-macOS-Intel-2026.1.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.1/EasyCESU-macOS-Intel-2026.1.dmg) |
+| Notice complète | [Easy_CESU_2026.1_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.1/Easy_CESU_2026.1_Notice_Installation_et_Utilisation.pdf) |
 
 L'installateur Windows n'est pas encore signé numériquement. Windows peut donc
 afficher un avertissement SmartScreen. Vérifiez l'empreinte SHA-256 publiée dans
@@ -71,7 +72,5 @@ ZIP régulière reste recommandée avant toute intervention importante.
 
 - [Signaler un problème](https://github.com/Mamat79/Easy-CESU/issues/new)
 - [Consulter toutes les versions](https://github.com/Mamat79/Easy-CESU/releases)
+- [Lire la notice complète](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.1/Easy_CESU_2026.1_Notice_Installation_et_Utilisation.pdf)
 - [Lire les notes de la version 2026.1](RELEASE_NOTES_2026.1.md)
-
-Ce dépôt public est réservé à la distribution. Le code source et les clés de
-signature des licences sont conservés dans un dépôt privé distinct.
