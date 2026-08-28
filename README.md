@@ -5,7 +5,7 @@ professionnels et salariés des services à la personne. Elle centralise les
 clients, interventions, tarifs, rappels, paiements, notes PDF et bilans Excel
 sans imposer de compte en ligne.
 
-**Version actuelle : 2026.2**
+**Version Windows actuelle : 2026.3** — **version macOS actuelle : 2026.2**
 
 [Télécharger la dernière version](https://github.com/Mamat79/Easy-CESU/releases/latest)
 
@@ -13,10 +13,10 @@ sans imposer de compte en ligne.
 
 | Système | Fichier |
 | --- | --- |
-| Windows 11 x64 | [EasyCESU-Setup-x64-2026.2.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.2/EasyCESU-Setup-x64-2026.2.exe) |
+| Windows 11 x64 | [EasyCESU-Setup-x64-2026.3.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.3/EasyCESU-Setup-x64-2026.3.exe) |
 | macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.2.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.2/EasyCESU-macOS-Apple-Silicon-2026.2.dmg) |
 | macOS Intel | [EasyCESU-macOS-Intel-2026.2.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.2/EasyCESU-macOS-Intel-2026.2.dmg) |
-| Notice complète | [Easy_CESU_2026.2_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.2/Easy_CESU_2026.2_Notice_Installation_et_Utilisation.pdf) |
+| Notice Windows 2026.3 | [Easy_CESU_2026.3_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.3/Easy_CESU_2026.3_Notice_Installation_et_Utilisation.pdf) |
 
 L'installateur Windows n'est pas encore signé numériquement. Windows peut donc
 afficher un avertissement SmartScreen. Vérifiez l'empreinte SHA-256 publiée dans
@@ -44,7 +44,11 @@ service officiel CESU.
 - après 30 jours, Easy CESU reste entièrement utilisable ;
 - seul un rappel non bloquant apparaît au démarrage ;
 - une licence permanente coûte **29 € TTC**, en paiement unique ;
-- le code reste valable après toutes les mises à jour compatibles.
+- les licences historiques restent valables après toutes les mises à jour
+  compatibles ;
+- Windows 2026.3 accepte aussi les nouvelles licences V2 : activation Internet
+  initiale, trois installations par défaut, puis validation entièrement hors
+  ligne et bouton de désactivation du poste.
 
 [Acheter une licence Easy CESU avec Stripe](https://easy-cesu-license.mamat79-dce.workers.dev/buy)
 
@@ -55,7 +59,9 @@ Pour activer le code reçu :
 3. cliquer sur `Gérer la licence` ;
 4. coller le code et cliquer sur `Activer le code`.
 
-Le code est vérifié localement. Easy CESU ne reçoit aucune donnée bancaire.
+Le paiement est traité par Stripe. Easy CESU ne reçoit aucune donnée bancaire.
+La boutique émet encore le format historique portable compatible avec Windows
+et macOS ; le passage commercial à V2 attend une version macOS signée et testée.
 
 ## Mise à jour sans perdre les données
 
@@ -72,5 +78,5 @@ ZIP régulière reste recommandée avant toute intervention importante.
 
 - [Signaler un problème](https://github.com/Mamat79/Easy-CESU/issues/new)
 - [Consulter toutes les versions](https://github.com/Mamat79/Easy-CESU/releases)
-- [Lire la notice complète](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.2/Easy_CESU_2026.2_Notice_Installation_et_Utilisation.pdf)
-- [Lire les notes de la version 2026.2](RELEASE_NOTES_2026.2.md)
+- [Lire la notice Windows 2026.3](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.3/Easy_CESU_2026.3_Notice_Installation_et_Utilisation.pdf)
+- [Lire les notes de la version 2026.3](RELEASE_NOTES_2026.3.md)
