@@ -1,39 +1,56 @@
 # Easy CESU
 
-Easy CESU est une application locale pour Windows et macOS destinée aux
-professionnels et salariés des services à la personne. Elle centralise les
-clients, interventions, tarifs, rappels, paiements, notes PDF et bilans Excel
-sans imposer de compte en ligne.
+Easy CESU est une application locale pour organiser simplement une activité de
+services à la personne : clients, interventions, planning, rappels, paiements,
+documents PDF et bilans Excel.
 
-**Version Windows actuelle : 2026.3** — **version macOS actuelle : 2026.2**
+**Version actuelle : 2026.4**
 
-[Télécharger la dernière version](https://github.com/Mamat79/Easy-CESU/releases/latest)
+[Télécharger Easy CESU 2026.4](https://github.com/Mamat79/Easy-CESU/releases/latest)
 
 ## Télécharger
 
 | Système | Fichier |
 | --- | --- |
-| Windows 11 x64 | [EasyCESU-Setup-x64-2026.3.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.3/EasyCESU-Setup-x64-2026.3.exe) |
-| macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.2.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.2/EasyCESU-macOS-Apple-Silicon-2026.2.dmg) |
-| macOS Intel | [EasyCESU-macOS-Intel-2026.2.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.2/EasyCESU-macOS-Intel-2026.2.dmg) |
-| Notice Windows 2026.3 | [Easy_CESU_2026.3_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.3/Easy_CESU_2026.3_Notice_Installation_et_Utilisation.pdf) |
+| Windows 11 x64 | [EasyCESU-Setup-x64-2026.4.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.4/EasyCESU-Setup-x64-2026.4.exe) |
+| Notice complète | [Easy_CESU_2026.4_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.4/Easy_CESU_2026.4_Notice_Installation_et_Utilisation.pdf) |
+
+Les installateurs macOS 2026.4 seront proposés séparément après leur validation.
 
 L'installateur Windows n'est pas encore signé numériquement. Windows peut donc
-afficher un avertissement SmartScreen. Vérifiez l'empreinte SHA-256 publiée dans
-la release avant de l'exécuter.
+afficher un avertissement SmartScreen. Vérifiez l'empreinte SHA-256 publiée avec
+la version avant de l'exécuter.
 
 ## Fonctions principales
 
 - plusieurs comptes Easy CESU entièrement séparés ;
 - clients, coordonnées, tarifs individuels et historique ;
-- interventions avec durée, montant, état et description ;
+- interventions avec durée, montant et suivi administratif ;
 - planning et rappels ponctuels ou récurrents ;
-- suivi `Transmis`, `Déclaré` et `Payé` ;
+- suivi direct `Transmis`, `Déclaré` et `Payé` ;
+- tableau des actions administratives restant à effectuer ;
 - notes d'intervention PDF personnalisables ;
-- préparation et envoi des emails avec pièces jointes ;
-- bilans Excel par mois ou par année ;
-- assistant de fin de contrat et archivage sans suppression ;
-- sauvegardes ZIP vérifiées et restauration sur un autre ordinateur.
+- préparation et envoi des notes par email ;
+- bilans Excel et comparaisons par jour, semaine, mois ou année ;
+- sauvegarde ZIP et restauration sur un autre ordinateur ;
+- archivage d'un client sans suppression de son historique.
+
+### Fin de contrat
+
+L'assistant de fin de contrat rassemble les interventions et prépare un dossier
+PDF clair pour le particulier employeur. La version 2026.4 peut également :
+
+- saisir les salaires mensuels bruts issus des bulletins CESU ;
+- comparer les moyennes sur trois et douze mois ;
+- estimer l'ancienneté et le minimum de licenciement ou de rupture
+  conventionnelle ;
+- indiquer le préavis théorique et, lorsque les informations le permettent,
+  une estimation de l'indemnité compensatrice ;
+- afficher la formule, les mois retenus, les points à vérifier et les sources
+  réglementaires dans le PDF.
+
+Ces montants sont des estimations préparatoires. Le particulier employeur doit
+les vérifier et terminer la démarche dans le service officiel CESU.
 
 Easy CESU est indépendant et n'est ni affilié ni connecté automatiquement au
 service officiel CESU.
@@ -41,42 +58,31 @@ service officiel CESU.
 ## Essai et licence
 
 - 30 jours d'essai gratuit sans rappel ;
-- après 30 jours, Easy CESU reste entièrement utilisable ;
+- après 30 jours, toutes les fonctions restent disponibles ;
 - seul un rappel non bloquant apparaît au démarrage ;
-- une licence permanente coûte **29 € TTC**, en paiement unique ;
-- les licences historiques restent valables après toutes les mises à jour
-  compatibles ;
-- Windows 2026.3 accepte aussi les nouvelles licences V2 : activation Internet
-  initiale, trois installations par défaut, puis validation entièrement hors
-  ligne et bouton de désactivation du poste.
+- la licence permanente coûte **29 € TTC**, en paiement unique ;
+- une licence déjà activée reste valable après une mise à jour compatible.
 
 [Acheter une licence Easy CESU avec Stripe](https://easy-cesu-license.mamat79-dce.workers.dev/buy)
 
-Pour activer le code reçu :
-
-1. ouvrir `Réglages` ;
-2. aller à `Licence, aide et communauté` ;
-3. cliquer sur `Gérer la licence` ;
-4. coller le code et cliquer sur `Activer le code`.
-
 Le paiement est traité par Stripe. Easy CESU ne reçoit aucune donnée bancaire.
-La boutique émet encore le format historique portable compatible avec Windows
-et macOS ; le passage commercial à V2 attend une version macOS signée et testée.
 
-## Mise à jour sans perdre les données
+## Installer ou mettre à jour sous Windows
 
-Fermez Easy CESU, téléchargez le nouvel installateur puis installez-le au même
-emplacement. Les données et la licence sont conservées séparément :
+1. Fermez Easy CESU s'il est ouvert.
+2. Téléchargez `EasyCESU-Setup-x64-2026.4.exe`.
+3. Lancez l'installateur et conservez le même dossier pour une mise à jour.
+4. Choisissez l'icône et les raccourcis souhaités.
 
-- Windows : `%LOCALAPPDATA%\EasyCESU` ;
-- macOS : `~/Library/Application Support/EasyCESU`.
+Les comptes, clients, interventions, réglages et licences sont conservés lors
+d'une mise à jour. Une sauvegarde automatique protège la base avant sa migration.
 
-Une licence déjà activée reste donc active après la mise à jour. Une sauvegarde
-ZIP régulière reste recommandée avant toute intervention importante.
+Les données sont enregistrées séparément de l'application, par défaut dans
+`%LOCALAPPDATA%\EasyCESU`.
 
 ## Aide
 
+- [Lire la notice complète](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.4/Easy_CESU_2026.4_Notice_Installation_et_Utilisation.pdf)
+- [Lire les nouveautés de la version 2026.4](RELEASE_NOTES_2026.4.md)
 - [Signaler un problème](https://github.com/Mamat79/Easy-CESU/issues/new)
-- [Consulter toutes les versions](https://github.com/Mamat79/Easy-CESU/releases)
-- [Lire la notice Windows 2026.3](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.3/Easy_CESU_2026.3_Notice_Installation_et_Utilisation.pdf)
-- [Lire les notes de la version 2026.3](RELEASE_NOTES_2026.3.md)
+- [Consulter les versions disponibles](https://github.com/Mamat79/Easy-CESU/releases)
