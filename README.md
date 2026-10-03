@@ -7,7 +7,7 @@ sans imposer de compte en ligne.
 
 **Version actuelle : 2026.5**
 
-Windows : 2026.5. macOS : 2026.4, dernière version disponible. Les installateurs macOS 2026.5 seront ajoutés dès qu’ils seront prêts.
+La version 2026.5 est disponible pour Windows, macOS Apple Silicon et macOS Intel.
 
 [Télécharger la dernière version](https://github.com/Mamat79/Easy-CESU/releases/latest)
 
@@ -16,13 +16,18 @@ Windows : 2026.5. macOS : 2026.4, dernière version disponible. Les installateur
 | Système | Fichier |
 | --- | --- |
 | Windows 11 x64 | [EasyCESU-Setup-x64-2026.5.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.5/EasyCESU-Setup-x64-2026.5.exe) |
-| macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.4.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.4/EasyCESU-macOS-Apple-Silicon-2026.4.dmg) |
-| macOS Intel | [EasyCESU-macOS-Intel-2026.4.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.4/EasyCESU-macOS-Intel-2026.4.dmg) |
+| macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.5.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.5/EasyCESU-macOS-Apple-Silicon-2026.5.dmg) |
+| macOS Intel | [EasyCESU-macOS-Intel-2026.5.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.5/EasyCESU-macOS-Intel-2026.5.dmg) |
 | Notice complète | [Easy_CESU_2026.5_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.5/Easy_CESU_2026.5_Notice_Installation_et_Utilisation.pdf) |
 
 L'installateur Windows n'est pas encore signé numériquement. Windows peut donc
 afficher un avertissement SmartScreen. Vérifiez l'empreinte SHA-256 publiée dans
 la release avant de l'exécuter.
+
+Sur Mac, ouvrez le DMG adapté à votre processeur puis glissez Easy CESU dans
+Applications. Les applications Mac ne sont pas notarisées par Apple ; si macOS
+bloque la première ouverture, autorisez Easy CESU dans Réglages Système,
+Confidentialité et sécurité, après avoir vérifié sa provenance et son empreinte.
 
 ## Nouveautés 2026.5
 

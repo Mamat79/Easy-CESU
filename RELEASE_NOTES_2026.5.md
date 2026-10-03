@@ -14,4 +14,4 @@ Cette mise à jour facilite les envois de notes et le suivi des interventions.
 
 Fermez Easy CESU et installez la version 2026.5 au même emplacement. Les comptes, interventions, réglages, dossiers et licences sont conservés. Une sauvegarde de précaution accompagne l'ajout des adresses en copie aux comptes existants.
 
-La version 2026.5 est disponible pour Windows 11 x64, avec sa notice et les empreintes SHA-256. Les installateurs macOS 2026.5 restent en préparation ; la version macOS 2026.4 reste disponible pour Apple Silicon et Intel.
+La version 2026.5 est disponible pour Windows 11 x64, macOS Apple Silicon et macOS Intel, avec sa notice et les empreintes SHA-256. Sur Mac, choisissez le DMG adapté à votre processeur et remplacez Easy CESU dans Applications. Les applications Mac ne sont pas notarisées par Apple.
