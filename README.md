@@ -5,9 +5,9 @@ professionnels et salariés des services à la personne. Elle centralise les
 clients, interventions, tarifs, rappels, paiements, notes PDF et bilans Excel
 sans imposer de compte en ligne.
 
-**Version actuelle : 2026.5**
+**Version actuelle : 2026.6**
 
-La version 2026.5 est disponible pour Windows, macOS Apple Silicon et macOS Intel.
+La version 2026.6 est disponible pour Windows, macOS Apple Silicon et macOS Intel.
 
 [Télécharger la dernière version](https://github.com/Mamat79/Easy-CESU/releases/latest)
 
@@ -15,10 +15,10 @@ La version 2026.5 est disponible pour Windows, macOS Apple Silicon et macOS Inte
 
 | Système | Fichier |
 | --- | --- |
-| Windows 11 x64 | [EasyCESU-Setup-x64-2026.5.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.5/EasyCESU-Setup-x64-2026.5.exe) |
-| macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.5.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.5/EasyCESU-macOS-Apple-Silicon-2026.5.dmg) |
-| macOS Intel | [EasyCESU-macOS-Intel-2026.5.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.5/EasyCESU-macOS-Intel-2026.5.dmg) |
-| Notice complète | [Easy_CESU_2026.5_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.5/Easy_CESU_2026.5_Notice_Installation_et_Utilisation.pdf) |
+| Windows 11 x64 | [EasyCESU-Setup-x64-2026.6.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/EasyCESU-Setup-x64-2026.6.exe) |
+| macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.6.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/EasyCESU-macOS-Apple-Silicon-2026.6.dmg) |
+| macOS Intel | [EasyCESU-macOS-Intel-2026.6.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/EasyCESU-macOS-Intel-2026.6.dmg) |
+| Notice complète | [Easy_CESU_2026.6_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/Easy_CESU_2026.6_Notice_Installation_et_Utilisation.pdf) |
 
 L'installateur Windows n'est pas encore signé numériquement. Windows peut donc
 afficher un avertissement SmartScreen. Vérifiez l'empreinte SHA-256 publiée dans
@@ -29,9 +29,18 @@ Applications. Les applications Mac ne sont pas notarisées par Apple ; si macOS
 bloque la première ouverture, autorisez Easy CESU dans Réglages Système,
 Confidentialité et sécurité, après avoir vérifié sa provenance et son empreinte.
 
-## Nouveautés 2026.5
 
-Ajoutez des adresses en copie, cochez des colonnes en une action et relisez les emails avec Précédent et Suivant. Le récapitulatif final conserve tous les clients retenus déjà cochés et permet de modifier chaque email avant de confirmer.
+## Mises à jour depuis le logiciel
+
+Une vérification quotidienne signale les nouvelles versions. Ouvrez Réglages > Mises à jour du logiciel pour rechercher une version ou désactiver la recherche automatique. Télécharger et installer vérifie le fichier, sauvegarde vos comptes, remplace l'application et la relance. Les données et la licence restent conservées ; Windows ou macOS peut demander une autorisation.
+
+Les versions antérieures à 2026.6 doivent installer cette version une première fois depuis GitHub pour disposer de cette fonction.
+
+## Nouveautés 2026.6
+
+Cette version ajoute la recherche et l'installation des mises à jour depuis Easy CESU, avec vérification du téléchargement et sauvegarde préalable.
+
+Elle inclut aussi les nouveautés 2026.5 : adresses en copie, sélection de colonnes en une action et relecture des emails avec Précédent et Suivant. Le récapitulatif final conserve tous les clients retenus déjà cochés et permet de modifier chaque email avant de confirmer.
 
 ## Fonctions principales
 
@@ -83,5 +92,5 @@ ZIP régulière reste recommandée avant toute intervention importante.
 
 - [Signaler un problème](https://github.com/Mamat79/Easy-CESU/issues/new)
 - [Consulter toutes les versions](https://github.com/Mamat79/Easy-CESU/releases)
-- [Lire la notice complète](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.5/Easy_CESU_2026.5_Notice_Installation_et_Utilisation.pdf)
-- [Lire les notes de la version 2026.5](RELEASE_NOTES_2026.5.md)
+- [Lire la notice complète](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/Easy_CESU_2026.6_Notice_Installation_et_Utilisation.pdf)
+- [Lire les notes de la version 2026.6](RELEASE_NOTES_2026.6.md)
