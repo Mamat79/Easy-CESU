@@ -9,7 +9,7 @@ sans imposer de compte en ligne.
 
 La version 2026.8 est disponible pour Windows. Les paquets Mac 2026.8 sont en préparation ; les versions Mac 2026.6 restent disponibles.
 
-[Télécharger la dernière version](https://github.com/Mamat79/Easy-CESU/releases/latest)
+[Voir la version Windows 2026.8](https://github.com/Mamat79/Easy-CESU/releases/tag/v2026.8)
 
 ## Télécharger
 
