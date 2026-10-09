@@ -14,4 +14,4 @@ La fonction **Regrouper les interventions** de la version 2026.7 est conservée 
 
 La version 2026.8 est disponible pour Windows 11 x64. Les paquets Mac 2026.8 sont en préparation. Téléchargez directement l’installateur Windows depuis cette page ; la mise à jour automatique sera proposée lorsque les paquets Windows et Mac seront tous disponibles.
 
-Pour une première installation ou une version plus ancienne, utilisez l'installateur adapté. Les comptes, interventions, réglages et licences sont conservés. Les applications Mac ne sont pas notarisées par Apple ; la version Intel est testée sous Rosetta sur Apple Silicon.
+Pour une première installation ou une version plus ancienne, utilisez l'installateur adapté. Les comptes, interventions, réglages et licences sont conservés. Les applications Mac actuellement disponibles ne sont pas notarisées par Apple.
