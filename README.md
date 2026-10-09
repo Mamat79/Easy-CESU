@@ -5,9 +5,9 @@ professionnels et salariés des services à la personne. Elle centralise les
 clients, interventions, tarifs, rappels, paiements, notes PDF et bilans Excel
 sans imposer de compte en ligne.
 
-**Version actuelle : 2026.6**
+**Version actuelle : 2026.7**
 
-La version 2026.6 est disponible pour Windows, macOS Apple Silicon et macOS Intel.
+La version 2026.7 est disponible pour Windows, macOS Apple Silicon et macOS Intel.
 
 [Télécharger la dernière version](https://github.com/Mamat79/Easy-CESU/releases/latest)
 
@@ -15,10 +15,10 @@ La version 2026.6 est disponible pour Windows, macOS Apple Silicon et macOS Inte
 
 | Système | Fichier |
 | --- | --- |
-| Windows 11 x64 | [EasyCESU-Setup-x64-2026.6.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/EasyCESU-Setup-x64-2026.6.exe) |
-| macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.6.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/EasyCESU-macOS-Apple-Silicon-2026.6.dmg) |
-| macOS Intel | [EasyCESU-macOS-Intel-2026.6.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/EasyCESU-macOS-Intel-2026.6.dmg) |
-| Notice complète | [Easy_CESU_2026.6_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/Easy_CESU_2026.6_Notice_Installation_et_Utilisation.pdf) |
+| Windows 11 x64 | [EasyCESU-Setup-x64-2026.7.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.7/EasyCESU-Setup-x64-2026.7.exe) |
+| macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.7.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.7/EasyCESU-macOS-Apple-Silicon-2026.7.dmg) |
+| macOS Intel | [EasyCESU-macOS-Intel-2026.7.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.7/EasyCESU-macOS-Intel-2026.7.dmg) |
+| Notice complète | [Easy_CESU_2026.7_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.7/Easy_CESU_2026.7_Notice_Installation_et_Utilisation.pdf) |
 
 L'installateur Windows n'est pas encore signé numériquement. Windows peut donc
 afficher un avertissement SmartScreen. Vérifiez l'empreinte SHA-256 publiée dans
@@ -36,9 +36,9 @@ Une vérification quotidienne signale les nouvelles versions. Ouvrez Réglages >
 
 Les versions antérieures à 2026.6 doivent installer cette version une première fois depuis GitHub pour disposer de cette fonction.
 
-## Nouveautés 2026.6
+## Nouveautés 2026.7
 
-Cette version ajoute la recherche et l'installation des mises à jour depuis Easy CESU, avec vérification du téléchargement et sauvegarde préalable.
+Regroupez les interventions affichées en une ligne par client, avec leur nombre, la durée totale et le montant total. Les cases Transmis, Déclaré et Payé agissent sur toutes les interventions représentées par cette ligne. Les états partiels restent visibles et les filtres limitent les interventions concernées. Un bouton permet de retrouver les lignes détaillées.
 
 Elle inclut aussi les nouveautés 2026.5 : adresses en copie, sélection de colonnes en une action et relecture des emails avec Précédent et Suivant. Le récapitulatif final conserve tous les clients retenus déjà cochés et permet de modifier chaque email avant de confirmer.
 
@@ -92,5 +92,5 @@ ZIP régulière reste recommandée avant toute intervention importante.
 
 - [Signaler un problème](https://github.com/Mamat79/Easy-CESU/issues/new)
 - [Consulter toutes les versions](https://github.com/Mamat79/Easy-CESU/releases)
-- [Lire la notice complète](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/Easy_CESU_2026.6_Notice_Installation_et_Utilisation.pdf)
-- [Lire les notes de la version 2026.6](RELEASE_NOTES_2026.6.md)
+- [Lire la notice complète](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.7/Easy_CESU_2026.7_Notice_Installation_et_Utilisation.pdf)
+- [Lire les notes de la version 2026.7](RELEASE_NOTES_2026.7.md)
