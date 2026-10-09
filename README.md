@@ -5,9 +5,9 @@ professionnels et salariés des services à la personne. Elle centralise les
 clients, interventions, tarifs, rappels, paiements, notes PDF et bilans Excel
 sans imposer de compte en ligne.
 
-**Version actuelle : 2026.7**
+**Version actuelle : 2026.8**
 
-La version 2026.7 est disponible pour Windows. Les paquets Mac 2026.7 sont en préparation ; les versions Mac 2026.6 restent disponibles.
+La version 2026.8 est disponible pour Windows. Les paquets Mac 2026.8 sont en préparation ; les versions Mac 2026.6 restent disponibles.
 
 [Télécharger la dernière version](https://github.com/Mamat79/Easy-CESU/releases/latest)
 
@@ -15,17 +15,17 @@ La version 2026.7 est disponible pour Windows. Les paquets Mac 2026.7 sont en pr
 
 | Système | Fichier |
 | --- | --- |
-| Windows 11 x64 | [EasyCESU-Setup-x64-2026.7.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.7/EasyCESU-Setup-x64-2026.7.exe) |
+| Windows 11 x64 | [EasyCESU-Setup-x64-2026.8.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.8/EasyCESU-Setup-x64-2026.8.exe) |
 | macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.6.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/EasyCESU-macOS-Apple-Silicon-2026.6.dmg) |
 | macOS Intel | [EasyCESU-macOS-Intel-2026.6.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/EasyCESU-macOS-Intel-2026.6.dmg) |
-| Notice complète | [Easy_CESU_2026.7_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.7/Easy_CESU_2026.7_Notice_Installation_et_Utilisation.pdf) |
+| Notice complète | [Easy_CESU_2026.8_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.8/Easy_CESU_2026.8_Notice_Installation_et_Utilisation.pdf) |
 
 L'installateur Windows n'est pas encore signé numériquement. Windows peut donc
 afficher un avertissement SmartScreen. Vérifiez l'empreinte SHA-256 publiée dans
 la release avant de l'exécuter.
 
 Sur Mac, ouvrez le DMG adapté à votre processeur puis glissez Easy CESU dans
-Applications. Les applications Mac ne sont pas notarisées par Apple ; si macOS
+Applications. La version Intel est testée sous Rosetta sur Apple Silicon. Les applications Mac ne sont pas notarisées par Apple ; si macOS
 bloque la première ouverture, autorisez Easy CESU dans Réglages Système,
 Confidentialité et sécurité, après avoir vérifié sa provenance et son empreinte.
 
@@ -36,7 +36,11 @@ Une vérification quotidienne signale les nouvelles versions. Ouvrez Réglages >
 
 Les versions antérieures à 2026.6 doivent installer cette version une première fois depuis GitHub pour disposer de cette fonction.
 
-## Nouveautés 2026.7
+## Nouveautés 2026.8
+
+Les titres **Durée** et **Net** sont alignés avec leurs valeurs. Les dates regroupées sont abrégées en **du 3 au 30**, **du 17 au 25** ou **le 17**, pour le mois affiché. Cliquez sur un titre de colonne pour trier les lignes ; un second clic inverse le tri. Client se trie par ordre alphabétique, les durées, montants et nombres d'interventions par valeur numérique. Le tri fonctionne en affichage détaillé et regroupé.
+
+## Regroupement des interventions
 
 Regroupez les interventions affichées en une ligne par client, avec leur nombre, la durée totale et le montant total. Les cases Transmis, Déclaré et Payé agissent sur toutes les interventions représentées par cette ligne. Les états partiels restent visibles et les filtres limitent les interventions concernées. Un bouton permet de retrouver les lignes détaillées.
 
@@ -92,5 +96,5 @@ ZIP régulière reste recommandée avant toute intervention importante.
 
 - [Signaler un problème](https://github.com/Mamat79/Easy-CESU/issues/new)
 - [Consulter toutes les versions](https://github.com/Mamat79/Easy-CESU/releases)
-- [Lire la notice complète](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.7/Easy_CESU_2026.7_Notice_Installation_et_Utilisation.pdf)
-- [Lire les notes de la version 2026.7](RELEASE_NOTES_2026.7.md)
+- [Lire la notice complète](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.8/Easy_CESU_2026.8_Notice_Installation_et_Utilisation.pdf)
+- [Lire les notes de la version 2026.8](RELEASE_NOTES_2026.8.md)

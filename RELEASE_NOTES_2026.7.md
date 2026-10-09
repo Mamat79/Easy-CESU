@@ -13,6 +13,6 @@ Chaque intervention conserve sa date, sa durée, son tarif, son montant et son h
 
 ## Installation et mise à jour
 
-La version 2026.7 est disponible pour Windows 11 x64. Les paquets Mac 2026.7 sont en préparation. L'installateur Windows peut être téléchargé directement depuis cette page ; la mise à jour automatique sera proposée lorsque les paquets Windows et Mac seront tous disponibles.
+La version 2026.7 est une publication Windows 11 x64. La version 2026.8 reprend cette fonction avec les corrections de lisibilité et le tri des colonnes. Pour macOS, consultez les paquets disponibles sur la page des versions.
 
 Pour une première installation ou une version plus ancienne, utilisez l'installateur adapté à votre ordinateur. Les comptes, interventions, réglages et licences sont conservés. Les applications Mac ne sont pas notarisées par Apple.
