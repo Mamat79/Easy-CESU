@@ -7,7 +7,7 @@ sans imposer de compte en ligne.
 
 **Version actuelle : 2026.7**
 
-La version 2026.7 est disponible pour Windows, macOS Apple Silicon et macOS Intel.
+La version 2026.7 est disponible pour Windows. Les paquets Mac 2026.7 sont en préparation ; les versions Mac 2026.6 restent disponibles.
 
 [Télécharger la dernière version](https://github.com/Mamat79/Easy-CESU/releases/latest)
 
@@ -16,8 +16,8 @@ La version 2026.7 est disponible pour Windows, macOS Apple Silicon et macOS Inte
 | Système | Fichier |
 | --- | --- |
 | Windows 11 x64 | [EasyCESU-Setup-x64-2026.7.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.7/EasyCESU-Setup-x64-2026.7.exe) |
-| macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.7.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.7/EasyCESU-macOS-Apple-Silicon-2026.7.dmg) |
-| macOS Intel | [EasyCESU-macOS-Intel-2026.7.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.7/EasyCESU-macOS-Intel-2026.7.dmg) |
+| macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.6.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/EasyCESU-macOS-Apple-Silicon-2026.6.dmg) |
+| macOS Intel | [EasyCESU-macOS-Intel-2026.6.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/EasyCESU-macOS-Intel-2026.6.dmg) |
 | Notice complète | [Easy_CESU_2026.7_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.7/Easy_CESU_2026.7_Notice_Installation_et_Utilisation.pdf) |
 
 L'installateur Windows n'est pas encore signé numériquement. Windows peut donc

@@ -13,6 +13,6 @@ Chaque intervention conserve sa date, sa durée, son tarif, son montant et son h
 
 ## Installation et mise à jour
 
-La version 2026.7 existe pour Windows 11 x64, macOS Apple Silicon et macOS Intel. Depuis Easy CESU 2026.6, ouvrez **Réglages > Mises à jour du logiciel**, recherchez la mise à jour puis choisissez **Télécharger et installer**.
+La version 2026.7 est disponible pour Windows 11 x64. Les paquets Mac 2026.7 sont en préparation. L'installateur Windows peut être téléchargé directement depuis cette page ; la mise à jour automatique sera proposée lorsque les paquets Windows et Mac seront tous disponibles.
 
 Pour une première installation ou une version plus ancienne, utilisez l'installateur adapté à votre ordinateur. Les comptes, interventions, réglages et licences sont conservés. Les applications Mac ne sont pas notarisées par Apple.
