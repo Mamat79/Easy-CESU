@@ -5,20 +5,20 @@ professionnels et salariés des services à la personne. Elle centralise les
 clients, interventions, tarifs, rappels, paiements, notes PDF et bilans Excel
 sans imposer de compte en ligne.
 
-**Version actuelle : 2026.8**
+**Version actuelle : 2026.9.1**
 
-La version 2026.8 est disponible pour Windows. Les paquets Mac 2026.8 sont en préparation ; les versions Mac 2026.6 restent disponibles.
+La version 2026.9.1 est disponible pour Windows. Les paquets Mac 2026.9.1 sont en préparation ; les versions Mac 2026.6 restent disponibles.
 
-[Voir la version Windows 2026.8](https://github.com/Mamat79/Easy-CESU/releases/tag/v2026.8)
+[Voir la version Windows 2026.9.1](https://github.com/Mamat79/Easy-CESU/releases/tag/v2026.9.1)
 
 ## Télécharger
 
 | Système | Fichier |
 | --- | --- |
-| Windows 11 x64 | [EasyCESU-Setup-x64-2026.8.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.8/EasyCESU-Setup-x64-2026.8.exe) |
+| Windows 11 x64 | [EasyCESU-Setup-x64-2026.9.1.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.9.1/EasyCESU-Setup-x64-2026.9.1.exe) |
 | macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.6.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/EasyCESU-macOS-Apple-Silicon-2026.6.dmg) |
 | macOS Intel | [EasyCESU-macOS-Intel-2026.6.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/EasyCESU-macOS-Intel-2026.6.dmg) |
-| Notice complète | [Easy_CESU_2026.8_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.8/Easy_CESU_2026.8_Notice_Installation_et_Utilisation.pdf) |
+| Notice complète | [Easy_CESU_2026.9.1_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.9.1/Easy_CESU_2026.9.1_Notice_Installation_et_Utilisation.pdf) |
 
 L'installateur Windows n'est pas encore signé numériquement. Windows peut donc
 afficher un avertissement SmartScreen. Vérifiez l'empreinte SHA-256 publiée dans
@@ -36,9 +36,15 @@ Une vérification quotidienne signale les nouvelles versions. Ouvrez Réglages >
 
 Les versions antérieures à 2026.6 doivent installer cette version une première fois depuis GitHub pour disposer de cette fonction.
 
-## Nouveautés 2026.8
+## Nouveautés 2026.9.1
 
-Les titres **Durée** et **Net** sont alignés avec leurs valeurs. Les dates regroupées sont abrégées en **du 3 au 30**, **du 17 au 25** ou **le 17**, pour le mois affiché. Cliquez sur un titre de colonne pour trier les lignes ; un second clic inverse le tri. Client se trie par ordre alphabétique, les durées, montants et nombres d'interventions par valeur numérique. Le tri fonctionne en affichage détaillé et regroupé.
+Ajoutez des fichiers à la note PDF pendant la relecture d'un client. Choisissez **Envoi classique**, **Placer dans les brouillons** ou **Programmer l'envoi**, puis appliquez au besoin une action commune aux clients cochés dans le récapitulatif. La confirmation finale reste obligatoire.
+
+Les brouillons sont déposés dans votre vraie messagerie par IMAP sécurisé, avec les destinataires, copies, contenu et pièces jointes. Avec Gmail, une demande différée devient un brouillon **à programmer soi-même dans Gmail** : l'avertissement est visible avant confirmation et le résultat rappelle la date et l'heure demandées. Une fois la programmation confirmée dans Gmail, Easy CESU et le PC peuvent être fermés. Les brouillons ne sont jamais marqués Transmis automatiquement.
+
+Le correctif 2026.9.1 conserve l'identité et une activation locale valide lorsqu'on ressaisit le même code de licence. Une tentative refusée préserve l'activation précédente ; les erreurs du service sans détail indiquent leur statut HTTP. Les licences permanentes déjà émises restent valables.
+
+Les fonctions précédentes sont conservées : colonnes Durée et Net alignées, dates regroupées abrégées et tri par clic sur les titres.
 
 ## Regroupement des interventions
 
@@ -96,5 +102,5 @@ ZIP régulière reste recommandée avant toute intervention importante.
 
 - [Signaler un problème](https://github.com/Mamat79/Easy-CESU/issues/new)
 - [Consulter toutes les versions](https://github.com/Mamat79/Easy-CESU/releases)
-- [Lire la notice complète](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.8/Easy_CESU_2026.8_Notice_Installation_et_Utilisation.pdf)
-- [Lire les notes de la version 2026.8](RELEASE_NOTES_2026.8.md)
+- [Lire la notice complète](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.9.1/Easy_CESU_2026.9.1_Notice_Installation_et_Utilisation.pdf)
+- [Lire les notes de la version 2026.9.1](RELEASE_NOTES_2026.9.1.md)
