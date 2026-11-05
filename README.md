@@ -5,20 +5,20 @@ professionnels et salariés des services à la personne. Elle centralise les
 clients, interventions, tarifs, rappels, paiements, notes PDF et bilans Excel
 sans imposer de compte en ligne.
 
-**Version actuelle : 2026.10**
+**Version actuelle : 2026.10.1**
 
-La version 2026.10 est disponible pour Windows et macOS (Apple Silicon et Intel).
+La version 2026.10.1 est disponible pour Windows et macOS (Apple Silicon et Intel).
 
-[Voir la version 2026.10](https://github.com/Mamat79/Easy-CESU/releases/tag/v2026.10)
+[Voir la version 2026.10.1](https://github.com/Mamat79/Easy-CESU/releases/tag/v2026.10.1)
 
 ## Télécharger
 
 | Système | Fichier |
 | --- | --- |
-| Windows 11 x64 | [EasyCESU-Setup-x64-2026.10.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.10/EasyCESU-Setup-x64-2026.10.exe) |
-| macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.10.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.10/EasyCESU-macOS-Apple-Silicon-2026.10.dmg) |
-| macOS Intel | [EasyCESU-macOS-Intel-2026.10.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.10/EasyCESU-macOS-Intel-2026.10.dmg) |
-| Notice complète | [Easy_CESU_2026.10_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.10/Easy_CESU_2026.10_Notice_Installation_et_Utilisation.pdf) |
+| Windows 11 x64 | [EasyCESU-Setup-x64-2026.10.1.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.10.1/EasyCESU-Setup-x64-2026.10.1.exe) |
+| macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.10.1.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.10.1/EasyCESU-macOS-Apple-Silicon-2026.10.1.dmg) |
+| macOS Intel | [EasyCESU-macOS-Intel-2026.10.1.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.10.1/EasyCESU-macOS-Intel-2026.10.1.dmg) |
+| Notice complète | [Easy_CESU_2026.10.1_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.10.1/Easy_CESU_2026.10.1_Notice_Installation_et_Utilisation.pdf) |
 
 L'installateur Windows n'est pas encore signé numériquement. Windows peut donc
 afficher un avertissement SmartScreen. Vérifiez l'empreinte SHA-256 publiée dans
@@ -35,6 +35,10 @@ Confidentialité et sécurité, après avoir vérifié sa provenance et son empr
 Une vérification quotidienne signale les nouvelles versions. Ouvrez Réglages > Mises à jour du logiciel pour rechercher une version ou désactiver la recherche automatique. Télécharger et installer vérifie le fichier, sauvegarde vos comptes, remplace l'application et la relance. Les données et la licence restent conservées ; Windows ou macOS peut demander une autorisation.
 
 Les versions antérieures à 2026.6 doivent installer cette version une première fois depuis GitHub pour disposer de cette fonction.
+
+## Nouveautés 2026.10.1
+
+Les dates du dossier de fin de contrat sont maintenant préremplies : début avec la première intervention du client, fin avec la dernière. Elles restent modifiables manuellement. Sans intervention, les champs restent vides. Les contrôles de préavis et de procédure sont conservés.
 
 ## Nouveautés 2026.10
 
@@ -102,5 +106,5 @@ ZIP régulière reste recommandée avant toute intervention importante.
 
 - [Signaler un problème](https://github.com/Mamat79/Easy-CESU/issues/new)
 - [Consulter toutes les versions](https://github.com/Mamat79/Easy-CESU/releases)
-- [Lire la notice complète](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.10/Easy_CESU_2026.10_Notice_Installation_et_Utilisation.pdf)
+- [Lire la notice complète](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.10.1/Easy_CESU_2026.10.1_Notice_Installation_et_Utilisation.pdf)
 - [Lire les notes de la version 2026.10](RELEASE_NOTES_2026.10.md)
