@@ -5,20 +5,20 @@ professionnels et salariés des services à la personne. Elle centralise les
 clients, interventions, tarifs, rappels, paiements, notes PDF et bilans Excel
 sans imposer de compte en ligne.
 
-**Version actuelle : 2026.9.1**
+**Version actuelle : 2026.10**
 
-La version 2026.9.1 est disponible pour Windows. Les paquets Mac 2026.9.1 sont en préparation ; les versions Mac 2026.6 restent disponibles.
+La version 2026.10 est disponible pour Windows et macOS (Apple Silicon et Intel).
 
-[Voir la version Windows 2026.9.1](https://github.com/Mamat79/Easy-CESU/releases/tag/v2026.9.1)
+[Voir la version 2026.10](https://github.com/Mamat79/Easy-CESU/releases/tag/v2026.10)
 
 ## Télécharger
 
 | Système | Fichier |
 | --- | --- |
-| Windows 11 x64 | [EasyCESU-Setup-x64-2026.9.1.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.9.1/EasyCESU-Setup-x64-2026.9.1.exe) |
-| macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.6.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/EasyCESU-macOS-Apple-Silicon-2026.6.dmg) |
-| macOS Intel | [EasyCESU-macOS-Intel-2026.6.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.6/EasyCESU-macOS-Intel-2026.6.dmg) |
-| Notice complète | [Easy_CESU_2026.9.1_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.9.1/Easy_CESU_2026.9.1_Notice_Installation_et_Utilisation.pdf) |
+| Windows 11 x64 | [EasyCESU-Setup-x64-2026.10.exe](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.10/EasyCESU-Setup-x64-2026.10.exe) |
+| macOS Apple Silicon | [EasyCESU-macOS-Apple-Silicon-2026.10.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.10/EasyCESU-macOS-Apple-Silicon-2026.10.dmg) |
+| macOS Intel | [EasyCESU-macOS-Intel-2026.10.dmg](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.10/EasyCESU-macOS-Intel-2026.10.dmg) |
+| Notice complète | [Easy_CESU_2026.10_Notice_Installation_et_Utilisation.pdf](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.10/Easy_CESU_2026.10_Notice_Installation_et_Utilisation.pdf) |
 
 L'installateur Windows n'est pas encore signé numériquement. Windows peut donc
 afficher un avertissement SmartScreen. Vérifiez l'empreinte SHA-256 publiée dans
@@ -36,15 +36,15 @@ Une vérification quotidienne signale les nouvelles versions. Ouvrez Réglages >
 
 Les versions antérieures à 2026.6 doivent installer cette version une première fois depuis GitHub pour disposer de cette fonction.
 
-## Nouveautés 2026.9.1
+## Nouveautés 2026.10
 
-Ajoutez des fichiers à la note PDF pendant la relecture d'un client. Choisissez **Envoi classique**, **Placer dans les brouillons** ou **Programmer l'envoi**, puis appliquez au besoin une action commune aux clients cochés dans le récapitulatif. La confirmation finale reste obligatoire.
+Préparez une fin de contrat avec un calendrier expliqué, des indemnités calculées sur les salaires bruts et des courriers préremplis modifiables. Le parcours distingue l'envoi, la première présentation d'un courrier, le préavis, la dernière intervention et le terme du contrat. La rupture conventionnelle suit ses propres délais de rétractation et d'homologation.
 
-Les brouillons sont déposés dans votre vraie messagerie par IMAP sécurisé, avec les destinataires, copies, contenu et pièces jointes. Avec Gmail, une demande différée devient un brouillon **à programmer soi-même dans Gmail** : l'avertissement est visible avant confirmation et le résultat rappelle la date et l'heure demandées. Une fois la programmation confirmée dans Gmail, Easy CESU et le PC peuvent être fermés. Les brouillons ne sont jamais marqués Transmis automatiquement.
+Le PDF réunit les interventions, les calculs justifiés, les montants convenus, les démarches de chaque partie et les modèles relus. Une simulation n'archive pas le client. Les actes officiels et l'attestation France Travail restent à finaliser dans CESU ou TéléRC.
 
-Le correctif 2026.9.1 conserve l'identité et une activation locale valide lorsqu'on ressaisit le même code de licence. Une tentative refusée préserve l'activation précédente ; les erreurs du service sans détail indiquent leur statut HTTP. Les licences permanentes déjà émises restent valables.
+Le parcours automatique concerne les CDI de salariés à domicile non protégés en métropole hors Alsace-Moselle. Les situations particulières sont signalées sans appliquer un calcul inadapté. Les montants inconnus restent à renseigner ; le total brut n'est pas le net à payer ni le coût employeur.
 
-Les fonctions précédentes sont conservées : colonnes Durée et Net alignées, dates regroupées abrégées et tri par clic sur les titres.
+Les fonctions précédentes d'email, brouillons, pièces jointes, suivi des interventions et licences permanentes sont conservées.
 
 ## Regroupement des interventions
 
@@ -102,5 +102,5 @@ ZIP régulière reste recommandée avant toute intervention importante.
 
 - [Signaler un problème](https://github.com/Mamat79/Easy-CESU/issues/new)
 - [Consulter toutes les versions](https://github.com/Mamat79/Easy-CESU/releases)
-- [Lire la notice complète](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.9.1/Easy_CESU_2026.9.1_Notice_Installation_et_Utilisation.pdf)
-- [Lire les notes de la version 2026.9.1](RELEASE_NOTES_2026.9.1.md)
+- [Lire la notice complète](https://github.com/Mamat79/Easy-CESU/releases/download/v2026.10/Easy_CESU_2026.10_Notice_Installation_et_Utilisation.pdf)
+- [Lire les notes de la version 2026.10](RELEASE_NOTES_2026.10.md)
